@@ -1,0 +1,15 @@
+# Development systems database
+# 8x5 supported systems
+# CSV list of servers and workstation
+# DB format:
+#
+# hostname,description,impact,is_web_server,is_linux,is_cluser_ip,can_ping,can_ssh
+#
+# is_webserver = ,yes,
+# or with web protocal list
+# is_webserver = ,yes:HTTP HTTPS FTP,
+
+# DEV Web cluster 
+wwwdev,Development Web server,WWWDEV Website is affected,yes,yes,yes,yes,yes
+wwwdev1,Development Web server 1,WWWDEV Website is affected,no,yes,no,yes,yes
+wwwdev2,Development Web server 2,WWWDEV Website is affected,no,yes,no,yes,yes

@@ -1,0 +1,16 @@
+# Production systems database
+# 24x7 supported systems
+# CSV list of servers and workstation
+# DB format:
+#
+# hostname,description,impact,is_web_server,is_linux,is_cluser_ip,can_ping,can_ssh
+#
+# is_webserver = ,yes,
+# or with web protocal list
+# is_webserver = ,yes:HTTP HTTPS FTP,
+
+# Web CMS cluster 
+cms,CMS server,Web CMS is affected,yes,yes,yes,yes,yes
+cms1,Primary CMS server,Web CMS is affected,no,yes,no,yes,yes
+cms2,Backup CMS server,Web CMS is affected,no,yes,no,yes,yes
+
