@@ -1,0 +1,18 @@
+
+# Cluster crontab example entries for DRSM monitor
+
+# Check for production system errors every 30 minutes
+30 * * * * sysadmin bash -c '/home/sysadmin/drsm/bin/system_check.sh &> /dev/null'
+45 * * * * sysadmin bash -c '/home/sysadmin/drsm/bin/system_report.sh &> /dev/null'
+
+# Send a status report every week day at 13:00 CDT
+00 13 * * mon,tue,wed,thu,fri sysadmin bash -c '/home/sysadmin/drsm/bin/system_check.sh YES &> /dev/null'
+15 13 * * mon,tue,wed,thu,fri sysadmin bash -c '/home/sysadmin/drsm/bin/system_report.sh YES &> /dev/null'
+
+# Check for DEV system errors
+35 09,10,11,12,13,14,15,16 * * mon,tue,wed,thu,fri sysadmin bash -c '/home/sysadmin/drsm/bin/system_check.sh NO DEV &> /dev/null'
+55 09,10,11,12,13,14,15,16 * * mon,tue,wed,thu,fri sysadmin bash -c '/home/sysadmin/drsm/bin/system_report.sh NO DEV &> /dev/null'
+
+# System reports archive and purge
+59 23 * * * sysadmin bash -c '/home/sysadmin/drsm/bin/archive.sh &> /dev/null'
+00 00 * * *  sysadmin bash -c '/home/sysadmin/drsm/bin/purge.sh &> /dev/null'
