@@ -221,16 +221,59 @@ do
 	continue 
     fi
 
-    if [ ! -e ${DRSMHOME}/bin/${host}_profile.sh ]
+    if [ ! -f ${CONFIGdir}/${host}_profile.sh ]
     then
-	echo "ERROR - Missing ${DRSMHOME}/bin/${host}_profile.sh profile script" | tee -a ${logfile}
-	echo "INFO - Missing profile script" >> ${OUTPUTdir}/${host}/${host}_report.txt
-	echo "" >> ${OUTPUTdir}/${host}/${host}_report.txt
-	echo "INFO - End of ${host} system health check report" >> ${OUTPUTdir}/${host}/${host}_report.txt
-	echo "" >> ${OUTPUTdir}/${host}/${host}_report.txt
-	cat ${OUTPUTdir}/${host}/${host}_report.txt > ${REPORTdir}/systems/${host}/${host}_report.txt
-	cat ${OUTPUTdir}/${host}/${host}_report.txt > ${REPORTdir}/systems/${host}/archive/${host}_report_${DATEEXT}.txt
-	continue
+	echo "INFO - Creating default profile script ${CONFIGdir}/${host}_profile.sh" | tee -a ${logfile}
+	cat /dev/null > ${CONFIGdir}/${host}_profile.sh
+	echo 'if [ "${host}" != "" ] && [ "${OUTPUTdir}" != "" ] && [ "${DRSMHOME}" != "" ]' >> ${CONFIGdir}/${host}_profile.sh
+	echo 'then' >> ${CONFIGdir}/${host}_profile.sh
+	echo '    # Run remote disk check, checks all local mounts by default:' >> ${CONFIGdir}/${host}_profile.sh
+	echo '    # To skip some mounted DIRs: disk_checks.sh '/archive /usr1'' >> ${CONFIGdir}/${host}_profile.sh
+	echo '    # To set custom alert level: disk_checks.sh NONE 90 99' >> ${CONFIGdir}/${host}_profile.sh
+	echo '    # Where $1 == DIR list to skip or NONE' >> ${CONFIGdir}/${host}_profile.sh
+	echo '    # Where $2 == Warning threshold' >> ${CONFIGdir}/${host}_profile.sh
+	echo '    # Where $3 == Error threshold' >> ${CONFIGdir}/${host}_profile.sh
+	echo '    ssh -q -x -o stricthostkeychecking=no -o PasswordAuthentication=no ${host} \' >> ${CONFIGdir}/${host}_profile.sh
+	echo '	"${DRSMHOME}/health_check_scripts/disk_checks.sh" > ${OUTPUTdir}/${host}/disk.txt' >> ${CONFIGdir}/${host}_profile.sh
+	echo "" >> ${CONFIGdir}/${host}_profile.sh
+	echo '    # Run remote CPU check:' >> ${CONFIGdir}/${host}_profile.sh
+	echo '    # To set custom alert level: cpu_checks.sh 85 95 100' >> ${CONFIGdir}/${host}_profile.sh
+	echo '    # To include CPU temps must have lm_sensors package setup on host   ' >> ${CONFIGdir}/${host}_profile.sh
+	echo '    # Where $1 == Warning threshold' >> ${CONFIGdir}/${host}_profile.sh
+	echo '    # Where $2 == Error threshold' >> ${CONFIGdir}/${host}_profile.sh
+	echo '    # Where $3 == Number of processes to list' >> ${CONFIGdir}/${host}_profile.sh
+	echo '    ssh -q -x -o stricthostkeychecking=no -o PasswordAuthentication=no ${host} \' >> ${CONFIGdir}/${host}_profile.sh
+	echo '	"${DRSMHOME}/health_check_scripts/cpu_checks.sh" > ${OUTPUTdir}/${host}/cpu.txt ' >> ${CONFIGdir}/${host}_profile.sh
+	echo "" >> ${CONFIGdir}/${host}_profile.sh
+	echo '    # Run remote load checks' >> ${CONFIGdir}/${host}_profile.sh
+	echo '    # To set custom alert level: load_checks.sh 35 50' >> ${CONFIGdir}/${host}_profile.sh
+	echo '    # Where $1 == Warning threshold' >> ${CONFIGdir}/${host}_profile.sh
+	echo '    # Where $2 == Error threshold' >> ${CONFIGdir}/${host}_profile.sh
+	echo '    ssh -q -x -o stricthostkeychecking=no -o PasswordAuthentication=no ${host} \' >> ${CONFIGdir}/${host}_profile.sh
+	echo '	"${DRSMHOME}/health_check_scripts/load_checks.sh" > ${OUTPUTdir}/${host}/load.txt' >> ${CONFIGdir}/${host}_profile.sh
+	echo "" >> ${CONFIGdir}/${host}_profile.sh
+	echo '    # Run remote memory checks' >> ${CONFIGdir}/${host}_profile.sh
+	echo '    # To set custom alert level: memory_checks.sh 256 1024 100' >> ${CONFIGdir}/${host}_profile.sh
+	echo '    # Where $1 == Error if free memory is below value in MB' >> ${CONFIGdir}/${host}_profile.sh
+	echo '    # Where $2 == Warning if using MB value or more of SWAP' >> ${CONFIGdir}/${host}_profile.sh
+	echo '    # Where $3 == Number of processes to list' >> ${CONFIGdir}/${host}_profile.sh
+	echo '    ssh -q -x -o stricthostkeychecking=no -o PasswordAuthentication=no ${host} \' >> ${CONFIGdir}/${host}_profile.sh
+	echo '	"${DRSMHOME}/health_check_scripts/memory_checks.sh" > ${OUTPUTdir}/${host}/memory.txt' >> ${CONFIGdir}/${host}_profile.sh
+	echo '' >> ${CONFIGdir}/${host}_profile.sh
+	echo '    # Run remote network checks, checks all active NICs by default' >> ${CONFIGdir}/${host}_profile.sh
+	echo '    # To set custom alert for specifed NICs: network_checks.sh 'eth0 eth1 eth2'' >> ${CONFIGdir}/${host}_profile.sh
+	echo '    # Where $1 == Is a list of NICs to check' >> ${CONFIGdir}/${host}_profile.sh
+	echo '    ssh -q -x -o stricthostkeychecking=no -o PasswordAuthentication=no ${host} \' >> ${CONFIGdir}/${host}_profile.sh
+	echo '	"${DRSMHOME}/health_check_scripts/network_checks.sh" > ${OUTPUTdir}/${host}/network.txt' >> ${CONFIGdir}/${host}_profile.sh
+	echo "" >> ${CONFIGdir}/${host}_profile.sh
+	echo '    # Run remote user checks' >> ${CONFIGdir}/${host}_profile.sh
+	echo '    # To set user alerts: user_checks.sh 'usr1 usr2' 'usr3 usr4'' >> ${CONFIGdir}/${host}_profile.sh
+	echo '    # Where $1 == Report error for any user in list' >> ${CONFIGdir}/${host}_profile.sh
+	echo '    # Where $2 == Report warning for any user in list' >> ${CONFIGdir}/${host}_profile.sh
+	echo '    ssh -q -x -o stricthostkeychecking=no -o PasswordAuthentication=no ${host} \' >> ${CONFIGdir}/${host}_profile.sh
+	echo '	"${DRSMHOME}/health_check_scripts/user_checks.sh" > ${OUTPUTdir}/${host}/user.txt' >> ${CONFIGdir}/${host}_profile.sh
+	echo 'fi' >> ${CONFIGdir}/${host}_profile.sh
+	echo "" >> ${CONFIGdir}/${host}_profile.sh
     fi
 
     if [ "${can_ping}" == "YES" ]
@@ -280,7 +323,7 @@ do
 	continue
     fi
 
-    ssh -q -x -o stricthostkeychecking=no -o PasswordAuthentication=no "${host}" mkdir -p /home/sysadmin/health_check_scripts
+    ssh -q -x -o stricthostkeychecking=no -o PasswordAuthentication=no "${host}" mkdir -p ${DRSMHOME}/health_check_scripts
     scp -q -o stricthostkeychecking=no -o PasswordAuthentication=no -p ${DRSMHOME}/bin/disk_checks.sh \
 	${DRSMHOME}/bin/cpu_checks.sh \
 	${DRSMHOME}/bin/load_checks.sh \
@@ -288,9 +331,9 @@ do
 	${DRSMHOME}/bin/network_checks.sh \
 	${DRSMHOME}/bin/user_checks.sh \
 	${DRSMHOME}/bin/read_cpu_temps.sh \
-	${host}:health_check_scripts/.
+	${host}:${DRSMHOME}/health_check_scripts/.
 
-    source ${DRSMHOME}/bin/${host}_profile.sh
+    source ${CONFIGdir}/${host}_profile.sh
     cat ${OUTPUTdir}/${host}/disk.txt >> ${OUTPUTdir}/${host}/${host}_report.txt
     echo "" >> ${OUTPUTdir}/${host}/${host}_report.txt
     cat ${OUTPUTdir}/${host}/cpu.txt >> ${OUTPUTdir}/${host}/${host}_report.txt
@@ -416,7 +459,6 @@ fi
 echo "All systems health check good, not sending any status messages" | tee -a ${logfile}
 RemoveLockFile
 exit 0
-
 # ----------------------------------------------------------- 
 # ******************************* 
 # ********* End of File ********* 

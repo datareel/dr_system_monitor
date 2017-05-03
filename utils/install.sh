@@ -150,7 +150,18 @@ mkdir -pv ${WWWdir}/images
 cp -fv ${BASEdir}/www/images/* ${WWWdir}/images/.
 chmod 775 ${WWWdir}/images
 chmod 664 ${WWWdir}/images/*
-chown -R ${SYSADMIN_USERNAME}:${SYSADMIN_GROUPNAME} ${WWWdir}/images
+chown ${SYSADMIN_USERNAME}:${SYSADMIN_GROUPNAME} ${WWWdir}/images/*
+
+if [ ! -f  ${WWWdir}/index.php ]; then
+    echo "Creating default index page"
+    cat /dev/null > ${WWWdir}/index.php
+    echo '<?php ' >> ${WWWdir}/index.php
+    echo "include('${{WWWdir}/php/index.php');" >> ${WWWdir}/index.php 
+    echo '?>' >> ${WWWdir}/index.php
+    echo "" >> ${WWWdir}/index.php
+    chmod 664 ${WWWdir}/index.php
+    chown ${SYSADMIN_USERNAME}:${SYSADMIN_GROUPNAME} ${WWWdir}/index.php
+fi
  
 echo "Installing sysadmin dat templates"
 files="systems.dat dev_systems.dat"

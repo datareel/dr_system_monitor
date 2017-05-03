@@ -6,9 +6,9 @@
 # Shell: BASH shell
 # Original Author(s): DataReel Software Development
 # File Creation Date: 05/25/2013
-# Date Last Modified: 05/01/2017
+# Date Last Modified: 05/03/2017
 #
-# Version control: 1.09
+# Version control: 1.12
 #
 # Contributor(s):
 # ----------------------------------------------------------- 
@@ -33,9 +33,8 @@
 # System monitoring script for memory usage
 #
 # ----------------------------------------------------------- 
-
 ALERT=256
-SWAPALERT=256
+SWAPALERT=1024
 NUMPROCS=100
 
 if [ "${1}" != "" ]; then ALERT=$1; fi
