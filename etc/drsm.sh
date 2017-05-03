@@ -12,14 +12,11 @@ export REPORTarchive=${WWWdir}/reports/archive
 export REPORTarchivevpath=${WWWvpath}/reports/archive
 export CONFIGdir=${WWWdir}/config
 export SITEincludes=${WWWdir}/site
-export APACHE_USERNAME=apache
-export APACHE_GROUPNAME=apache
 
-# Setup for the username, uid, and gid for the sysadmin account
+# Setup umask, user name, and group name for the sysadmin account
+umask 0002
 export SYSADMIN_USERNAME=sysadmin
 export SYSADMIN_GROUPNAME=sysadmin
-export SYSADMIN_UID=2890
-export SYSADMIN_GID=2890
 
 # Our DRSM home directory
 export DRSMHOME=${HOME}/drsm

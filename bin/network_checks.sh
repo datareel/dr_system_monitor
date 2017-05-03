@@ -8,7 +8,7 @@
 # File Creation Date: 05/25/2013
 # Date Last Modified: 05/01/2017
 #
-# Version control: 1.09
+# Version control: 1.12
 #
 # Contributor(s):
 # ----------------------------------------------------------- 
@@ -36,7 +36,9 @@
 # NICS is a space seperated list of interfaces to monitor"
 # NICS="eth0 eth1 eth2"
 
-IP="/usr/sbin/ip"
+IP="ip"
+if [ -f /sbin/ip ]; then IP="/sbin/ip"; fi
+if [ -f /usr/sbin/ip ]; then IP="/usr/sbin/ip"; fi
 
 if [ "${1}" != "" ]; then 
     NICS="${1}"; 
