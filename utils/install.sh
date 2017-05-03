@@ -111,6 +111,9 @@ do
     chown ${SYSADMIN_USERNAME}:${SYSADMIN_GROUPNAME} ${d}
 done 
 
+chmod 775 ${WWWdir} ${REPORTdir}
+chown ${SYSADMIN_USERNAME}:${SYSADMIN_GROUPNAME} ${WWWdir} ${REPORTdir}
+
 echo "Creating default PHP configuration"
 if [ -f ${CONFIGdir}/drsm.php ]; then cp -fp  ${CONFIGdir}/drsm.php ${CONFIGdir}/drsm.php_$(date +%Y%d%m_%H%M%S); fi
 cat /dev/null > ${CONFIGdir}/drsm.php
@@ -127,9 +130,10 @@ echo -n '$REPORTarchivevpath = ' >> ${CONFIGdir}/drsm.php; echo "'${REPORTarchiv
 echo -n '$CONFIGdir = ' >> ${CONFIGdir}/drsm.php; echo "'${CONFIGdir}';" >> ${CONFIGdir}/drsm.php
 echo -n '$SITEincludes = ' >> ${CONFIGdir}/drsm.php; echo "'${SITEincludes}';" >> ${CONFIGdir}/drsm.php
 echo '?>' >> ${CONFIGdir}/drsm.php
+chmod 664 ${CONFIGdir}/drsm.php
+chown ${SYSADMIN_USERNAME}:${SYSADMIN_GROUPNAME} ${CONFIGdir}/drsm.php
 
 echo "Installing PHP code"
-
 files="checks.php \
 default_footer.php \
 default_header.php \
@@ -143,6 +147,7 @@ do
     cp -fv ${BASEdir}/www/php/${f} ${WWWdir}/php/${f}
     chmod 664 ${WWWdir}/php/${f}
     chown ${SYSADMIN_USERNAME}:${SYSADMIN_GROUPNAME} ${WWWdir}/php/${f}
+    sed -i s,../config/drsm.php,${CONFIGdir}/drsm.php,g ${WWWdir}/php/${f}
 done 
 
 echo "Copying WWW image files"
@@ -151,12 +156,11 @@ cp -fv ${BASEdir}/www/images/* ${WWWdir}/images/.
 chmod 775 ${WWWdir}/images
 chmod 664 ${WWWdir}/images/*
 chown ${SYSADMIN_USERNAME}:${SYSADMIN_GROUPNAME} ${WWWdir}/images/*
-
 if [ ! -f  ${WWWdir}/index.php ]; then
     echo "Creating default index page"
     cat /dev/null > ${WWWdir}/index.php
     echo '<?php ' >> ${WWWdir}/index.php
-    echo "include('${{WWWdir}/php/index.php');" >> ${WWWdir}/index.php 
+    echo "include('${WWWdir}/php/index.php');" >> ${WWWdir}/index.php 
     echo '?>' >> ${WWWdir}/index.php
     echo "" >> ${WWWdir}/index.php
     chmod 664 ${WWWdir}/index.php
