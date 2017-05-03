@@ -6,9 +6,9 @@
 # Shell: BASH shell
 # Original Author(s): DataReel Software Development
 # File Creation Date: 05/25/2013
-# Date Last Modified: 05/01/2017
+# Date Last Modified: 05/02/2017
 #
-# Version control: 1.09
+# Version control: 1.11
 #
 # Contributor(s):
 # ----------------------------------------------------------- 
@@ -33,9 +33,7 @@
 # System monitoring script for disk space 
 #
 # ----------------------------------------------------------- 
-DIRS="/boot / /var /tmp"
-if [ "${1}" != "" ]; then DIRS="${1}"; fi
-
+SKIPDIRS=""
 ALERT=90
 MAX=99
 HOST=$(hostname -s)
@@ -44,23 +42,41 @@ has_warning="0"
 
 echo "Disk usage checks for ${HOST}"
 
-for d in ${DIRS}
+if [ "${1}" != "" ]; then SKIPDIRS="${1}"; fi
+if [ "${2}" != "" ]; then ALERT="${2}"; fi
+if [ "${3}" != "" ]; then MAX="${3}"; fi
+
+while read line
 do
-    DISKSPACE=$(df -HP ${d} | sed '1d' | awk '{print $5}' | cut -d'%' -f1)
-    if [ ${DISKSPACE} -ge ${ALERT} ] 
-    then
-	if [ ${DISKSPACE} -ge ${MAX} ]
-	then
-	    echo "ERROR - ${HOST}:${d} is fill at ${DISKSPACE}% capacity."
-	    has_error="1"
-	else
-	    echo "WARNING - ${HOST}:${d} is at ${DISKSPACE}% capacity."
-	    has_warning="1"
+    DATLINE=$(echo $line | grep -v "^#")
+    if [ "${DATLINE}" != "" ]; then
+	FSTYPE=$(echo "${DATLINE}" | awk '{ print $3 }')
+	DIR=$(echo "${DATLINE}" | awk '{ print $2 }')
+	if [ "${FSTYPE}" == "xfs" ] || [ "${FSTYPE}" == "ext4" ] || [ "${FSTYPE}" == "ext3" ] || [ "${FSTYPE}" == "ext2" ]; then
+	    for d in ${SKIPDIRS}
+	    do
+		if [ "${DIR}" == "${d}" ]; then
+		    echo "Skipping DIR check on ${d}"
+		    continue
+		fi
+	    done
+	    DISKSPACE=$(df -HP ${DIR} | sed '1d' | awk '{print $5}' | cut -d'%' -f1)
+	    if [ ${DISKSPACE} -ge ${ALERT} ] 
+	    then
+		if [ ${DISKSPACE} -ge ${MAX} ]
+		then
+		    echo "ERROR - ${HOST}:${DIR} is fill at ${DISKSPACE}% capacity."
+		    has_error="1"
+		else
+		    echo "WARNING - ${HOST}:${DIR} is at ${DISKSPACE}% capacity."
+		    has_warning="1"
+		fi
+	    else 
+		echo "${HOST}:${DIR} checks good at ${DISKSPACE}% capacity."
+	    fi
 	fi
-    else 
-	echo "${HOST}:${d} checks good at ${DISKSPACE}% capacity."
     fi
-done
+done < /etc/fstab
 
 if [ "${has_error}" == "1" ]
 then
