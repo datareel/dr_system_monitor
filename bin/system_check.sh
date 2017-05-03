@@ -6,9 +6,9 @@
 # Shell: BASH shell
 # Original Author(s): DataReel Software Development
 # File Creation Date: 05/25/2013
-# Date Last Modified: 05/02/2017
+# Date Last Modified: 05/03/2017
 #
-# Version control: 1.11
+# Version control: 1.12
 #
 # Contributor(s):
 # ----------------------------------------------------------- 
@@ -35,20 +35,27 @@
 # ----------------------------------------------------------- 
 if [ "${BASEdir}" == "" ]; then export BASEdir="${HOME}/drsm"; fi
 
-if [ ! -f ${BASEdir}/etc/drsm.sh ]; then
-    echo "ERROR - Cannot find base config ${BASEdir}/etc/drsm.sh"
+if [ -f ${HOME}/.drsm.sh ]; then
+    echo "INFO - Using config override file ${HOME}/.drsm.sh"
+    CONFIG_FILE=${HOME}/.drsm.sh
+else
+    echo "INFO - Using default config ${BASEdir}/etc/drsm.sh"
+    CONFIG_FILE=${BASEdir}/etc/drsm.sh
+fi
+
+if [ ! -f ${CONFIG_FILE} ]; then
+    echo "Missing base config ${CONFIG_FILE}"
     exit 1
 fi
 
-source ${BASEdir}/etc/drsm.sh
-source ${BASEdir}/bin/system_functions.sh
+source ${CONFIG_FILE}
+source ${DRSMHOME}/bin/system_functions.sh
 
 HOST=$(hostname -s)
 has_errors="0"
 verbose="0"
 sortnodes="0"
 emailstatusreport="NO"
-RUNdir="${BASEdir}/bin"
 OUTPUTdir="${VARdir}/system_check.tmp"
 errorfile="${OUTPUTdir}/errors.txt"
 statusfile="${OUTPUTdir}/status.txt"
@@ -78,7 +85,7 @@ then
 fi
 
 if [ ! -e ${VARdir} ]; then mkdir -p ${VARdir}; fi
-source ${RUNdir}/process_lock.sh
+source ${DRSMHOME}/bin/process_lock.sh
 
 LockFileCheck $MINold
 CreateLockFile
@@ -251,7 +258,7 @@ then
 	TIMEFILE="${VARdir}/email_alert_dev.timefile"
 	INITFILE="${VARdir}/email_alert_dev.initfile"
     fi
-    source ${RUNdir}/text_email_alert.sh
+    source ${DRSMHOME}/bin/text_email_alert.sh
     email_alert "${SUBJECT}" "${BODY}"
     RemoveLockFile
     exit 1
@@ -270,7 +277,7 @@ then
 	TIMEFILE="${VARdir}/email_alert_dev.timefile"
 	INITFILE="${VARdir}/email_alert_dev.initfile"
     fi
-    source ${RUNdir}/text_email_alert.sh
+    source ${DRSMHOME}/bin/text_email_alert.sh
     email_alert "${SUBJECT}" "${BODY}"
     rm -f ${VARdir}/email_alert.*
     RemoveLockFile

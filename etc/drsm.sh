@@ -1,8 +1,6 @@
 #!/bin/bash
 # DRSM master configuration file
 
-export RUNdir=${HOME}/drsm
-
 # Internal Web server setup
 # UNIX path of our Web directory
 export WWWdir=/var/www/html/sysadmin
@@ -23,14 +21,25 @@ export SYSADMIN_GROUPNAME=sysadmin
 export SYSADMIN_UID=2890
 export SYSADMIN_GID=2890
 
+# Our DRSM home directory
+export DRSMHOME=${HOME}/drsm
+if [ "$(whoami)" != "${SYSADMIN_USERNAME}" ]; then
+    export DRSMHOME=${SYSADMIN_USERNAME}/drsm
+fi
+
 # Set DIRs for logs, temp and spool files
-export LOGdir="/tmp/${SYSADMIN_USERNAME}/drsm/logs"
-export VARdir="/tmp/${SYSADMIN_USERNAME}/drsm/var"
-export SPOOLdir="/tmp/${SYSADMIN_USERNAME}/drsm/spool"
+export TEMPdir="/tmp/${SYSADMIN_USERNAME}/drsm"
+export LOGdir="${TEMPdir}/logs"
+export VARdir="${TEMPdir}/var"
+export SPOOLdir="${TEMPdir}/spool"
 
-# Optional custom overrrides configuration for testing
-if [ -f ${HOME}/.drsm.sh ]; then source ${HOME}/.drsm.sh; fi
-
+if [ ! -d ${TEMPdir} ]; then mkdir -p ${TEMPdir}; fi
 if [ ! -d ${LOGdir} ]; then mkdir -p ${LOGdir}; fi
 if [ ! -d ${VARdir} ]; then mkdir -p ${VARdir}; fi
 if [ ! -d ${SPOOLdir} ]; then mkdir -p ${SPOOLdir}; fi
+
+if [ "$(whoami)" != "${SYSADMIN_USERNAME}" ]; then
+    for d in ${TEMPdir} ${LOGdir} ${VARdir} ${SPOOLdir}; do
+	chown ${SYSADMIN_USERNAME}:${SYSADMIN_GROUPNAME} ${d}
+    done 
+fi

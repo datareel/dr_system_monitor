@@ -5,9 +5,9 @@
 # Shell: BASH shell
 # Original Author(s): DataReel Software Development
 # File Creation Date: 05/25/2013
-# Date Last Modified: 05/02/2017
+# Date Last Modified: 05/03/2017
 #
-# Version control: 1.11
+# Version control: 1.12
 #
 # Contributor(s):
 # ----------------------------------------------------------- 
@@ -34,12 +34,21 @@
 # ----------------------------------------------------------- 
 if [ "${BASEdir}" == "" ]; then export BASEdir="${HOME}/drsm"; fi
 
-if [ ! -f ${BASEdir}/etc/drsm.sh ]; then
-    echo "ERROR - Cannot find base config ${BASEdir}/etc/drsm.sh"
+if [ -f ${HOME}/.drsm.sh ]; then
+    echo "INFO - Using config override file ${HOME}/.drsm.sh"
+    CONFIG_FILE=${HOME}/.drsm.sh
+else
+    echo "INFO - Using default config ${BASEdir}/etc/drsm.sh"
+    CONFIG_FILE=${BASEdir}/etc/drsm.sh
+fi
+
+if [ ! -f ${CONFIG_FILE} ]; then
+    echo "Missing base config ${CONFIG_FILE}"
     exit 1
 fi
 
-source ${BASEdir}/bin/system_functions.sh
+source ${CONFIG_FILE}
+source ${DRSMHOME}/bin/system_functions.sh
 
 HOST=$(hostname -s)
 has_errors="0"
@@ -47,7 +56,6 @@ verbose="1"
 sortnodes="0"
 emailstatusreport="NO"
 singletesthost=""
-RUNdir="${BASEdir}/bin"
 OUTPUTdir="${VARdir}/system_report.tmp"
 errorfile="${OUTPUTdir}/errors.txt"
 statusfile="${OUTPUTdir}/status.txt"
@@ -80,7 +88,7 @@ fi
 if [ "${3}" != "" ]; then singletesthost="${3}"; fi
 
 if [ ! -e ${VARdir} ]; then mkdir -p ${VARdir}; fi
-source ${RUNdir}/process_lock.sh
+source ${DRSMHOME}/bin/process_lock.sh
 
 LockFileCheck $MINold
 CreateLockFile
@@ -213,9 +221,9 @@ do
 	continue 
     fi
 
-    if [ ! -e ${RUNdir}/${host}_profile.sh ]
+    if [ ! -e ${DRSMHOME}/bin/${host}_profile.sh ]
     then
-	echo "ERROR - Missing ${RUNdir}/${host}_profile.sh profile script" | tee -a ${logfile}
+	echo "ERROR - Missing ${DRSMHOME}/bin/${host}_profile.sh profile script" | tee -a ${logfile}
 	echo "INFO - Missing profile script" >> ${OUTPUTdir}/${host}/${host}_report.txt
 	echo "" >> ${OUTPUTdir}/${host}/${host}_report.txt
 	echo "INFO - End of ${host} system health check report" >> ${OUTPUTdir}/${host}/${host}_report.txt
@@ -273,16 +281,16 @@ do
     fi
 
     ssh -q -x -o stricthostkeychecking=no -o PasswordAuthentication=no "${host}" mkdir -p /home/sysadmin/health_check_scripts
-    scp -q -o stricthostkeychecking=no -o PasswordAuthentication=no -p ${RUNdir}/disk_checks.sh \
-	${RUNdir}/cpu_checks.sh \
-	${RUNdir}/load_checks.sh \
-	${RUNdir}/memory_checks.sh \
-	${RUNdir}/network_checks.sh \
-	${RUNdir}/user_checks.sh \
-	${RUNdir}/read_cpu_temps.sh \
+    scp -q -o stricthostkeychecking=no -o PasswordAuthentication=no -p ${DRSMHOME}/bin/disk_checks.sh \
+	${DRSMHOME}/bin/cpu_checks.sh \
+	${DRSMHOME}/bin/load_checks.sh \
+	${DRSMHOME}/bin/memory_checks.sh \
+	${DRSMHOME}/bin/network_checks.sh \
+	${DRSMHOME}/bin/user_checks.sh \
+	${DRSMHOME}/bin/read_cpu_temps.sh \
 	${host}:health_check_scripts/.
 
-    source ${RUNdir}/${host}_profile.sh
+    source ${DRSMHOME}/bin/${host}_profile.sh
     cat ${OUTPUTdir}/${host}/disk.txt >> ${OUTPUTdir}/${host}/${host}_report.txt
     echo "" >> ${OUTPUTdir}/${host}/${host}_report.txt
     cat ${OUTPUTdir}/${host}/cpu.txt >> ${OUTPUTdir}/${host}/${host}_report.txt
@@ -346,7 +354,7 @@ then
 	TIMEFILE="${VARdir}/email_alert_dev.timefile"
 	INITFILE="${VARdir}/email_alert_dev.initfile"
     fi
-    source ${RUNdir}/text_email_alert.sh
+    source ${DRSMHOME}/bin/text_email_alert.sh
     email_alert "${SUBJECT}" "${BODY}"
     rm -f ${VARdir}/system_report_message.$$
     RemoveLockFile
@@ -372,7 +380,7 @@ then
 	    TIMEFILE="${VARdir}/email_alert_dev.timefile"
 	    INITFILE="${VARdir}/email_alert_dev.initfile"
 	fi
-	source ${RUNdir}/text_email_alert.sh
+	source ${DRSMHOME}/bin/text_email_alert.sh
 	email_alert "${SUBJECT}" "${BODY}"
 	rm -f ${VARdir}/email_alert.*
 	rm -f ${VARdir}/system_report_message.$$
@@ -398,7 +406,7 @@ then
 	TIMEFILE="${VARdir}/email_alert_dev.timefile"
 	INITFILE="${VARdir}/email_alert_dev.initfile"
     fi
-    source ${RUNdir}/text_email_alert.sh
+    source ${DRSMHOME}/bin/text_email_alert.sh
     email_alert "${SUBJECT}" "${BODY}"
     rm -f ${VARdir}/email_alert.*
     RemoveLockFile

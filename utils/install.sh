@@ -1,11 +1,13 @@
 #!/bin/bash
+# DRSM installation script
+# Last modified: 05/03/2017
 
 cd ../
 BASEdir=$(pwd)
 if [ "${1}" != "" ]; then BASEdir="${1}"; fi
 
-if [ ! -d ${BASEdir} ]; then
-    echo "ERROR - Missing ${BASEdir} base directory"
+if [ ! -d ${BASEdir}/bin ] || [ ! -d ${BASEdir}/etc ] || [ ! -d ${BASEdir}/utils ] || [ ! -d ${BASEdir}/www ]; then
+    echo "ERROR - Bad DRSM ${BASEdir} base directory"
     exit 1
 fi
 
@@ -31,21 +33,78 @@ else
     exit 1
 fi
 
-if [ ! -f ${BASEdir}/etc/drsm.sh ]; then
-    echo "Missing base config ${BASEdir}/etc/drsm.sh"
+if [ -f ${HOME}/.drsm.sh ]; then
+    echo "INFO - Using config override file ${HOME}/.drsm.sh"
+    CONFIG_FILE=${HOME}/.drsm.sh
+else
+    echo "INFO - Using default config ${BASEdir}/etc/drsm.sh"
+    CONFIG_FILE=${BASEdir}/etc/drsm.sh
+fi
+
+if [ ! -f ${CONFIG_FILE} ]; then
+    echo "Missing base config ${CONFIG_FILE}"
     exit 1
 fi
 
-source ${BASEdir}/etc/drsm.sh
+source ${CONFIG_FILE}
+
+USERNAME=$(whoami)
+
+if [ "${USERNAME}" != "${SYSADMIN_USERNAME}" ]; then 
+    if [ "${USERNAME}" != "root" ]; then
+	echo "ERROR - You must ${SYSADMIN_USERNAME} or root to install"
+	echo "ERROR - Check your DRSM config ${CONFIG_FILE}"
+    exit 1
+    fi
+fi
+
+echo "Installing DSRM to ${DRSMHOME}"
+mkdir -pv ${DRSMHOME}
+if [ $? -ne 0 ]; then 
+    echo "ERROR - Cannot make install DIR ${DRSMHOME}"
+    echo "ERROR - Check your DRSM config ${CONFIG_FILE}"
+    exit 1
+fi
+
+dirs="bin etc utils www"
+for d in ${dirs}
+do
+    cp -rfv ${BASEdir}/${d} ${DRSMHOME}/.
+    if [ $? -ne 0 ]; then 
+	echo "ERROR - Cannot install ${BASEdir}/${d} to ${DRSMHOME}/${d}"
+	exit 1
+    fi
+    if [ "${USERNAME}" != "${SYSADMIN_USERNAME}" ]; then 
+	chmod 775 ${DRSMHOME}/${d}
+	chown ${SYSADMIN_USERNAME}:${SYSADMIN_GROUPNAME} ${DRSMHOME}/${d}
+	chown ${SYSADMIN_USERNAME}:${SYSADMIN_GROUPNAME} ${DRSMHOME}/${d}/*
+    fi
+done 
+
+find ${DRSMHOME} -name "*.sh" -print | xargs chmod 755
+
+files="README.txt version.txt license.txt"
+for f in ${files}
+do
+    cp -fv ${BASEdir}/${f} ${DRSMHOME}/${f}
+    if [ $? -ne 0 ]; then 
+	echo "ERROR - Cannot install ${f} to ${DRSMHOME}/${f}"
+	exit 1
+    fi
+    if [ "${USERNAME}" != "${SYSADMIN_USERNAME}" ]; then 
+	chmod 644 ${DRSMHOME}/${f}
+	chown ${SYSADMIN_USERNAME}:${SYSADMIN_GROUPNAME} ${DRSMHOME}/${f}
+    fi
+done 
 
 echo "Creating Web directories"
 dirs="${WWWdir}/php ${REPORTdir}/systems ${REPORTarchive} ${CONFIGdir} ${SITEincludes}"
-
 for d in ${dirs}
 do
     mkdir -pv ${d}
     if [ $? -ne 0 ]; then 
 	echo "ERROR - Cannot make DIR ${d}"
+	echo "ERROR - Check your DRSM config ${CONFIG_FILE}"
 	exit 1
     fi
     chmod 775 ${d}
@@ -81,7 +140,7 @@ reports.php"
 
 for f in ${files}
 do
-    cp -fpv ${BASEdir}/www/php/${f} ${WWWdir}/php/${f}
+    cp -fv ${BASEdir}/www/php/${f} ${WWWdir}/php/${f}
     chmod 664 ${WWWdir}/php/${f}
     chown ${SYSADMIN_USERNAME}:${SYSADMIN_GROUPNAME} ${WWWdir}/php/${f}
 done 
@@ -95,15 +154,21 @@ chown -R ${SYSADMIN_USERNAME}:${SYSADMIN_GROUPNAME} ${WWWdir}/images
  
 echo "Installing sysadmin dat templates"
 files="systems.dat dev_systems.dat"
-
 for f in ${files}
 do
-    if [ -f ${CONFIGdir}/${f} ]; then cp -fp ${CONFIGdir}/${f} ${CONFIGdir}/${f}_$(date +%Y%d%m_%H%M%S); fi
-    cp -fpv ${BASEdir}/www/config/${f} ${CONFIGdir}/${f}
-    chmod 664 ${CONFIGdir}/${f}
-    chown ${SYSADMIN_USERNAME}:${SYSADMIN_GROUPNAME} ${CONFIGdir}/${f}
-done 
+    if [ -f ${CONFIGdir}/${f} ]; then 
+	echo "INFO - Config file exists ${CONFIGdir}/${f}"
+	echo "INFO - Will not overwrite existing DB file"
+	cp -f ${CONFIGdir}/${f} ${CONFIGdir}/${f}_install_new
+	chmod 664 ${CONFIGdir}/${f}_install_new
+	chown ${SYSADMIN_USERNAME}:${SYSADMIN_GROUPNAME} ${CONFIGdir}/${f}_install_new
 
+    else
+	cp -fv ${BASEdir}/www/config/${f} ${CONFIGdir}/${f}
+	chmod 664 ${CONFIGdir}/${f}
+	chown ${SYSADMIN_USERNAME}:${SYSADMIN_GROUPNAME} ${CONFIGdir}/${f}
+    fi
+done 
 
 echo "Install complete"
 echo ""

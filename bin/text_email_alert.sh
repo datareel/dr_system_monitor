@@ -5,9 +5,9 @@
 # Shell: BASH shell
 # Original Author(s): DataReel Software Development
 # File Creation Date: 08/01/2008
-# Date Last Modified: 05/02/2017
+# Date Last Modified: 05/03/2017
 #
-# Version control: 1.11
+# Version control: 1.12
 #
 # Contributor(s):
 # ----------------------------------------------------------- 
@@ -34,14 +34,22 @@
 # -----------------------------------------------------------
 if [ "${BASEdir}" == "" ]; then export BASEdir="${HOME}/drsm"; fi
 
-if [ ! -f ${BASEdir}/etc/drsm.sh ]; then
-    echo "ERROR - Cannot find base config ${BASEdir}/etc/drsm.sh"
+if [ -f ${HOME}/.drsm.sh ]; then
+    echo "INFO - Using config override file ${HOME}/.drsm.sh"
+    CONFIG_FILE=${HOME}/.drsm.sh
+else
+    echo "INFO - Using default config ${BASEdir}/etc/drsm.sh"
+    CONFIG_FILE=${BASEdir}/etc/drsm.sh
+fi
+
+if [ ! -f ${CONFIG_FILE} ]; then
+    echo "Missing base config ${CONFIG_FILE}"
     exit 1
 fi
 
-source ${BASEdir}/etc/drsm.sh
+source ${CONFIG_FILE}
 
-if [ "${ALERTdir}" == "" ]; then export ALERTdir="${BASEdir}/etc"; fi
+if [ "${ALERTdir}" == "" ]; then export ALERTdir="${DRSMHOME}/etc"; fi
 if [ "${LISTNAME}" == "" ]; then export LISTNAME="alert"; fi
 
 # This is the timespan between email messages to prevent a flood of email messages.
