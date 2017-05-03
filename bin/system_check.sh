@@ -6,9 +6,9 @@
 # Shell: BASH shell
 # Original Author(s): DataReel Software Development
 # File Creation Date: 05/25/2013
-# Date Last Modified: 05/01/2017
+# Date Last Modified: 05/02/2017
 #
-# Version control: 1.09
+# Version control: 1.11
 #
 # Contributor(s):
 # ----------------------------------------------------------- 
@@ -33,7 +33,13 @@
 # System connectivity monitoring script 
 #
 # ----------------------------------------------------------- 
-if [ "${BASEdir}" == "" ]; then export BASEdir="$HOME/drsm"; fi
+if [ "${BASEdir}" == "" ]; then export BASEdir="${HOME}/drsm"; fi
+
+if [ ! -f ${BASEdir}/etc/drsm.sh ]; then
+    echo "ERROR - Cannot find base config ${BASEdir}/etc/drsm.sh"
+    exit 1
+fi
+
 source ${BASEdir}/etc/drsm.sh
 source ${BASEdir}/bin/system_functions.sh
 

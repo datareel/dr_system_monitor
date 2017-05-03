@@ -5,9 +5,9 @@
 # Shell: BASH shell
 # Original Author(s): DataReel Software Development
 # File Creation Date: 05/25/2013
-# Date Last Modified: 05/01/2017
+# Date Last Modified: 05/02/2017
 #
-# Version control: 1.09
+# Version control: 1.11
 #
 # Contributor(s):
 # ----------------------------------------------------------- 
@@ -32,8 +32,13 @@
 # System health check reporting script 
 #
 # ----------------------------------------------------------- 
-if [ "${BASEdir}" == "" ]; then export BASEdir="$HOME/drsm"; fi
-source ${BASEdir}/etc/drsm.sh
+if [ "${BASEdir}" == "" ]; then export BASEdir="${HOME}/drsm"; fi
+
+if [ ! -f ${BASEdir}/etc/drsm.sh ]; then
+    echo "ERROR - Cannot find base config ${BASEdir}/etc/drsm.sh"
+    exit 1
+fi
+
 source ${BASEdir}/bin/system_functions.sh
 
 HOST=$(hostname -s)

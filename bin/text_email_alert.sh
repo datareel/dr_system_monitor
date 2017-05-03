@@ -5,9 +5,9 @@
 # Shell: BASH shell
 # Original Author(s): DataReel Software Development
 # File Creation Date: 08/01/2008
-# Date Last Modified: 05/01/2017
+# Date Last Modified: 05/02/2017
 #
-# Version control: 1.09
+# Version control: 1.11
 #
 # Contributor(s):
 # ----------------------------------------------------------- 
@@ -32,7 +32,13 @@
 # Include script used to text and email system or process alearts
 #
 # -----------------------------------------------------------
-if [ "${BASEdir}" == "" ]; then export BASEdir="$HOME/drsm"; fi
+if [ "${BASEdir}" == "" ]; then export BASEdir="${HOME}/drsm"; fi
+
+if [ ! -f ${BASEdir}/etc/drsm.sh ]; then
+    echo "ERROR - Cannot find base config ${BASEdir}/etc/drsm.sh"
+    exit 1
+fi
+
 source ${BASEdir}/etc/drsm.sh
 
 if [ "${ALERTdir}" == "" ]; then export ALERTdir="${BASEdir}/etc"; fi
