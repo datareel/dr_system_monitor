@@ -5,9 +5,9 @@
 #
 # hostname,description,impact,is_web_server,is_linux,is_cluser_ip,can_ping,can_ssh
 #
-# is_webserver = ,yes,
+# is_web_server = ,yes,
 # or with web protocal list
-# is_webserver = ,yes:HTTP HTTPS FTP,
+# is_web_server = ,yes:HTTP HTTPS FTP,
 
 # Web CMS cluster 
 cms,CMS server,Web CMS is affected,yes,yes,yes,yes,yes

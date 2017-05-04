@@ -128,7 +128,50 @@ $ firefox http://$(hostname)/sysadmin
 
 Adding systems to monitor:
 -------------------------
+The connectivity and heath reporting scripts use a CSV database file
+to select systems to monitor. The CSV format is: 
 
+hostname,description,impact,is_web_server,is_linux,is_cluser_ip,can_ping,can_ssh
+hostname = The hostname or IP address of the server or workstation
+description = A short text describing the server or workstation
+impact = A short text stating the impact of a system warning or error
+is_web_server = Is this a Web server, yes or no
+NOTE: For Web servers you can specify a space separated protocol list:
+is_web_server = ,yes:HTTP HTTPS FTP,
+is_linux = Is this a Linux host, yes or no
+is_cluser_ip = Is this hostname or IP the head of a cluster node, yes or no
+can_ping = Can we ping this host, yes or no
+can_ssh = Can we SSH with keyed authentication to this host, yes or no
+
+To add production systems append new CSV lines to the
+${CONFIGdir}/systems.dat file:
+
+$ source ~/.drsm.sh
+$ vi ${CONFIGdir}/systems.dat
+
+# Web CMS cluster 
+cms,CMS server,Web CMS is affected,yes,yes,yes,yes,yes
+cms1,Primary CMS server,Web CMS is affected,no,yes,no,yes,yes
+cms2,Backup CMS server,Web CMS is affected,no,yes,no,yes,yes
+
+In the above example we checking the head of cluster and 2 cluster
+nodes.
+
+To add development systems append new CSV lines to the
+${CONFIGdir}/dev_systems.dat file:
+
+$ source ~/.drsm.sh
+$ vi ${CONFIGdir}/dev_systems.dat
+
+# DEV Web cluster 
+wwwdev,Development Web server,WWWDEV Website is affected,yes,yes,yes,yes,yes
+wwwdev1,Development Web server 1,WWWDEV Website is affected,no,yes,no,yes,yes
+wwwdev2,Development Web server 2,WWWDEV Website is affected,no,yes,no,yes,yes
+
+To test your production and development configurations:
+
+$ ~/drsm/bin/system_check.sh
+$ ~/drsm/bin/system_check.sh NO DEV
 
 Customizing the Web Interface:
 -----------------------------
