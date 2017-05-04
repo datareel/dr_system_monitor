@@ -5,9 +5,9 @@
 # Shell: BASH shell
 # Original Author(s): DataReel Software Development
 # File Creation Date: 08/01/2008
-# Date Last Modified: 05/03/2017
+# Date Last Modified: 05/04/2017
 #
-# Version control: 1.12
+# Version control: 1.13
 #
 # Contributor(s):
 # ----------------------------------------------------------- 
@@ -124,8 +124,12 @@ if [ "${EMAILlist}" == "" ]
 	source $ALERTdir/${LISTNAME}.email.list
     else
 	touch $ALERTdir/${LISTNAME}.email.list
-	echo "# Set your comma delimited list here" >> $ALERTdir/${LISTNAME}.email.list
+	echo "# Set your comma delimited email list here" >> $ALERTdir/${LISTNAME}.email.list
 	echo 'export EMAILlist="root"' >> $ALERTdir/${LISTNAME}.email.list
+	echo "#" >> $ALERTdir/${LISTNAME}.email.list
+	echo "# Set your comma delimited text list here" >> $ALERTdir/${LISTNAME}.email.list
+	echo '##export TEXTlist=""' >> $ALERTdir/${LISTNAME}.email.list
+	echo "" >> $ALERTdir/${LISTNAME}.email.list
 	source $ALERTdir/${LISTNAME}.email.list
     fi
 fi
