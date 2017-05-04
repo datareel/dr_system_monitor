@@ -397,17 +397,17 @@ $ su - root
 If your data center has a relay host, you can use the relay host by
 modifying the postfix configuration:
 
-vi /etc/postfix/main.cf
+# vi /etc/postfix/main.cf
 
 relayhost = 192.168.1.12
 
-systemctl restart postfix
+# systemctl restart postfix
 
 If you do not have a relay host, you can setup a smart host using an
 external email account:
 
-cd /etc/postfix
-vi main.cf
+# cd /etc/postfix
+# vi main.cf
 
 # Enforce TLS encryption                                                                                                                                                                         
 smtp_tls_security_level = encrypt
@@ -417,32 +417,76 @@ smtp_sasl_password_maps = hash:/etc/postfix/relay_passwd
 relayhost = [smtp.gmail.com]:587
 smtp_generic_maps = hash:/etc/postfix/generic
 
-vi /etc/postfix/relay_passwd
+# vi /etc/postfix/relay_passwd
 
 mailserver.example.com USERNAME:PASSWORD
 
-chmod 600 /etc/postfix/relay_passwd
-postmap /etc/postfix/relay_passwd 
-rm /etc/postfix/relay_passwd 
+# chmod 600 /etc/postfix/relay_passwd
+# postmap /etc/postfix/relay_passwd 
+# rm /etc/postfix/relay_passwd 
 
-vi /etc/postfix/generic
+# vi /etc/postfix/generic
 
 # NOTE: We need to change our From address to a valid domain
 root@localdomain.local  username@example.com
 @localdomain.local      username@example.com
 
-postmap /etc/postfix/generic
+# postmap /etc/postfix/generic
 
 After changing the postfix configuration and building the hashes,
 restart postfix to load the configuration changes and new hash tables:
 
-systemctl restart postfix
-
-
+# systemctl restart postfix
+ 
 Monitoring Crons:
 ----------------
+To run the DRSM package for production and development system
+monitoring setup user crons to run the system check and report
+scripts. In the example crontab entries below we are using
+/home/sysadmin/drsm as our installation directory:
 
+# Check for production system errors every 30 minutes
+30 * * * * /home/sysadmin/drsm/bin/system_check.sh &> /dev/null
+45 * * * * /home/sysadmin/drsm/bin/system_report.sh &> /dev/null
+
+# Send a status report every week day at 13:00 CDT
+00 13 * * mon,tue,wed,thu,fri /home/sysadmin/drsm/bin/system_check.sh YES &> /dev/null
+15 13 * * mon,tue,wed,thu,fri /home/sysadmin/drsm/bin/system_report.sh YES &> /dev/null
+
+# Check for DEV system errors
+35 09,10,11,12,13,14,15,16 * * mon,tue,wed,thu,fri /home/sysadmin/drsm/bin/system_check.sh NO DEV &> /dev/null
+55 09,10,11,12,13,14,15,16 * * mon,tue,wed,thu,fri /home/sysadmin/drsm/bin/system_report.sh NO DEV &> /dev/null
+
+# System reports archive and purge
+59 23 * * * /home/sysadmin/drsm/bin/archive.sh
+00 00 * * * /home/sysadmin/drsm/bin/purge.sh
+
+If you are running the DRSM package on a server cluster, the following
+is an HA crontab example using the sysadmin user account:
+
+# Check for production system errors every 30 minutes
+30 * * * * sysadmin bash -c '/home/sysadmin/drsm/bin/system_check.sh &> /dev/null'
+45 * * * * sysadmin bash -c '/home/sysadmin/drsm/bin/system_report.sh &> /dev/null'
+
+# Send a status report every week day at 13:00 CDT
+00 13 * * mon,tue,wed,thu,fri sysadmin bash -c '/home/sysadmin/drsm/bin/system_check.sh YES &> /dev/null'
+15 13 * * mon,tue,wed,thu,fri sysadmin bash -c '/home/sysadmin/drsm/bin/system_report.sh YES &> /dev/null'
+
+# Check for DEV system errors
+35 09,10,11,12,13,14,15,16 * * mon,tue,wed,thu,fri sysadmin bash -c '/home/sysadmin/drsm/bin/system_check.sh NO DEV &> /dev/null'
+55 09,10,11,12,13,14,15,16 * * mon,tue,wed,thu,fri sysadmin bash -c '/home/sysadmin/drsm/bin/system_report.sh NO DEV &> /dev/null'
+
+# System reports archive and purge
+59 23 * * * sysadmin bash -c '/home/sysadmin/drsm/bin/archive.sh &> /dev/null'
+00 00 * * *  sysadmin bash -c '/home/sysadmin/drsm/bin/purge.sh &> /dev/null'
 
 Support:
 -------
+For any DRSM support issues, questions, or suggestions open a ticket
+on GITHUB:
+
+https://github.com/datareel/dr_system_monitor/issues
+
+If you wish to contribute to the DRSM project, fork a copy of the DRSM
+repo or post code updates to open issue thread.
 
