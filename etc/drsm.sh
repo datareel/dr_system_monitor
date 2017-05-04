@@ -21,11 +21,26 @@ export SYSADMIN_GROUPNAME=sysadmin
 # Set the timezone
 export TZ=UTC
 
+# Purge and archive settings
+# Age off $VARdir files in minutes
+export TEMPfile_age=60
+# Age off report files in days
+export REPORTSfile_age=3
+# Age off offline report files in days
+export OFFLINEfile_age=30
+
 # Our DRSM home directory
 export DRSMHOME=${HOME}/drsm
 if [ "$(whoami)" != "${SYSADMIN_USERNAME}" ]; then
-    export DRSMHOME=${SYSADMIN_USERNAME}/drsm
+    export DRSMHOME=/home/${SYSADMIN_USERNAME}/drsm
 fi
+
+# Offline permanent archive location, to keep offline report backups
+export OFFLINEarchive=${DRSMHOME}/report_archives
+if [ ! -d ${OFFLINEarchive} ]; then mkdir -p ${OFFLINEarchive}; fi
+
+# Offline report name prefix
+export OFFLINEprefix="drsm_report_archive"
 
 # Set DIRs for logs, temp and spool files
 export TEMPdir="/tmp/${SYSADMIN_USERNAME}/drsm"
@@ -39,7 +54,7 @@ if [ ! -d ${VARdir} ]; then mkdir -p ${VARdir}; fi
 if [ ! -d ${SPOOLdir} ]; then mkdir -p ${SPOOLdir}; fi
 
 if [ "$(whoami)" != "${SYSADMIN_USERNAME}" ]; then
-    for d in ${TEMPdir} ${LOGdir} ${VARdir} ${SPOOLdir}; do
+    for d in ${TEMPdir} ${LOGdir} ${VARdir} ${SPOOLdir} ${OFFLINEarchive}; do
 	chown ${SYSADMIN_USERNAME}:${SYSADMIN_GROUPNAME} ${d}
     done 
 fi
