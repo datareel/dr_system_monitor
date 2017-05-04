@@ -6,9 +6,9 @@
 # Shell: BASH shell
 # Original Author(s): DataReel Software Development
 # File Creation Date: 05/25/2013
-# Date Last Modified: 05/03/2017
+# Date Last Modified: 05/04/2017
 #
-# Version control: 1.12
+# Version control: 1.13
 #
 # Contributor(s):
 # ----------------------------------------------------------- 
@@ -98,11 +98,11 @@ if [ ! -d ${REPORTdir}/archive ]; then mkdir -p ${REPORTdir}/archive; fi
 cat /dev/null > ${errorfile}
 cat /dev/null > ${statusfile}
 
-DATEEXT=$(date -u +%Y%m%d_%H%M%S)
+DATEEXT=$(date +%Y%m%d_%H%M%S)
 ETIME=$(date +%s)
-datetime=$(date -u)
+datetime=$(date)
 
-echo "DRSM status report, ${datetime} GMT" | tee -a ${statusfile}
+echo "DRSM status report, ${datetime}" | tee -a ${statusfile}
 echo "Our report type is set to: ${reporttype}" | tee -a ${statusfile}
 if [ ! -e ${dbfile} ]
 then

@@ -18,6 +18,9 @@ umask 0002
 export SYSADMIN_USERNAME=sysadmin
 export SYSADMIN_GROUPNAME=sysadmin
 
+# Set the timezone
+export TZ=UTC
+
 # Our DRSM home directory
 export DRSMHOME=${HOME}/drsm
 if [ "$(whoami)" != "${SYSADMIN_USERNAME}" ]; then

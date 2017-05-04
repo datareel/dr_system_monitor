@@ -5,9 +5,9 @@
 # Shell: BASH shell
 # Original Author(s): DataReel Software Development
 # File Creation Date: 05/25/2013
-# Date Last Modified: 05/03/2017
+# Date Last Modified: 05/04/2017
 #
-# Version control: 1.12
+# Version control: 1.13
 #
 # Contributor(s):
 # ----------------------------------------------------------- 
@@ -102,9 +102,9 @@ cat /dev/null > ${errorfile}
 cat /dev/null > ${statusfile}
 cat /dev/null > ${logfile}
 
-DATEEXT=$(date -u +%Y%m%d_%H%M%S)
+DATEEXT=$(date +%Y%m%d_%H%M%S)
 ETIME=$(date +%s)
-datetime=$(date -u)
+datetime=$(date)
 
 echo "DRSM health check report, ${datetime} GMT" | tee -a ${statusfile}
 echo "Our report type is set to: ${reporttype}" | tee -a ${statusfile}
@@ -197,7 +197,8 @@ do
     if [ ! -e ${REPORTdir}/systems/${host}/archive ]; then mkdir -p ${REPORTdir}/systems/${host}/archive; fi
     cat /dev/null > ${OUTPUTdir}/${host}/${host}_report.txt
     echo "INFO - Start of ${host} system health check report" >> ${OUTPUTdir}/${host}/${host}_report.txt
-    echo "REPORT_TIME:${ETIME}" >> ${OUTPUTdir}/${host}/${host}_report.txt
+    echo "REPORT_TIME:${datetime}" >> ${OUTPUTdir}/${host}/${host}_report.txt
+    echo "ETIME:${ETIME}" >> ${OUTPUTdir}/${host}/${host}_report.txt
     echo "HOSTNAME:${host}" >> ${OUTPUTdir}/${host}/${host}_report.txt
     echo "DESCRIPTION:${description}" >> ${OUTPUTdir}/${host}/${host}_report.txt
     echo "IMPACT:${impact}" >> ${OUTPUTdir}/${host}/${host}_report.txt
