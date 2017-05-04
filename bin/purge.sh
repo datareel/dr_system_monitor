@@ -1,3 +1,4 @@
+#!/bin/bash
 # ----------------------------------------------------------- 
 # BASH Script
 # Operating System(s): RHEL/CENTOS
