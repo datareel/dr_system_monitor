@@ -8,6 +8,7 @@ Contents:
 * Setting up the system admin user
 * Installing
 * Adding systems to monitor
+* Web Interface Setup
 * Customizing the Web Interface
 * Setting custom alert thresholds
 * Email Text messaging setup
@@ -88,6 +89,10 @@ export SYSADMIN_GROUPNAME=sysadmin
 export TEMPdir="/tmp/${SYSADMIN_USERNAME}/drsm"
 ...
 
+NOTE: In the example below replace /var/www/html/sysadmin with your
+${WWWdir} setting:
+
+$ cat ~/.drsm.sh | grep WWWdir
 $ su - root
 # mkdir -p /var/www/html/sysadmin
 # chmod 775 /var/www/html/sysadmin
@@ -173,16 +178,181 @@ To test your production and development configurations:
 $ ~/drsm/bin/system_check.sh
 $ ~/drsm/bin/system_check.sh NO DEV
 
+Web Server Setup:
+-------------------
+On your workstation or server running the DRSM package you will need
+to have Apache and PHP installed:
+
+$ sudo su - root
+# yum groupinstall 'Web Server'
+# yum groupinstall 'PHP Support'
+
+For testing:
+# yum install wget
+# yum install firefox
+
+Apache and PHP Configuration files:
+/etc/httpd/conf/httpd.conf
+/etc/httpf/conf.d/*.conf
+/etc/httpd/conf.modules.d/*.conf
+/etc/php.ini
+
+Apache Log files:
+/var/log/httpd
+
+Host-based firewall settings:
+# firewall-cmd --list-services
+# firewall-cmd --list-rich-rules
+
+If no HTTP services are listed above:
+# firewall-cmd --permanent --add-rich-rule='rule family="ipv4" source address="192.168.122.0/24" service name="http" accept'
+# firewall-cmd --permanent --add-rich-rule='rule family="ipv4" source address="192.168.122.0/24" service name="https" accept'
+# firewall-cmd --reload
+# firewall-cmd --list-rich-rules
+
+Where  192.168.122.0/24 is the subnet you will allow to view your
+system admin reports.
+
+Start and enable the HTTPD service:
+# systemctl start httpd
+# systemctl enable httpd
+
 Customizing the Web Interface:
 -----------------------------
+To customize your index page, page headers and footers, from your
+sysadmin user account:
 
+$ source ~/.drsm.sh
+$ cd $WWWdir/site
+
+Add or create the page_header.php and page_footer.php files:
+
+$ vi page_header.php
+
+<!DOCTYPE html>
+<html>
+<head>
+<title>MY System Monitor</title>
+</head>
+<body>
+<h1>MY System Monitoring Pages</h1>
+<hr />
+
+$ vi page_footer.php
+
+<hr />
+</body>
+</html>
+
+To customize your sysadmin index page:
+
+$ source ~/.drsm.sh
+$ cd $WWWdir
+
+In the $WWWdir add or edit the index.php file:
+
+$ vi index.php
+
+The $WWWdir/index.php and $WWWdir/site files will not get overwritten
+if you update or re-install the DRSM package.
 
 Setting custom alert thresholds:
 ------------------------------
+When generating health check reports you may need to increase or
+decrease the default alert levels. When you run the system_report.sh
+script a configuration profile will be automatically generate for each
+host in your ${CONFIGdir}/systems.dat and ${CONFIGdir}/dev_systems.dat
+files. To change the default alert settings per system:
 
+$ source ~/.drsm.sh
+$ cd $CONFIGdir
+$ ls *profile.sh
+
+Edit the system profile you need to modify, for example:
+
+$ vi vm1_profile.sh
+
+By default the disk checks, look at the disk usage for all mounted
+partitions, warn at 90 percent usage, and error a 99 percent usage.
+If you want to skip the check on some of your mounted partitions you
+need to supply a space separated list. To customize disk checking
+alerts, edit the disk check section inside the double quotes:
+
+"${DRSMHOME}/health_check_scripts/disk_checks.sh '/tmp /usr1' 80 90" 
+
+In the example above, we will skip checks on /tmp and /usr1. We will
+send a warning if we are at 80% disk usage on mounted partitions and
+send an error if we are a 90% disk usage. If you want to set the
+warning or error thresholds without skipping any mounted partitions:
+
+"${DRSMHOME}/health_check_scripts/disk_checks.sh NONE 80 90"
+
+By default the CPU check, looks at the CPU usage for all sockets,
+physical cores, and logical cores. The default waning level is 85
+percent total usage and the default error level is 95 percent total
+usage. By default the CPU check will list the top 100 processes in the
+system report. To customize CPU checking alerts, edit the CPU check
+section inside the double quotes:
+
+"${DRSMHOME}/health_check_scripts/cpu_checks.sh 75 85 200"
+
+In the example above, we will send a warning if we are at 75% percent
+CPU usage, send an error if we are a 85% CPU usage, and list the top
+200 processes in our health check report.
+
+The load check monitors the 15 minute load average. The default waning
+level is 35 and the default error level is 50. To customize load
+average checking alerts, edit the load check section inside the double
+quotes:
+
+
+"${DRSMHOME}/health_check_scripts/load_checks.sh 100 250"
+
+In the example above, we will send a warning if our 15 minute load
+average reaches 100 and send an error if our 15 minute load average
+reaches 250. 
+
+The memory check monitor the available amount free memory, the amount
+of SWAP spaced used, lists the top 100 processes by default. The
+default error level for free memory is 256 MB or less. The default
+warning for SWAP usage is 1024 MB or higher. The top number of
+processes listed in the report, defaults to 100. To customize memory
+checking alerts, edit the memory check section inside the double
+quotes:
+
+"${DRSMHOME}/health_check_scripts/memory_checks.sh 128 4096 300"
+
+In the example above, we will send an error if our available free
+memory is at or below 128 MB. We will send a warning if we are using
+4096 MB or more of SWAP space, and list the top 300 processes in our
+health check report.
+
+By default the network checks monitor all active NICs. Reports uptime,
+the total number of bytes received and the number bytes transmitted.
+Errors and warning are based excessive packet loss, excessive number
+of dropped packets and/or excessive number of collisions. If you only
+want to monitor specific Ethernet interfaces to supply a space
+separated list. To customize network checking alerts, edit the network
+check section inside the double quotes:
+
+"${DRSMHOME}/health_check_scripts/network_checks.sh 'eth1 eth2'" 
+
+In the example above, we will only monitor the eth1 and eth2
+interfaces, all other active interfaces will be skipped.
+
+The user check, generates a list of all users logged into the server
+or workstation you are monitoring. If you want to generate an error
+alert if a certain user or list of users are logged in:
+
+"${DRSMHOME}/health_check_scripts/user_checks.sh 'usr1 usr2 usr3'"
+
+If you want to generate a warning alert if a certain user or list of users are logged in:
+
+"${DRSMHOME}/health_check_scripts/user_checks.sh NONE 'usr4 usr5 usr6'"
 
 Email Text messaging setup:
 -------------------------
+
 
 
 Monitoring Crons:

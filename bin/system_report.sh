@@ -229,8 +229,8 @@ do
 	echo 'if [ "${host}" != "" ] && [ "${OUTPUTdir}" != "" ] && [ "${DRSMHOME}" != "" ]' >> ${CONFIGdir}/${host}_profile.sh
 	echo 'then' >> ${CONFIGdir}/${host}_profile.sh
 	echo '    # Run remote disk check, checks all local mounts by default:' >> ${CONFIGdir}/${host}_profile.sh
-	echo '    # To skip some mounted DIRs: disk_checks.sh '/archive /usr1'' >> ${CONFIGdir}/${host}_profile.sh
-	echo '    # To set custom alert level: disk_checks.sh NONE 90 99' >> ${CONFIGdir}/${host}_profile.sh
+	echo "    # To skip some mounted DIRs: disk_checks.sh '/archive /usr1'" >> ${CONFIGdir}/${host}_profile.sh
+	echo "    # To set custom alert level: disk_checks.sh NONE 90 99" >> ${CONFIGdir}/${host}_profile.sh
 	echo '    # Where $1 == DIR list to skip or NONE' >> ${CONFIGdir}/${host}_profile.sh
 	echo '    # Where $2 == Warning threshold' >> ${CONFIGdir}/${host}_profile.sh
 	echo '    # Where $3 == Error threshold' >> ${CONFIGdir}/${host}_profile.sh
@@ -262,13 +262,13 @@ do
 	echo '	"${DRSMHOME}/health_check_scripts/memory_checks.sh" > ${OUTPUTdir}/${host}/memory.txt' >> ${CONFIGdir}/${host}_profile.sh
 	echo '' >> ${CONFIGdir}/${host}_profile.sh
 	echo '    # Run remote network checks, checks all active NICs by default' >> ${CONFIGdir}/${host}_profile.sh
-	echo '    # To set custom alert for specifed NICs: network_checks.sh 'eth0 eth1 eth2'' >> ${CONFIGdir}/${host}_profile.sh
+	echo "    # To set custom alert for specifed NICs: network_checks.sh 'eth0 eth1 eth2'" >> ${CONFIGdir}/${host}_profile.sh
 	echo '    # Where $1 == Is a list of NICs to check' >> ${CONFIGdir}/${host}_profile.sh
 	echo '    ssh -q -x -o stricthostkeychecking=no -o PasswordAuthentication=no ${host} \' >> ${CONFIGdir}/${host}_profile.sh
 	echo '	"${DRSMHOME}/health_check_scripts/network_checks.sh" > ${OUTPUTdir}/${host}/network.txt' >> ${CONFIGdir}/${host}_profile.sh
 	echo "" >> ${CONFIGdir}/${host}_profile.sh
 	echo '    # Run remote user checks' >> ${CONFIGdir}/${host}_profile.sh
-	echo '    # To set user alerts: user_checks.sh 'usr1 usr2' 'usr3 usr4'' >> ${CONFIGdir}/${host}_profile.sh
+	echo "    # To set user alerts: user_checks.sh 'usr1 usr2' 'usr3 usr4'" >> ${CONFIGdir}/${host}_profile.sh
 	echo '    # Where $1 == Report error for any user in list' >> ${CONFIGdir}/${host}_profile.sh
 	echo '    # Where $2 == Report warning for any user in list' >> ${CONFIGdir}/${host}_profile.sh
 	echo '    ssh -q -x -o stricthostkeychecking=no -o PasswordAuthentication=no ${host} \' >> ${CONFIGdir}/${host}_profile.sh
