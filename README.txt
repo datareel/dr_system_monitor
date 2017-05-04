@@ -352,7 +352,91 @@ If you want to generate a warning alert if a certain user or list of users are l
 
 Email Text messaging setup:
 -------------------------
+By default the DRSM alerts are emailed to the "root" account on the
+server or workstation running the DRSM package. Email and text
+messages are only sent in 4 hour increments. For example, if you run
+DRSM crons every 30 minutes and there is a system reporting an error,
+you get one email and/or text error alert once in a 4 hour period and
+not every 30 minutes. This prevents DRSM from generating excessive
+email and/or text messages.
 
+To setup and test the alert messaging, run the following:
+
+$ source ~/.drsm.sh
+$ cd $DRSMHOME/bin
+$ ./test_alert.sh
+
+To add or remove email addresses or SMS addresses, edit the email list
+file:
+
+$ source ~/.drsm.sh
+$ cd $DRSMHOME/etc
+$ vi alert.email.list
+
+export EMAILlist="root,example@example.com"
+export TEXTlist="5555555555@vtext.com,5555555555@txt.att.net"
+
+For SMS, text messaging, use the “mobile number”@”domain” for mobile
+provider. The most common domains are:
+  
+Verizon Wireless: (mobile#)@vtext.com
+AT&T: (mobile#)@txt.att.net
+Cingular: (mobile#)@mycingular.com
+Nextel: (mobile#)@messaging.nextel.com
+T-Mobile: (mobile#)@tmomail.net
+Sprint: (mobile#)@messaging.sprintpcs.com
+Trac: (mobile#)@mmst5.tracfone.com
+
+If your postfix configuration is not configured for a relay host or
+smart host you may not be able to email or text from the workstation
+or server running the DRSM package. To monitor postfix:
+
+$ su - root
+# tail -f /var/log/maillog
+
+If your data center has a relay host, you can use the relay host by
+modifying the postfix configuration:
+
+vi /etc/postfix/main.cf
+
+relayhost = 192.168.1.12
+
+systemctl restart postfix
+
+If you do not have a relay host, you can setup a smart host using an
+external email account:
+
+cd /etc/postfix
+vi main.cf
+
+# Enforce TLS encryption                                                                                                                                                                         
+smtp_tls_security_level = encrypt
+smtp_sasl_auth_enable = yes
+smtp_sasl_security_options = noanonymous
+smtp_sasl_password_maps = hash:/etc/postfix/relay_passwd
+relayhost = [smtp.gmail.com]:587
+smtp_generic_maps = hash:/etc/postfix/generic
+
+vi /etc/postfix/relay_passwd
+
+mailserver.example.com USERNAME:PASSWORD
+
+chmod 600 /etc/postfix/relay_passwd
+postmap /etc/postfix/relay_passwd 
+rm /etc/postfix/relay_passwd 
+
+vi /etc/postfix/generic
+
+# NOTE: We need to change our From address to a valid domain
+root@localdomain.local  username@example.com
+@localdomain.local      username@example.com
+
+postmap /etc/postfix/generic
+
+After changing the postfix configuration and building the hashes,
+restart postfix to load the configuration changes and new hash tables:
+
+systemctl restart postfix
 
 
 Monitoring Crons:

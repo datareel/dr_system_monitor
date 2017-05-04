@@ -17,7 +17,8 @@ fi
 
 source ${CONFIG_FILE}
 
-TIMESPAN="1"
+# Force a send each time we run the script
+TIMESPAN="0"
 
 SUBJECT="[!ACTION!] Alert Test Message"
 BODY="This is an alert test message"
