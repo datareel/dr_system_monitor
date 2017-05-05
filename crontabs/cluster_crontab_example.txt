@@ -15,4 +15,4 @@
 
 # System reports archive and purge
 59 23 * * * sysadmin bash -c '/home/sysadmin/drsm/bin/archive.sh &> /dev/null'
-00 00 * * *  sysadmin bash -c '/home/sysadmin/drsm/bin/purge.sh &> /dev/null'
+00 * * * *  sysadmin bash -c '/home/sysadmin/drsm/bin/purge.sh &> /dev/null'

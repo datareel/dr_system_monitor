@@ -15,5 +15,5 @@
 
 # System reports archive and purge
 59 23 * * * /home/sysadmin/drsm/bin/archive.sh
-00 00 * * * /home/sysadmin/drsm/bin/purge.sh
+00 * * * * /home/sysadmin/drsm/bin/purge.sh
 
