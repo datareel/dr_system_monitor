@@ -51,8 +51,6 @@ source ${CONFIG_FILE}
 source ${DRSMHOME}/bin/system_functions.sh
 
 HOST=$(hostname -s)
-RUNdir="${HOME}/bin"
-VARdir="${HOME}/var"
 
 cat ${CONFIGdir}/systems.dat > ${VARdir}/print_systems_linuxsystems.dat
 cat ${CONFIGdir}/dev_systems.dat >> ${VARdir}/print_systems_linuxsystems.dat
