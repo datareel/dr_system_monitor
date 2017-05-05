@@ -115,9 +115,9 @@ $ vi ${CONFIGdir}/systems.dat
 
 # hostname,description,impact,is_web_server,is_linux,is_cluser_ip,can_ping,can_ssh
 #
-# is_webserver = ,yes,
+# is_web_server = ,yes,
 # or with web protocal list
-# is_webserver = ,yes:HTTP HTTPS FTP,
+# is_web_server = ,yes:HTTP HTTPS FTP,
 
 vm1,Test VM1, Test VM1 affected,no,yes,no,yes,yes
 vm2,Test VM2, Test VM2 affected,no,yes,no,yes,yes
@@ -137,6 +137,7 @@ The connectivity and heath reporting scripts use a CSV database file
 to select systems to monitor. The CSV format is: 
 
 hostname,description,impact,is_web_server,is_linux,is_cluser_ip,can_ping,can_ssh
+
 hostname = The hostname or IP address of the server or workstation
 description = A short text describing the server or workstation
 impact = A short text stating the impact of a system warning or error
@@ -272,8 +273,8 @@ Edit the system profile you need to modify, for example:
 
 $ vi vm1_profile.sh
 
-By default the disk checks, look at the disk usage for all mounted
-partitions, warn at 90 percent usage, and error a 99 percent usage.
+By default the disk checks, montiors disk usage for all mounted
+partitions, warns at 90 percent usage, and errors at 99 percent usage.
 If you want to skip the check on some of your mounted partitions you
 need to supply a space separated list. To customize disk checking
 alerts, edit the disk check section inside the double quotes:
@@ -282,12 +283,12 @@ alerts, edit the disk check section inside the double quotes:
 
 In the example above, we will skip checks on /tmp and /usr1. We will
 send a warning if we are at 80% disk usage on mounted partitions and
-send an error if we are a 90% disk usage. If you want to set the
+send an error if we are at 90% disk usage. If you want to set the
 warning or error thresholds without skipping any mounted partitions:
 
 "${DRSMHOME}/health_check_scripts/disk_checks.sh NONE 80 90"
 
-By default the CPU check, looks at the CPU usage for all sockets,
+By default the CPU check montiors the CPU usage for all sockets,
 physical cores, and logical cores. The default waning level is 85
 percent total usage and the default error level is 95 percent total
 usage. By default the CPU check will list the top 100 processes in the
@@ -305,18 +306,17 @@ level is 35 and the default error level is 50. To customize load
 average checking alerts, edit the load check section inside the double
 quotes:
 
-
 "${DRSMHOME}/health_check_scripts/load_checks.sh 100 250"
 
 In the example above, we will send a warning if our 15 minute load
 average reaches 100 and send an error if our 15 minute load average
 reaches 250. 
 
-The memory check monitor the available amount free memory, the amount
-of SWAP spaced used, lists the top 100 processes by default. The
+The memory check monitors available free memory, the amount
+of SWAP spaced used, and lists the top 100 processes by default. The
 default error level for free memory is 256 MB or less. The default
 warning for SWAP usage is 1024 MB or higher. The top number of
-processes listed in the report, defaults to 100. To customize memory
+processes listed in the report defaults to 100. To customize memory
 checking alerts, edit the memory check section inside the double
 quotes:
 
@@ -330,8 +330,8 @@ health check report.
 By default the network checks monitor all active NICs. Reports uptime,
 the total number of bytes received and the number bytes transmitted.
 Errors and warning are based excessive packet loss, excessive number
-of dropped packets and/or excessive number of collisions. If you only
-want to monitor specific Ethernet interfaces to supply a space
+of dropped packets, and/or excessive number of collisions. If you only
+want to monitor specific Ethernet interfaces you need to supply a space
 separated list. To customize network checking alerts, edit the network
 check section inside the double quotes:
 
@@ -379,13 +379,13 @@ export TEXTlist="5555555555@vtext.com,5555555555@txt.att.net"
 For SMS, text messaging, use the “mobile number”@”domain” for mobile
 provider. The most common domains are:
   
-Verizon Wireless: (mobile#)@vtext.com
-AT&T: (mobile#)@txt.att.net
-Cingular: (mobile#)@mycingular.com
-Nextel: (mobile#)@messaging.nextel.com
-T-Mobile: (mobile#)@tmomail.net
-Sprint: (mobile#)@messaging.sprintpcs.com
-Trac: (mobile#)@mmst5.tracfone.com
+Verizon Wireless: mobile_number@vtext.com
+AT&T: mobile_number@txt.att.net
+Cingular: mobile_number@mycingular.com
+Nextel: mobile_number@messaging.nextel.com
+T-Mobile: mobile_number@tmomail.net
+Sprint: mobile_number@messaging.sprintpcs.com
+Trac: mobile_number@mmst5.tracfone.com
 
 If your postfix configuration is not configured for a relay host or
 smart host you may not be able to email or text from the workstation
@@ -409,7 +409,7 @@ external email account:
 # cd /etc/postfix
 # vi main.cf
 
-# Enforce TLS encryption                                                                                                                                                                         
+# Enforce TLS encryption
 smtp_tls_security_level = encrypt
 smtp_sasl_auth_enable = yes
 smtp_sasl_security_options = noanonymous
@@ -449,7 +449,7 @@ scripts. In the example crontab entries below we are using
 30 * * * * /home/sysadmin/drsm/bin/system_check.sh &> /dev/null
 45 * * * * /home/sysadmin/drsm/bin/system_report.sh &> /dev/null
 
-# Send a status report every week day at 13:00 CDT
+# Send a status report every week day at 13:00
 00 13 * * mon,tue,wed,thu,fri /home/sysadmin/drsm/bin/system_check.sh YES &> /dev/null
 15 13 * * mon,tue,wed,thu,fri /home/sysadmin/drsm/bin/system_report.sh YES &> /dev/null
 
@@ -459,7 +459,7 @@ scripts. In the example crontab entries below we are using
 
 # System reports archive and purge
 59 23 * * * /home/sysadmin/drsm/bin/archive.sh
-00 00 * * * /home/sysadmin/drsm/bin/purge.sh
+00 * * * * /home/sysadmin/drsm/bin/purge.sh
 
 If you are running the DRSM package on a server cluster, the following
 is an HA crontab example using the sysadmin user account:
@@ -468,7 +468,7 @@ is an HA crontab example using the sysadmin user account:
 30 * * * * sysadmin bash -c '/home/sysadmin/drsm/bin/system_check.sh &> /dev/null'
 45 * * * * sysadmin bash -c '/home/sysadmin/drsm/bin/system_report.sh &> /dev/null'
 
-# Send a status report every week day at 13:00 CDT
+# Send a status report every week day at 13:00
 00 13 * * mon,tue,wed,thu,fri sysadmin bash -c '/home/sysadmin/drsm/bin/system_check.sh YES &> /dev/null'
 15 13 * * mon,tue,wed,thu,fri sysadmin bash -c '/home/sysadmin/drsm/bin/system_report.sh YES &> /dev/null'
 
@@ -478,7 +478,7 @@ is an HA crontab example using the sysadmin user account:
 
 # System reports archive and purge
 59 23 * * * sysadmin bash -c '/home/sysadmin/drsm/bin/archive.sh &> /dev/null'
-00 00 * * *  sysadmin bash -c '/home/sysadmin/drsm/bin/purge.sh &> /dev/null'
+00 * * * *  sysadmin bash -c '/home/sysadmin/drsm/bin/purge.sh &> /dev/null'
 
 Support:
 -------
