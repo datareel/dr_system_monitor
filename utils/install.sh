@@ -1,6 +1,6 @@
 #!/bin/bash
 # DRSM installation script
-# Last modified: 05/03/2017
+# Last modified: 05/05/2017
 
 cd ../
 BASEdir=$(pwd)
@@ -66,7 +66,7 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-dirs="bin etc utils www"
+dirs="bin etc mysql utils www"
 for d in ${dirs}
 do
     cp -rfv ${BASEdir}/${d} ${DRSMHOME}/.
