@@ -6,9 +6,9 @@
 # Shell: BASH shell
 # Original Author(s): DataReel Software Development
 # File Creation Date: 05/25/2013
-# Date Last Modified: 05/01/2017
+# Date Last Modified: 05/04/2017
 #
-# Version control: 1.12
+# Version control: 1.13
 #
 # Contributor(s):
 # ----------------------------------------------------------- 
@@ -54,6 +54,10 @@ has_warning="0"
 DROPPEDMAX=5000
 COLLMAX=5000
 MAXERRORS=5000
+
+if [ "${2}" != "" ]; then DROPPEDMAX=$2; fi
+if [ "${3}" != "" ]; then COLLMAX=$3; fi
+if [ "${4}" != "" ]; then MAXERRORS=$4; fi 
 
 for n in ${NICS}
 do
