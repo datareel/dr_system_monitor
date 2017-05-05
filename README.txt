@@ -1,5 +1,5 @@
 DataReel System Admin Monitor README file
-Last Modified: 05/04/2017
+Last Modified: 05/05/2017
 
 Contents:
 --------
@@ -124,11 +124,14 @@ vm2,Test VM2, Test VM2 affected,no,yes,no,yes,yes
 vm3,Test VM3, Test VM3 affected,no,yes,no,yes,yes
 vm4,Test VM4, Test VM4 affected,no,yes,no,yes,yes
 
+To print a system list:
+$ ~/drsm/bin/print_systems.sh
+
+To run a report test:
 $ ~/drsm/bin/system_check.sh
 $ ~/drsm/bin/system_report.sh 
 
 To test the Web interface:
-
 $ firefox http://$(hostname)/sysadmin
 
 Adding systems to monitor:

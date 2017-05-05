@@ -6,9 +6,9 @@
 # Shell: BASH shell
 # Original Author(s): DataReel Software Development
 # File Creation Date: 05/25/2013
-# Date Last Modified: 05/04/2017
+# Date Last Modified: 05/05/2017
 #
-# Version control: 1.13
+# Version control: 1.14
 #
 # Contributor(s):
 # ----------------------------------------------------------- 
@@ -44,7 +44,7 @@ if [ "${1}" != "" ]; then
     NICS="${1}"; 
 
 else
-    NICS=$(${IP} link | grep -v lo: | grep -v ' virbr' | grep 'state UP' | awk -F: '{ print $2 }' | sed s/' '//g)
+    NICS=$(${IP} link | grep -v lo: | grep -v ' virbr' | grep -v 'macvtap' | grep 'state UP' | awk -F: '{ print $2 }' | sed s/' '//g)
 fi
 
 HOST=$(hostname -s)

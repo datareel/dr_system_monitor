@@ -5,9 +5,9 @@
 # Shell: BASH shell
 # Original Author(s): DataReel Software Development
 # File Creation Date: 05/25/2013
-# Date Last Modified: 05/04/2017
+# Date Last Modified: 05/05/2017
 #
-# Version control: 1.13
+# Version control: 1.14
 #
 # Contributor(s):
 # ----------------------------------------------------------- 
@@ -264,6 +264,9 @@ do
 	echo '    # Run remote network checks, checks all active NICs by default' >> ${CONFIGdir}/${host}_profile.sh
 	echo "    # To set custom alert for specifed NICs: network_checks.sh 'eth0 eth1 eth2'" >> ${CONFIGdir}/${host}_profile.sh
 	echo '    # Where $1 == Is a list of NICs to check' >> ${CONFIGdir}/${host}_profile.sh
+	echo '    # Where $2 == Is MAX number of dropped packets, default is 5000' >> ${CONFIGdir}/${host}_profile.sh
+	echo '    # Where $3 == Is MAX number of collisions, default is 5000' >> ${CONFIGdir}/${host}_profile.sh
+	echo '    # Where $4 == Is MAX number of errors, default is 5000' >> ${CONFIGdir}/${host}_profile.sh
 	echo '    ssh -q -x -o stricthostkeychecking=no -o PasswordAuthentication=no ${host} \' >> ${CONFIGdir}/${host}_profile.sh
 	echo '	"${DRSMHOME}/health_check_scripts/network_checks.sh" > ${OUTPUTdir}/${host}/network.txt' >> ${CONFIGdir}/${host}_profile.sh
 	echo "" >> ${CONFIGdir}/${host}_profile.sh
