@@ -6,9 +6,9 @@
 # Shell: BASH shell
 # Original Author(s): DataReel Software Development
 # File Creation Date: 06/10/2013
-# Date Last Modified: 05/04/2017
+# Date Last Modified: 05/08/2017
 #
-# Version control: 1.14
+# Version control: 1.15
 #
 # Contributor(s):
 # ----------------------------------------------------------- 
@@ -49,22 +49,38 @@ fi
 source ${CONFIG_FILE}
 source ${DRSMHOME}/bin/system_functions.sh
 
-host="$1"
-username="$2"
-pass="$3"
+HOST="$1"
+USER="$2"
+PW="$3"
 autodefrag="$4"
 
-if [ "$host" == "" ]; then echo -n "MySQL host: " ; read host; fi
-if [ "$username" == "" ]; then echo -n "MySQL username: " ; read username; fi
-if [ "$pass" == "" ]; then echo -n "MySQL pass: " ; stty -echo ; read pass ; stty echo ; echo; fi
-if [ "$autodefrag" == "" ]; then echo -n "Auto Defrag (YES/NO): "; read autodefrag; fi
-if [ "$autodefrag" != "YES" ]; then autodefrag="NO"; fi
+function SaveMySQLAuth {
+    if [ ! -d ${DRSMHOME}/.auth ]; then mkdir -p ${DRSMHOME}/.auth; chmod 700 ${DRSMHOME}/.auth; fi
+    cat /dev/null > ${DRSMHOME}/.auth/${HOST}.msql; chmod 600 ${DRSMHOME}/.auth/${HOST}.msql
+    echo "" >> ${DRSMHOME}/.auth/${HOST}.msql
+    echo -n "export HOST='" >> ${DRSMHOME}/.auth/${HOST}.msql; echo -n "${HOST}" >> ${DRSMHOME}/.auth/${HOST}.msql; echo "'" >> ${DRSMHOME}/.auth/${HOST}.msql
+    echo -n "export USER='" >> ${DRSMHOME}/.auth/${HOST}.msql; echo -n "${USER}" >> ${DRSMHOME}/.auth/${HOST}.msql; echo "'" >> ${DRSMHOME}/.auth/${HOST}.msql
+    echo -n "export PW='" >> ${DRSMHOME}/.auth/${HOST}.msql; echo -n "${PW}" >> ${DRSMHOME}/.auth/${HOST}.msql; echo "'" >> ${DRSMHOME}/.auth/${HOST}.msql
+    echo "" >> ${DRSMHOME}/.auth/${HOST}.msql
+}
+
+if [ "$HOST" == "" ]; then echo -n "MySQL HOST: " ; read HOST; fi
+if [ -f ${DRSMHOME}/.auth/${HOST}.msql ]; then source ${DRSMHOME}/.auth/${HOST}.msql; fi
+if [ "$USER" == "" ]; then echo -n "MySQL USER: " ; read USER; fi
+if [ "$PW" == "" ]; then 
+    echo -n "MySQL PW: " ; stty -echo ; read PW ; stty echo ; echo; 
+    echo -n "Do you want to save MySQL auth for ${HOST} (yes/no)> ";
+    read prompt
+    if [ "${prompt^^}" == "YES" ] || [ "${prompt^^}" == "Y" ]; then SaveMySQLAuth; fi 
+fi
+if [ "$autodefrag" == "" ]; then autodefrag="YES"; fi
+if [ "${autodefrag^^}" != "NO" ]; then autodefrag="YES"; fi
 
 REPORTdir="${REPORTdir}/mysql_servers"
 OUTPUTdir="${VARdir}/collect_mysql_stats.tmp"
-logfile="${LOGdir}/mysql_defrag_${host}.log"
+logfile="${LOGdir}/mysql_defrag_${HOST}.log"
 PROGRAMname="$0"
-LOCKfile="${VARdir}/mysql_defrag_${host}.lck"
+LOCKfile="${VARdir}/mysql_defrag_${HOST}.lck"
 MINold="15"
 verbose="false"
 
@@ -75,16 +91,16 @@ LockFileCheck $MINold
 CreateLockFile
 
 if [ ! -e ${LOGdir} ]; then mkdir -p ${LOGdir}; fi
-if [ ! -e ${OUTPUTdir}/${host}/table_stats ]; then mkdir -p ${OUTPUTdir}/${host}/table_stats; fi
-if [ ! -e ${REPORTdir}/${host}/archive ]; then mkdir -p ${REPORTdir}/${host}/archive; fi
+if [ ! -e ${OUTPUTdir}/${HOST}/table_stats ]; then mkdir -p ${OUTPUTdir}/${HOST}/table_stats; fi
+if [ ! -e ${REPORTdir}/${HOST}/archive ]; then mkdir -p ${REPORTdir}/${HOST}/archive; fi
 
-PROCdir="${OUTPUTdir}/${host}"
+PROCdir="${OUTPUTdir}/${HOST}"
 
 if [ "${verbose}" == "true" ]; then echo "Writing table stats to ${PROCdir}/table_stats"; fi
 cat /dev/null > ${PROCdir}/table_stats/fraglist.txt
 
-mysql -h $host -u $username -p"$pass" -NBe "SHOW DATABASES;" | grep -v 'lost+found' | while read database ; do
-    mysql -h $host -u $username -p"$pass" -NBe "SHOW TABLE STATUS;" $database | while read name engine version rowformat rows avgrowlength datalength maxdatalength indexlength datafree autoincrement createtime updatetime checktime collation checksum createoptions comment ; do
+mysql -h $HOST -u $USER -p"$PW" -NBe "SHOW DATABASES;" | grep -v 'lost+found' | while read database ; do
+    mysql -h $HOST -u $USER -p"$PW" -NBe "SHOW TABLE STATUS;" $database | while read name engine version rowformat rows avgrowlength datalength maxdatalength indexlength datafree autoincrement createtime updatetime checktime collation checksum createoptions comment ; do
 
 	fname="${PROCdir}/table_stats/${database}_${name}.txt"
 	cat /dev/null > ${fname}
@@ -118,13 +134,17 @@ mysql -h $host -u $username -p"$pass" -NBe "SHOW DATABASES;" | grep -v 'lost+fou
 		then 
 		cat /dev/null > "${PROCdir}/table_stats/${database}_${name}_defrag.txt"
 		echo "Defragmenting $database DB $name TABLE" | tee -a ${PROCdir}/table_stats/${database}_${name}_defrag.txt
-		mysql -h $host -u "$username" -p"$pass" -NBe "OPTIMIZE TABLE $name;" "$database" | tee -a ${PROCdir}/table_stats/${database}_${name}_defrag.txt
+		mysql -h $HOST -u "$USER" -p"$PW" -NBe "OPTIMIZE TABLE $name;" "$database" | tee -a ${PROCdir}/table_stats/${database}_${name}_defrag.txt
 	    fi
 	fi
     done
 done
 
 cat ${PROCdir}/table_stats/fraglist.txt | wc -l > ${PROCdir}/table_stats/numfrag.txt
+
+unset HOST
+unset USER
+unset PW
 
 RemoveLockFile
 exit 0

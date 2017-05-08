@@ -6,9 +6,9 @@
 # Shell: BASH shell
 # Original Author(s): DataReel Software Development
 # File Creation Date: 06/10/2013
-# Date Last Modified: 05/04/2017
+# Date Last Modified: 05/08/2017
 #
-# Version control: 1.14
+# Version control: 1.15
 #
 # Contributor(s):
 # ----------------------------------------------------------- 
@@ -53,9 +53,25 @@ HOST="${1}"
 USER="${2}"
 PW="${3}"
 
-if [ "$HOST" == "" ]; then echo -n "MySQL host: " ; read HOST; fi
-if [ "$USER" == "" ]; then echo -n "MySQL username: " ; read USER; fi
-if [ "$PW" == "" ]; then echo -n "MySQL pass: " ; stty -echo ; read PW ; stty echo ; echo; fi
+function SaveMySQLAuth {
+    if [ ! -d ${DRSMHOME}/.auth ]; then mkdir -p ${DRSMHOME}/.auth; chmod 700 ${DRSMHOME}/.auth; fi
+    cat /dev/null > ${DRSMHOME}/.auth/${HOST}.msql; chmod 600 ${DRSMHOME}/.auth/${HOST}.msql
+    echo "" >> ${DRSMHOME}/.auth/${HOST}.msql
+    echo -n "export HOST='" >> ${DRSMHOME}/.auth/${HOST}.msql; echo -n "${HOST}" >> ${DRSMHOME}/.auth/${HOST}.msql; echo "'" >> ${DRSMHOME}/.auth/${HOST}.msql
+    echo -n "export USER='" >> ${DRSMHOME}/.auth/${HOST}.msql; echo -n "${USER}" >> ${DRSMHOME}/.auth/${HOST}.msql; echo "'" >> ${DRSMHOME}/.auth/${HOST}.msql
+    echo -n "export PW='" >> ${DRSMHOME}/.auth/${HOST}.msql; echo -n "${PW}" >> ${DRSMHOME}/.auth/${HOST}.msql; echo "'" >> ${DRSMHOME}/.auth/${HOST}.msql
+    echo "" >> ${DRSMHOME}/.auth/${HOST}.msql
+}
+
+if [ "${HOST}" == "" ]; then echo -n "MySQL host: " ; read HOST; fi
+if [ -f ${DRSMHOME}/.auth/${HOST}.msql ]; then source ${DRSMHOME}/.auth/${HOST}.msql; fi
+if [ "${USER}" == "" ]; then echo -n "MySQL username: " ; read USER; fi
+if [ "${PW}" == "" ]; then 
+    echo -n "MySQL pass: " ; stty -echo ; read PW ; stty echo ; echo; 
+    echo -n "Do you want to save MySQL auth for ${HOST} (yes/no)> ";
+    read prompt
+    if [ "${prompt^^}" == "YES" ] || [ "${prompt^^}" == "Y" ]; then SaveMySQLAuth; fi 
+fi
 
 REPORTdir="${REPORTdir}/mysql_servers"
 OUTPUTdir="${VARdir}/collect_mysql_stats.tmp"
@@ -91,6 +107,9 @@ then
     echo "ERROR - collect_mysql_stats.php returned errors" | tee -a ${logfile}
     cat ${OUTPUTdir}/${HOST}/${HOST}_mysql_stats.txt >> ${logfile}
     RemoveLockFile
+    unset HOST
+    unset USER
+    unset PW
     exit 1
 fi
 
@@ -99,6 +118,11 @@ cat ${OUTPUTdir}/${HOST}/${HOST}_mysql_stats.txt > ${REPORTdir}/${HOST}/archive/
 
 echo "${HOST} stats report complete" | tee -a ${logfile}
 echo "Ouput file: ${REPORTdir}/${HOST}/${HOST}_mysql_stats.txt"
+
+unset HOST
+unset USER
+unset PW
+
 RemoveLockFile
 exit 0
 # ----------------------------------------------------------- 

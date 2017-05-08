@@ -6,9 +6,9 @@
 # Shell: BASH shell
 # Original Author(s): DataReel Software Development
 # File Creation Date: 06/10/2013
-# Date Last Modified: 05/04/2017
+# Date Last Modified: 05/08/2017
 #
-# Version control: 1.14
+# Version control: 1.15
 #
 # Contributor(s):
 # ----------------------------------------------------------- 
@@ -49,19 +49,35 @@ fi
 source ${CONFIG_FILE}
 source ${DRSMHOME}/bin/system_functions.sh
 
-host="$1"
-username="$2"
-pass="$3"
+HOST="$1"
+USER="$2"
+PW="$3"
 
-if [ "$host" == "" ]; then echo -n "MySQL host: " ; read host; fi
-if [ "$username" == "" ]; then echo -n "MySQL username: " ; read username; fi
-if [ "$pass" == "" ]; then echo -n "MySQL pass: " ; stty -echo ; read pass ; stty echo ; echo; fi
+function SaveMySQLAuth {
+    if [ ! -d ${DRSMHOME}/.auth ]; then mkdir -p ${DRSMHOME}/.auth; chmod 700 ${DRSMHOME}/.auth; fi
+    cat /dev/null > ${DRSMHOME}/.auth/${HOST}.msql; chmod 600 ${DRSMHOME}/.auth/${HOST}.msql
+    echo "" >> ${DRSMHOME}/.auth/${HOST}.msql
+    echo -n "export HOST='" >> ${DRSMHOME}/.auth/${HOST}.msql; echo -n "${HOST}" >> ${DRSMHOME}/.auth/${HOST}.msql; echo "'" >> ${DRSMHOME}/.auth/${HOST}.msql
+    echo -n "export USER='" >> ${DRSMHOME}/.auth/${HOST}.msql; echo -n "${USER}" >> ${DRSMHOME}/.auth/${HOST}.msql; echo "'" >> ${DRSMHOME}/.auth/${HOST}.msql
+    echo -n "export PW='" >> ${DRSMHOME}/.auth/${HOST}.msql; echo -n "${PW}" >> ${DRSMHOME}/.auth/${HOST}.msql; echo "'" >> ${DRSMHOME}/.auth/${HOST}.msql
+    echo "" >> ${DRSMHOME}/.auth/${HOST}.msql
+}
+
+if [ "$HOST" == "" ]; then echo -n "MySQL HOST: " ; read HOST; fi
+if [ -f ${DRSMHOME}/.auth/${HOST}.msql ]; then source ${DRSMHOME}/.auth/${HOST}.msql; fi
+if [ "$USER" == "" ]; then echo -n "MySQL USER: " ; read USER; fi
+if [ "$PW" == "" ]; then 
+    echo -n "MySQL PW: " ; stty -echo ; read PW ; stty echo ; echo; 
+    echo -n "Do you want to save MySQL auth for ${HOST} (yes/no)> ";
+    read prompt
+    if [ "${prompt^^}" == "YES" ] || [ "${prompt^^}" == "Y" ]; then SaveMySQLAuth; fi 
+fi
 
 REPORTdir="${REPORTdir}/mysql_servers"
 OUTPUTdir="${VARdir}/collect_mysql_stats.tmp"
-logfile="${LOGdir}/mysql_dbflush_${host}.log"
+logfile="${LOGdir}/mysql_dbflush_${HOST}.log"
 PROGRAMname="$0"
-LOCKfile="${VARdir}/mysql_dbflush_${host}.lck"
+LOCKfile="${VARdir}/mysql_dbflush_${HOST}.lck"
 MINold="15"
 
 if [ ! -e ${VARdir} ]; then mkdir -p ${VARdir}; fi
@@ -71,32 +87,36 @@ LockFileCheck $MINold
 CreateLockFile
 
 if [ ! -e ${LOGdir} ]; then mkdir -p ${LOGdir}; fi
-if [ ! -e ${OUTPUTdir}/${host} ]; then mkdir -p ${OUTPUTdir}/${host}; fi
-if [ ! -e ${REPORTdir}/${host}/archive ]; then mkdir -p ${REPORTdir}/${host}/archive; fi
+if [ ! -e ${OUTPUTdir}/${HOST} ]; then mkdir -p ${OUTPUTdir}/${HOST}; fi
+if [ ! -e ${REPORTdir}/${HOST}/archive ]; then mkdir -p ${REPORTdir}/${HOST}/archive; fi
 
 echo "Flushing QUERY CACHE"
-mysql -h ${host} -u ${username} -p"$pass" --execute='FLUSH QUERY CACHE'
+mysql -h ${HOST} -u ${USER} -p"$PW" --execute='FLUSH QUERY CACHE'
 
 echo "Flushing PRIVILEGES"
-mysql -h ${host} -u ${username} -p"$pass" --execute='FLUSH PRIVILEGES'
+mysql -h ${HOST} -u ${USER} -p"$PW" --execute='FLUSH PRIVILEGES'
 
 echo "Flushing TABLES"
-mysql -h ${host} -u ${username} -p"$pass" --execute='FLUSH TABLES'
+mysql -h ${HOST} -u ${USER} -p"$PW" --execute='FLUSH TABLES'
 
 echo "Flushing HOSTS"
-mysql -h ${host} -u ${username} -p"$pass" --execute='FLUSH HOSTS'
+mysql -h ${HOST} -u ${USER} -p"$PW" --execute='FLUSH HOSTS'
 
 echo "Flushing LOGS"
-mysql -h ${host} -u ${username} -p"$pass" --execute='FLUSH LOGS'
+mysql -h ${HOST} -u ${USER} -p"$PW" --execute='FLUSH LOGS'
 
 echo "Flushing STATUS"
-mysql -h ${host} -u ${username} -p"$pass" --execute='FLUSH STATUS'
+mysql -h ${HOST} -u ${USER} -p"$PW" --execute='FLUSH STATUS'
 
 echo "Flushing USER_RESOURCES"
-mysql -h ${host} -u ${username} -p"$pass" --execute='FLUSH USER_RESOURCES'
+mysql -h ${HOST} -u ${USER} -p"$PW" --execute='FLUSH USER_RESOURCES'
 
 ##echo "Reset binary logs"
-##mysql -h ${host} -u ${username} -p"$pass" --execute='RESET MASTER'
+##mysql -h ${HOST} -u ${USER} -p"$PW" --execute='RESET MASTER'
+
+unset HOST
+unset USER
+unset PW
 
 RemoveLockFile
 exit 0
