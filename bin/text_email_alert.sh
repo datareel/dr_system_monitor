@@ -5,9 +5,9 @@
 # Shell: BASH shell
 # Original Author(s): DataReel Software Development
 # File Creation Date: 08/01/2008
-# Date Last Modified: 05/04/2017
+# Date Last Modified: 05/08/2017
 #
-# Version control: 1.13
+# Version control: 1.15
 #
 # Contributor(s):
 # ----------------------------------------------------------- 
@@ -35,10 +35,8 @@
 if [ "${BASEdir}" == "" ]; then export BASEdir="${HOME}/drsm"; fi
 
 if [ -f ${HOME}/.drsm.sh ]; then
-    echo "INFO - Using config override file ${HOME}/.drsm.sh"
     CONFIG_FILE=${HOME}/.drsm.sh
 else
-    echo "INFO - Using default config ${BASEdir}/etc/drsm.sh"
     CONFIG_FILE=${BASEdir}/etc/drsm.sh
 fi
 
@@ -201,7 +199,6 @@ function email_alert() {
 	rm -f ${VARdir}/body.$$
     fi
 }
-
 # ----------------------------------------------------------- 
 # ******************************* 
 # ********* End of File ********* 

@@ -20,7 +20,7 @@ source ${CONFIG_FILE}
 # Force a send each time we run the script
 TIMESPAN="0"
 
-SUBJECT="[!ACTION!] Alert Test Message"
+SUBJECT="[!ACTION!] ${SITEID} Alert Test Message"
 BODY="This is an alert test message"
 
 source ${DRSMHOME}/bin/text_email_alert.sh

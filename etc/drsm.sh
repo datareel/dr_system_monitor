@@ -1,6 +1,9 @@
 #!/bin/bash
 # DRSM master configuration file
 
+# Name of your site
+export SITEID="DRSM"
+
 # Internal Web server setup
 # UNIX path of our Web directory
 export WWWdir=/var/www/html/sysadmin

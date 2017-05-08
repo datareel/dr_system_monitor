@@ -5,9 +5,9 @@
 # Shell: BASH shell
 # Original Author(s): DataReel Software Development
 # File Creation Date: 05/25/2013
-# Date Last Modified: 05/05/2017
+# Date Last Modified: 05/08/2017
 #
-# Version control: 1.14
+# Version control: 1.15
 #
 # Contributor(s):
 # ----------------------------------------------------------- 
@@ -386,7 +386,7 @@ cat ${errorfile} > ${REPORTdir}/archive/${systemhealthreportfile}_errors_${DATEE
 if [ "${has_errors}" == "1" ]
 then
     echo "System health check reported errors, sending alert message" | tee -a ${logfile}
-    SUBJECT="[!ALERT!] DRSM Health Checks Reported Errors"
+    SUBJECT="[!ALERT!] ${SITEID} Health Checks Reported Errors"
     cat ${errorfile} > ${VARdir}/system_report_message.$$
     echo "" >> ${VARdir}/system_report_message.$$
     cat ${statusfile} >> ${VARdir}/system_report_message.$$
@@ -397,7 +397,7 @@ then
     if [ "${reporttype}" == "DEV" ] 
     then 
 	SENDTEXT="FALSE" 
-	SUBJECT="[!ALERT!] DRSM Dev Systems Health Checks Reported Errors"
+	SUBJECT="[!ALERT!] ${SITEID} Dev Systems Health Checks Reported Errors"
 	TIMEFILE="${VARdir}/email_alert_dev.timefile"
 	INITFILE="${VARdir}/email_alert_dev.initfile"
     fi
@@ -413,7 +413,7 @@ then
     if [ "${emailstatusreport}" == "YES" ] 
     then 
 	echo "System health check reported warnings, sending status message" | tee -a ${logfile}
-	SUBJECT="[!INFO!] DRSM System Health Checks Reported Warnings"
+	SUBJECT="[!INFO!] ${SITEID} System Health Checks Reported Warnings"
 	cat ${errorfile} > ${VARdir}/system_report_message.$$
 	echo "" >> ${VARdir}/system_report_message.$$
 	cat ${statusfile} >> ${VARdir}/system_report_message.$$
@@ -423,7 +423,7 @@ then
 	SENDTEXT="FALSE"
 	if [ "${reporttype}" == "DEV" ] 
 	then 
-	    SUBJECT="[!INFO!] DRSM Dev Systems Health Checks Reported Warnings"
+	    SUBJECT="[!INFO!] ${SITEID} Dev Systems Health Checks Reported Warnings"
 	    TIMEFILE="${VARdir}/email_alert_dev.timefile"
 	    INITFILE="${VARdir}/email_alert_dev.initfile"
 	fi
@@ -442,14 +442,14 @@ fi
 if [ "${emailstatusreport}" == "YES" ] 
 then 
     echo "All systems check good, sending status message, sening status message" | tee -a ${logfile}
-    SUBJECT="[!INFO!] DRSM Systems Health Check Report"
+    SUBJECT="[!INFO!] ${SITEID} Systems Health Check Report"
     BODY=${statusfile}
     TIMESPAN="4"
     SENDEMAIL="TRUE"
     SENDTEXT="FALSE"
     if [ "${reporttype}" == "DEV" ] 
     then 
-	SUBJECT="[!INFO!] DRSM Dev Systems Systems Health Check Report"
+	SUBJECT="[!INFO!] ${SITEID} Dev Systems Systems Health Check Report"
 	TIMEFILE="${VARdir}/email_alert_dev.timefile"
 	INITFILE="${VARdir}/email_alert_dev.initfile"
     fi

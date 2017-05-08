@@ -6,9 +6,9 @@
 # Shell: BASH shell
 # Original Author(s): DataReel Software Development
 # File Creation Date: 05/25/2013
-# Date Last Modified: 05/04/2017
+# Date Last Modified: 05/08/2017
 #
-# Version control: 1.13
+# Version control: 1.15
 #
 # Contributor(s):
 # ----------------------------------------------------------- 
@@ -246,7 +246,7 @@ cat ${errorfile} > ${REPORTdir}/archive/${systemcheckfile}_report_errors_${DATEE
 if [ "${has_errors}" == "1" ]
 then
     echo "System checks reported connection errors, sending alert message"
-    SUBJECT="[!ALERT!] DRSM Connection Checks Reported Errors"
+    SUBJECT="[!ALERT!] ${SITEID} Connection Checks Reported Errors"
     BODY="${errorfile}"
     TIMESPAN="4"
     SENDEMAIL="TRUE"
@@ -254,7 +254,7 @@ then
     if [ "${reporttype}" == "DEV" ] 
     then 
 	SENDTEXT="FALSE" 
-	SUBJECT="[!ALERT!] DRSM Dev Systems Connection Checks Reported Errors"
+	SUBJECT="[!ALERT!] ${SITEID} Dev Systems Connection Checks Reported Errors"
 	TIMEFILE="${VARdir}/email_alert_dev.timefile"
 	INITFILE="${VARdir}/email_alert_dev.initfile"
     fi
@@ -267,13 +267,13 @@ fi
 if [ "${emailstatusreport}" == "YES" ] 
 then 
     echo "All systems check good, sending status message"
-    SUBJECT="[!INFO!] DRSM Connections Check Status Report"
+    SUBJECT="[!INFO!] ${SITEID} Connections Check Status Report"
     BODY=${statusfile}
     TIMESPAN="4"
     SENDTEXT="FALSE"
     if [ "${reporttype}" == "DEV" ] 
     then 
-	SUBJECT="[!INFO!] DRSM Dev Systems Connections Check Status Report"
+	SUBJECT="[!INFO!] ${SITEID} Dev Systems Connections Check Status Report"
 	TIMEFILE="${VARdir}/email_alert_dev.timefile"
 	INITFILE="${VARdir}/email_alert_dev.initfile"
     fi
