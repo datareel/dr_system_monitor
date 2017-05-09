@@ -30,7 +30,7 @@
 # along with the DataReel software distribution.  If not, see
 # <http://www.gnu.org/licenses/>.
 #
-# MySQL stat collection using PHP command line script
+# Script used to create MySQL backups
 #
 # ----------------------------------------------------------- 
 if [ "${BASEdir}" == "" ]; then export BASEdir="${HOME}/drsm"; fi
@@ -73,11 +73,9 @@ if [ "${PW}" == "" ]; then
     if [ "${prompt^^}" == "YES" ] || [ "${prompt^^}" == "Y" ]; then SaveMySQLAuth; fi 
 fi
 
-REPORTdir="${REPORTdir}/mysql_servers"
-OUTPUTdir="${VARdir}/collect_mysql_stats.tmp"
-logfile="${LOGdir}/collect_mysql_stats_${HOST}.log"
+logfile="${LOGdir}/mysql_backup_${HOST}.log"
 PROGRAMname="$0"
-LOCKfile="${VARdir}/collect_mysql_stats_${HOST}.lck"
+LOCKfile="${VARdir}/mysql_backup_${HOST}.lck"
 MINold="30"
 
 if [ ! -e ${VARdir} ]; then mkdir -p ${VARdir}; fi
@@ -87,42 +85,31 @@ LockFileCheck $MINold
 CreateLockFile
 
 if [ ! -e ${LOGdir} ]; then mkdir -p ${LOGdir}; fi
-if [ ! -e ${OUTPUTdir}/${HOST} ]; then mkdir -p ${OUTPUTdir}/${HOST}; fi
-if [ ! -e ${REPORTdir}/${HOST}/archive ]; then mkdir -p ${REPORTdir}/${HOST}/archive; fi
 
 cat /dev/null > ${logfile}
-cat /dev/null > ${OUTPUTdir}/${HOST}/${HOST}_mysql_stats.txt
 
-DATEEXT=$(date +%Y%m%d_%H%M%S)
-ETIME=$(date +%s)
+DATEEXT=$(date +%Y%m%d)
 datetime=$(date)
-echo "${HOST} stats report, ${datetime}" | tee -a ${logfile}
+echo "${HOST} MySQL backup, $(date)" | tee -a ${logfile}
 
-echo "${HOST} stats report, ${datetime}" >> ${OUTPUTdir}/${HOST}/${HOST}_mysql_stats.txt
-echo "" >> ${OUTPUTdir}/${HOST}/${HOST}_mysql_stats.txt
+DBLIST=$(mysql -h $HOST -u $USER -p"$PW" -NBe "SHOW DATABASES;" | grep -v 'lost+found')
+if [ ! -d ${BACKUPdir}/mysql/${HOST}/${DATEEXT} ]; then 
+    mkdir -pv ${BACKUPdir}/mysql/${HOST}/${DATEEXT} | tee -a ${logfile} 
+fi 
 
-/usr/bin/php ${DRSMHOME}/mysql/collect_mysql_stats.php "${HOST}" "${USER}" "${PW}" ${DRSMHOME} ${VARdir} ${LOGdir} >> ${OUTPUTdir}/${HOST}/${HOST}_mysql_stats.txt
-if [ "$?" != "0" ]
-then
-    echo "ERROR - collect_mysql_stats.php returned errors" | tee -a ${logfile}
-    cat ${OUTPUTdir}/${HOST}/${HOST}_mysql_stats.txt >> ${logfile}
-    RemoveLockFile
-    unset HOST
-    unset USER
-    unset PW
-    exit 1
-fi
+MYSQLDUMP_ARGS="--lock-tables=false --events --log-error=${logfile}"
+for DB in ${DBLIST} 
+do
+    echo "Backing up schema and SQL for ${DB}" | tee -a ${logfile}
+    echo "mysqldump ${MYSQLDUMP_ARGS} -h ${HOST} -u ${USER} --databases ${DB} > ${BACKUPdir}/mysql/${HOST}/${DATEEXT}/${DB}.sql" | tee -a ${logfile} 
+    mysqldump ${MYSQLDUMP_ARGS} --no-data -h ${HOST} -u ${USER} -p"${PW}" --databases ${DB} > ${BACKUPdir}/mysql/${HOST}/${DATEEXT}/${DB}.schema
+    mysqldump ${MYSQLDUMP_ARGS} -h ${HOST} -u ${USER} -p"${PW}" --databases ${DB} > ${BACKUPdir}/mysql/${HOST}/${DATEEXT}/${DB}.sql
+done
 
-cat ${OUTPUTdir}/${HOST}/${HOST}_mysql_stats.txt > ${REPORTdir}/${HOST}/${HOST}_mysql_stats.txt
-cat ${OUTPUTdir}/${HOST}/${HOST}_mysql_stats.txt > ${REPORTdir}/${HOST}/archive/${HOST}_mysql_stats_${ETIME}.txt
-
-echo "${HOST} stats report complete" | tee -a ${logfile}
-echo "Ouput file: ${REPORTdir}/${HOST}/${HOST}_mysql_stats.txt"
-
+echo "${HOST} MySQL backup complete, $(date)" | tee -a ${logfile}
 unset HOST
 unset USER
 unset PW
-
 RemoveLockFile
 exit 0
 # ----------------------------------------------------------- 

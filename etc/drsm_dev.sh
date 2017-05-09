@@ -1,12 +1,12 @@
 #!/bin/bash
-# DRSM master configuration file
+# DRSM config example for development and testing from my user account
 
 # Name of your site
-export SITEID="DRSM"
+export SITEID="TEST"
 
 # Internal Web server setup
 # UNIX path of our Web directory
-export WWWdir=/var/www/html/sysadmin
+export WWWdir=${HOME}/public_html/sysadmin
 # Web path
 export WWWvpath="/$(basename $WWWdir)" 
 export REPORTdir=${WWWdir}/reports
@@ -18,8 +18,8 @@ export SITEincludes=${WWWdir}/site
 
 # Setup umask, user name, and group name for the sysadmin account
 umask 0002
-export SYSADMIN_USERNAME=sysadmin
-export SYSADMIN_GROUPNAME=sysadmin
+export SYSADMIN_USERNAME=$(whoami)
+export SYSADMIN_GROUPNAME=$(getent group | grep $(id -g) | cut -d: -f1)
 
 # Set the timezone
 export TZ=UTC
