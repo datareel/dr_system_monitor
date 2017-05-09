@@ -55,16 +55,16 @@ PW="${3}"
 
 function SaveMySQLAuth {
     if [ ! -d ${DRSMHOME}/.auth ]; then mkdir -p ${DRSMHOME}/.auth; chmod 700 ${DRSMHOME}/.auth; fi
-    cat /dev/null > ${DRSMHOME}/.auth/${HOST}.msql; chmod 600 ${DRSMHOME}/.auth/${HOST}.msql
-    echo "" >> ${DRSMHOME}/.auth/${HOST}.msql
-    echo -n "export HOST='" >> ${DRSMHOME}/.auth/${HOST}.msql; echo -n "${HOST}" >> ${DRSMHOME}/.auth/${HOST}.msql; echo "'" >> ${DRSMHOME}/.auth/${HOST}.msql
-    echo -n "export USER='" >> ${DRSMHOME}/.auth/${HOST}.msql; echo -n "${USER}" >> ${DRSMHOME}/.auth/${HOST}.msql; echo "'" >> ${DRSMHOME}/.auth/${HOST}.msql
-    echo -n "export PW='" >> ${DRSMHOME}/.auth/${HOST}.msql; echo -n "${PW}" >> ${DRSMHOME}/.auth/${HOST}.msql; echo "'" >> ${DRSMHOME}/.auth/${HOST}.msql
-    echo "" >> ${DRSMHOME}/.auth/${HOST}.msql
+    cat /dev/null > ${DRSMHOME}/.auth/${HOST}.mysql; chmod 600 ${DRSMHOME}/.auth/${HOST}.mysql
+    echo "" >> ${DRSMHOME}/.auth/${HOST}.mysql
+    echo -n "export HOST='" >> ${DRSMHOME}/.auth/${HOST}.mysql; echo -n "${HOST}" >> ${DRSMHOME}/.auth/${HOST}.mysql; echo "'" >> ${DRSMHOME}/.auth/${HOST}.mysql
+    echo -n "export USER='" >> ${DRSMHOME}/.auth/${HOST}.mysql; echo -n "${USER}" >> ${DRSMHOME}/.auth/${HOST}.mysql; echo "'" >> ${DRSMHOME}/.auth/${HOST}.mysql
+    echo -n "export PW='" >> ${DRSMHOME}/.auth/${HOST}.mysql; echo -n "${PW}" >> ${DRSMHOME}/.auth/${HOST}.mysql; echo "'" >> ${DRSMHOME}/.auth/${HOST}.mysql
+    echo "" >> ${DRSMHOME}/.auth/${HOST}.mysql
 }
 
 if [ "${HOST}" == "" ]; then echo -n "MySQL host: " ; read HOST; fi
-if [ -f ${DRSMHOME}/.auth/${HOST}.msql ]; then source ${DRSMHOME}/.auth/${HOST}.msql; fi
+if [ -f ${DRSMHOME}/.auth/${HOST}.mysql ]; then source ${DRSMHOME}/.auth/${HOST}.mysql; fi
 if [ "${USER}" == "" ]; then echo -n "MySQL username: " ; read USER; fi
 if [ "${PW}" == "" ]; then 
     echo -n "MySQL pass: " ; stty -echo ; read PW ; stty echo ; echo; 
