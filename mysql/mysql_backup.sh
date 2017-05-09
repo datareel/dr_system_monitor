@@ -8,7 +8,7 @@
 # File Creation Date: 06/10/2013
 # Date Last Modified: 05/09/2017
 #
-# Version control: 1.16
+# Version control: 1.17
 #
 # Contributor(s):
 # ----------------------------------------------------------- 
@@ -96,6 +96,19 @@ DBLIST=$(mysql -h $HOST -u $USER -p"$PW" -NBe "SHOW DATABASES;" | grep -v 'lost+
 if [ ! -d ${BACKUPdir}/mysql/${HOST}/${DATEEXT} ]; then 
     mkdir -pv ${BACKUPdir}/mysql/${HOST}/${DATEEXT} | tee -a ${logfile} 
 fi 
+
+if [ ! -d ${BACKUPdir}/mysql/${HOST}/${DATEEXT} ]; then
+    echo "ERROR - Cannot make DIR ${BACKUPdir}/mysql/${HOST}/${DATEEXT}" | tee -a ${logfile}
+    unset HOST
+    unset USER
+    unset PW
+    RemoveLockFile
+    exit 1
+fi
+
+echo "Purging ${BACKUPdir}/mysql/${HOST} files older than ${BACKUP_age}" | tee -a ${logfile} 
+touch ${BACKUPdir}/mysql/${HOST}
+find ${BACKUPdir}/mysql/${HOST} -type f -mtime +${BACKUP_age} -print | xargs rm -rfv | tee -a ${logfile}
 
 MYSQLDUMP_ARGS="--lock-tables=false --events --log-error=${logfile}"
 for DB in ${DBLIST} 

@@ -31,6 +31,8 @@ export TEMPfile_age=60
 export REPORTSfile_age=3
 # Age off offline report files in days
 export OFFLINEfile_age=30
+# Age off database and system backups
+export BACKUP_age=30
 
 # Our DRSM home directory
 export DRSMHOME=${HOME}/drsm
@@ -65,3 +67,16 @@ if [ "$(whoami)" != "${SYSADMIN_USERNAME}" ]; then
 	chown ${SYSADMIN_USERNAME}:${SYSADMIN_GROUPNAME} ${d}
     done 
 fi
+
+# Postgres utils settings
+export PSQL="psql"
+export PG_DUMP="pg_dump"
+export PG_RESTORE="pg_restore"
+export VACUUMDB="vacuumdb"
+# NOTE: If you are using different versions of Postgres you can reset
+# NOTE: the ENV vars above per process, for example, for 9.2 servers:
+## export LD_LIBRARY_PATH="/usr/local/pgsql-9.2/lib"
+## export PSQL="/usr/local/pgsql-9.2/bin/psql"
+## export PG_DUMP="/usr/local/pgsql-9.2/bin/pg_dump"
+## export PG_RESTORE="/usr/local/pgsql-9.2/bin/pg_restore"
+## export VACUUMDB="/usr/local/pgsql-9.2/bin/vacuumdb"
