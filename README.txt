@@ -4,19 +4,21 @@ Last Modified: 05/10/2017
 Contents:
 --------
 * Overview
+* Documented Usage
 * Requirements
 * Setting up the system admin user
 * Installing
 * Setting up a DRSM development workstation
 * Adding systems to monitor
-* Web Interface Setup
+* Web Server Setup
 * Customizing the Web Interface
 * Setting custom alert thresholds
 * Email Text messaging setup
 * Monitoring Crons
 * MySQL Utilities
 * Postgres Utilities
-* Support
+* Remaining Work on This Project
+* Support and Bug Tracking
 
 Overview:
 --------
@@ -28,6 +30,17 @@ HTTPS, and FTP as required. System health check reporting connects to
 systems via keyed SSH sessions and monitors CPU, memory, disk, load,
 and user statistics. Email and text message alerts can be sent based
 on per-defined or user-defined thresholds.
+
+Documented Usage:
+----------------
+* All commands prefixed with the $ prompt indicate the command is
+  executed from a user account or from a service account. 
+
+* All commands prefixed with the # prompt indicate the command is
+  executed as root.
+
+* In a configuration file example a ... symbol indicates omitted content
+  for brevity.
 
 Requirements:
 ------------
@@ -159,7 +172,7 @@ $HOME/public_html/sysadmin
 
 To view your $HOME/public_html directory:
 
-firefox http://$(hostname)/~$(whoami)/sysadmin
+$ firefox http://$(hostname)/~$(whoami)/sysadmin
 
 Adding systems to monitor:
 -------------------------
@@ -632,7 +645,7 @@ export PG_DUMP="/usr/local/pgsql-9.2/bin/pg_dump"
 export PG_RESTORE="/usr/local/pgsql-9.2/bin/pg_restore"
 export VACUUMDB="/usr/local/pgsql-9.2/bin/vacuumdb"
 
-To set postgres variables for individual database servers:
+To set Postgres variables for individual database servers:
 
 $ source ~/.drsm.sh
 $ vi $DRSMHOME/.auth/gis.example.com.pg
@@ -640,8 +653,12 @@ $ vi $DRSMHOME/.auth/gis.example.com.pg
 Set your PG variables in the .pg file corresponding to each database
 server's hostname.
 
-Support:
--------
+Remaining Work on This Project:
+------------------------------
+* Rewrite of Postgres stat collection
+
+Support and Bug Tracking:
+------------------------
 For any DRSM support issues, questions, or suggestions open a ticket
 on GITHUB:
 
