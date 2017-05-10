@@ -1,5 +1,5 @@
 DataReel System Admin Monitor README file
-Last Modified: 05/05/2017
+Last Modified: 05/10/2017
 
 Contents:
 --------
@@ -7,12 +7,15 @@ Contents:
 * Requirements
 * Setting up the system admin user
 * Installing
+* Setting up a DRSM development workstation
 * Adding systems to monitor
 * Web Interface Setup
 * Customizing the Web Interface
 * Setting custom alert thresholds
 * Email Text messaging setup
 * Monitoring Crons
+* MySQL Utilities
+* Postgres Utilities
 * Support
 
 Overview:
@@ -133,6 +136,30 @@ $ ~/drsm/bin/system_report.sh
 
 To test the Web interface:
 $ firefox http://$(hostname)/sysadmin
+
+Setting up a DRSM development workstation:
+-----------------------------------------
+To setup a DRSM development workstation to run from your user account:
+
+$ mkdir -p ~/git
+$ cd ~/git
+$ git clone https://github.com/datareel/dr_system_monitor
+$ cd ~/git/dr_system_monitor/etc
+$ cp -p drsm_dev.sh ~/.drsm.sh
+$ cd ~/git/dr_system_monitor/utils
+$ ./install.sh
+
+Your default install directory will be:
+
+$HOME/drsm
+
+Your default Web directory will be:
+
+$HOME/public_html/sysadmin
+
+To view your $HOME/public_html directory:
+
+firefox http://$(hostname)/~$(whoami)/sysadmin
 
 Adding systems to monitor:
 -------------------------
@@ -482,6 +509,67 @@ is an HA crontab example using the sysadmin user account:
 # System reports archive and purge
 59 23 * * * sysadmin bash -c '/home/sysadmin/drsm/bin/archive.sh &> /dev/null'
 00 * * * *  sysadmin bash -c '/home/sysadmin/drsm/bin/purge.sh &> /dev/null'
+
+MySQL Utilities:
+---------------
+The DRSM MySQL utilities include backup, stat collection, and
+optimization scripts. Each utility will give you the option to store
+MySQL credentials, allowing you to automate database backups and
+optimization. To test connectivity and store MySQL credentials:
+
+$ source ~/.drsm.sh
+$ cd $DRSMHOME/mysql
+$ ./mysql_dbflush.sh 
+
+MySQL HOST: cms.example.com
+MySQL USER: dbadmin
+MySQL PW: ***********
+Do you want to save MySQL auth for cms (yes/no)> yes
+
+Flushing QUERY CACHE
+Flushing PRIVILEGES
+Flushing TABLES
+Flushing HOSTS
+Flushing LOGS
+Flushing STATUS
+Flushing USER_RESOURCES
+
+Run the same command again, this time supplying the MySQL server's hostname:
+
+$ ./mysql_dbflush.sh cms.example.com
+
+If you selected yes to save the MySQL credentials, you will not be
+prompted for a user name and password.
+
+To run a MySQL backup, first check your backup settings:
+
+$ vi ~/.drsm.sh
+
+...
+export BACKUP_age=30
+...
+export BACKUPdir=${HOME}/backups
+
+This config will save 30 days of backups in the $HOME/backups
+directory. Next, run the back up script supplying the hostname of the
+MySQL server you wish to backup:
+
+source ~/.drsm.sh
+cd $DRSMHOME/mysql
+./mysql_backup.sh cms.example.com
+
+To collect MySQL statistics:
+
+./collect_mysql_stats.sh cms.example.com
+
+To optimize MySQL performance:
+
+./mysql_defragment.sh cms.example.com
+./mysql_dbflush.sh cms.example.com
+
+Postgres Utilities:
+------------------
+
 
 Support:
 -------
