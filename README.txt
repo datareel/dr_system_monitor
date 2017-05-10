@@ -524,7 +524,7 @@ $ ./mysql_dbflush.sh
 MySQL HOST: cms.example.com
 MySQL USER: dbadmin
 MySQL PW: ***********
-Do you want to save MySQL auth for cms (yes/no)> yes
+Do you want to save MySQL auth for cms.example.com (yes/no)> yes
 
 Flushing QUERY CACHE
 Flushing PRIVILEGES
@@ -534,7 +534,8 @@ Flushing LOGS
 Flushing STATUS
 Flushing USER_RESOURCES
 
-Run the same command again, this time supplying the MySQL server's hostname:
+Run the same command again, this time supplying the MySQL server's
+hostname:
 
 $ ./mysql_dbflush.sh cms.example.com
 
@@ -569,7 +570,75 @@ To optimize MySQL performance:
 
 Postgres Utilities:
 ------------------
+The DRSM Postgres utilities include backup and optimization
+scripts. Each utility will give you the option to store Postgres
+credentials, allowing you to automate database backups and
+optimization.
 
+To test connectivity and store Postgres credentials:
+
+$ source ~/.drsm.sh
+$ cd $DRSMHOME/postgres
+$ ./postgres_db_checks.sh
+
+PG host: gis.example.com
+PG username: postgres
+PG pass: ***********
+Do you want to save PG auth for gis.example.com (yes/no)> yes
+
+Run the same command again, this time supplying the Postgres server's hostname:
+
+$ ./postgres_db_checks.sh gis.example.com
+
+If you selected yes to save the Postgres credentials, you will not be
+prompted for a user name and password.
+
+To run a Postgres backup, first check your backup settings:
+
+$ vi ~/.drsm.sh
+
+...
+export BACKUP_age=30
+...
+export BACKUPdir=${HOME}/backups
+
+This will save 30 days of backups in the $HOME/backups
+directory. Next, run the backup script supplying the hostname of the
+database server you wish to backup:
+
+$ source ~/.drsm.sh
+$ cd $DRSMHOME/postgres
+$ ./postgres_backup.sh gis.example.com
+
+To optimize Postgres database performance:
+
+$ ./postgres_optimize.sh gis.example.com
+
+If you need to backup and optimize different versions of Postgres, you
+will need to configure your runtime environment to use the same
+version of Postgres installed on each DB server. For example if your
+workstation has postgres 8.4 installed and your server is running
+version 9.2, you will need to use version 9.2 utilities on your
+workstation. To do this globally on your system monitor, install a
+copy of 9.2 in /usr/local and set the following environmental
+variables: 
+
+$ vi ~/.drsm.sh
+
+# Postgres utils settings
+export LD_LIBRARY_PATH="/usr/local/pgsql-9.2/lib"
+export PSQL="/usr/local/pgsql-9.2/bin/psql"
+export PG_DUMP="/usr/local/pgsql-9.2/bin/pg_dump"
+export PG_RESTORE="/usr/local/pgsql-9.2/bin/pg_restore"
+export VACUUMDB="/usr/local/pgsql-9.2/bin/vacuumdb"
+
+To set postgres variables for individual database servers:
+
+$ source ~/.drsm.sh
+$ vi $DRSMHOME/.auth/gis.example.com.pg
+
+Set your PG variables in the .pg file corresponding to each database
+server's hostname.
 
 Support:
 -------
