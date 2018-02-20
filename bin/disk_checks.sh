@@ -6,9 +6,9 @@
 # Shell: BASH shell
 # Original Author(s): DataReel Software Development
 # File Creation Date: 05/25/2013
-# Date Last Modified: 05/02/2017
+# Date Last Modified: 02/20/2018
 #
-# Version control: 1.11
+# Version control: 1.12
 #
 # Contributor(s):
 # ----------------------------------------------------------- 
@@ -77,6 +77,13 @@ do
 	fi
     fi
 done < /etc/fstab
+
+if [ -f ${HOME}/drsm/health_check_scripts/raid_check.sh ]; then
+    echo ""
+    rv=$(${HOME}/drsm/health_check_scripts/raid_check.sh)
+    if [ $rv -eq 2 ]; then has_error=1; fi
+    if [ $rv -eq 1 ]; then has_warning=1; fi
+fi
 
 if [ "${has_error}" == "1" ]
 then

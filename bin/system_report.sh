@@ -5,9 +5,9 @@
 # Shell: BASH shell
 # Original Author(s): DataReel Software Development
 # File Creation Date: 05/25/2013
-# Date Last Modified: 05/08/2017
+# Date Last Modified: 02/20/2018
 #
-# Version control: 1.15
+# Version control: 1.17
 #
 # Contributor(s):
 # ----------------------------------------------------------- 
@@ -335,6 +335,7 @@ do
 	${DRSMHOME}/bin/network_checks.sh \
 	${DRSMHOME}/bin/user_checks.sh \
 	${DRSMHOME}/bin/read_cpu_temps.sh \
+	${DRSMHOME}/bin/raid_checks.sh \
 	${host}:${DRSMHOME}/health_check_scripts/.
 
     source ${CONFIGdir}/${host}_profile.sh
