@@ -80,9 +80,9 @@ done < /etc/fstab
 
 if [ -f ${HOME}/drsm/health_check_scripts/raid_checks.sh ]; then
     echo ""
-    rv=$(${HOME}/drsm/health_check_scripts/raid_checks.sh)
-    if [ $rv -eq 2 ]; then has_error=1; fi
-    if [ $rv -eq 1 ]; then has_warning=1; fi
+    ${HOME}/drsm/health_check_scripts/raid_checks.sh
+    if [ $? -eq 2 ]; then has_error=1; fi
+    if [ $? -eq 1 ]; then has_warning=1; fi
 fi
 
 if [ "${has_error}" == "1" ]
