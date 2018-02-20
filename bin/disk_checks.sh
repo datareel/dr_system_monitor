@@ -8,7 +8,7 @@
 # File Creation Date: 05/25/2013
 # Date Last Modified: 02/20/2018
 #
-# Version control: 1.12
+# Version control: 1.13
 #
 # Contributor(s):
 # ----------------------------------------------------------- 
@@ -78,9 +78,9 @@ do
     fi
 done < /etc/fstab
 
-if [ -f ${HOME}/drsm/health_check_scripts/raid_check.sh ]; then
+if [ -f ${HOME}/drsm/health_check_scripts/raid_checks.sh ]; then
     echo ""
-    rv=$(${HOME}/drsm/health_check_scripts/raid_check.sh)
+    rv=$(${HOME}/drsm/health_check_scripts/raid_checks.sh)
     if [ $rv -eq 2 ]; then has_error=1; fi
     if [ $rv -eq 1 ]; then has_warning=1; fi
 fi
