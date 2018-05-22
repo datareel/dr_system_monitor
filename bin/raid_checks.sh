@@ -8,7 +8,7 @@
 # File Creation Date: 02/20/2018
 # Date Last Modified: 05/22/2018
 #
-# Version control: 1.02
+# Version control: 1.03
 #
 # Contributor(s):
 # ----------------------------------------------------------- 
@@ -58,7 +58,7 @@
 # ...
 
 # Check for LSI RAID contollers
-/sys/bus/pci -type f -print | grep -i megaraid &> /dev/null
+find /sys/bus/pci -type f -print | grep -i megaraid &> /dev/null
 if [ $? -ne 0 ]; then
     echo "INFO: This system does not have LSI RAID controller hardware installed"
     exit 0
