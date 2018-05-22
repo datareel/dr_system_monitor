@@ -6,9 +6,9 @@
 # Shell: BASH shell
 # Original Author(s): DataReel Software Development
 # File Creation Date: 02/20/2018
-# Date Last Modified: 02/20/2018
+# Date Last Modified: 05/22/2018
 #
-# Version control: 1.01
+# Version control: 1.02
 #
 # Contributor(s):
 # ----------------------------------------------------------- 
@@ -58,9 +58,16 @@
 # ...
 
 # Check for LSI RAID contollers
-dmesg | grep -i megaraid &> /dev/null
+/sys/bus/pci -type f -print | grep -i megaraid &> /dev/null
 if [ $? -ne 0 ]; then
     echo "INFO: This system does not have LSI RAID controller hardware installed"
+    exit 0
+fi
+
+# Check to see if LSI RAID module is loaded
+find /sys/module -type f -print | grep -i megaraid &> /dev/null
+if [ $? -ne 0 ]; then
+    echo "INFO: The LSI RAID controller kernel module is not loaded"
     exit 0
 fi
 
