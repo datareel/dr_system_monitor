@@ -6,9 +6,9 @@
 # Shell: BASH shell
 # Original Author(s): DataReel Software Development
 # File Creation Date: 02/20/2018
-# Date Last Modified: 05/22/2018
+# Date Last Modified: 10/25/2018
 #
-# Version control: 1.03
+# Version control: 1.04
 #
 # Contributor(s):
 # ----------------------------------------------------------- 
@@ -84,8 +84,8 @@ fi
 
 sudo /opt/MegaRAID/MegaCli/MegaCli64 -PdList -aAll  | grep -i Failed
 if [ $? -eq 0 ]; then
-    echo "ERROR - One or more hard drives have failed in RAID array"
-    echo "ERROR - For more info run: /opt/MegaRAID/MegaCli/MegaCli64 -PdList -aAll"
+    echo "ERROR - $(hostname) One or more hard drives have failed in RAID array"
+    echo "ERROR - $(hostname) For more info run: /opt/MegaRAID/MegaCli/MegaCli64 -PdList -aAll"
     exit 2
 else
     echo "INFO - All drives RAID drives check good" 

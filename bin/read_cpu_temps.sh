@@ -6,9 +6,9 @@
 # Shell: BASH shell
 # Original Author(s): DataReel Software Development
 # File Creation Date: 05/25/2013
-# Date Last Modified: 05/01/2017
+# Date Last Modified: 10/25/2018
 #
-# Version control: 1.09
+# Version control: 1.10
 #
 # Contributor(s):
 # ----------------------------------------------------------- 
@@ -68,14 +68,14 @@ do
 
     if [ $acutal -ge $crit ]
     then
-	echo "ERROR - ${core} is at or above critical tempature: actual_temp=${acutal}°C high_temp=${high}°C crit_temp=${crit}°C" 
+	echo "ERROR - $(hostname) ${core} is at or above critical tempature: actual_temp=${acutal}°C high_temp=${high}°C crit_temp=${crit}°C" 
 	continue
     fi
 
 
     if [ $acutal -ge $high ] && [ $acutal -lt $crit ]
     then
-	echo "WARNING - ${core} is at or above high tempature: actual_temp=${acutal}°C high_temp=${high}°C crit_temp=${crit}°C" 
+	echo "WARNING - $(hostname) ${core} is at or above high tempature: actual_temp=${acutal}°C high_temp=${high}°C crit_temp=${crit}°C" 
 	continue
     fi
     
