@@ -6,9 +6,9 @@
 # Shell: BASH shell
 # Original Author(s): DataReel Software Development
 # File Creation Date: 05/25/2013
-# Date Last Modified: 05/05/2017
+# Date Last Modified: 05/31/2022
 #
-# Version control: 1.14
+# Version control: 1.15
 #
 # Contributor(s):
 # ----------------------------------------------------------- 
@@ -54,10 +54,12 @@ has_warning="0"
 DROPPEDMAX=5000
 COLLMAX=5000
 MAXERRORS=5000
+retry_wait=1
 
 if [ "${2}" != "" ]; then DROPPEDMAX=$2; fi
 if [ "${3}" != "" ]; then COLLMAX=$3; fi
 if [ "${4}" != "" ]; then MAXERRORS=$4; fi 
+if [ "${5}" != "" ]; then retry_wait=$5; fi 
 
 for n in ${NICS}
 do
@@ -81,8 +83,8 @@ do
 
     if [ ${RXERRORS} -gt ${MAXERRORS} ] || [ ${TXERRORS} -gt ${MAXERRORS} ] 
     then
-	echo "INFO - ${HOST} ${ETH} detected RXERRORS/TXERRORS, will retry check in 60 seconds"
-	sleep 60
+	echo "INFO - ${HOST} ${ETH} detected RXERRORS/TXERRORS, will retry check in ${retry_wait} seconds"
+	sleep ${retry_wait}
 	RXERRORS_RETRY=$(echo "${ETHinfo}" | awk '{ print $3 }')
 	TXERRORS_RETRY=$(echo "${ETHinfo}" | awk '{ print $11 }')
 	if [ ${RXERRORS} -ne ${RXERRORS_RETRY} ] || [ ${TXERRORS} -gt ${TXERRORS_RETRY} ]
@@ -95,23 +97,23 @@ do
 		echo "RX errors: ${RXERRORS} TX errors: ${TXERRORS}"
 		has_error="1"
 	    else
-		echo "INFO - ${HOST} ${ETH} 60 second error count RX=${RXERRORS} TX=${TXERRORS}"
+		echo "INFO - ${HOST} ${ETH} 1 second error count RX=${RXERRORS} TX=${TXERRORS}"
 	    fi
 	fi
     fi
 
     if [ ${RXDROPPED} -gt ${DROPPEDMAX} ] || [ ${TXDROPPED} -gt ${DROPPEDMAX} ] || [ ${COLLISIONS} -gt ${COLLMAX} ]
     then
-	echo "INFO - ${HOST} ${ETH} detected DROPPED/FRAME/COLLISIONS, will retry check in 60 seconds"
-	sleep 60
+	echo "INFO - ${HOST} ${ETH} detected DROPPED/FRAME/COLLISIONS, will retry check in ${retry_wait} seconds"
+	sleep ${retry_wait}
 	RXDROPPED_RETRY=$(echo "${ETHinfo}" | awk '{ print $4 }')
 	TXDROPPED_RETRY=$(echo "${ETHinfo}" | awk '{ print $12 }')
 	COLLISIONS_RETRY=$(echo "${ETHinfo}" | awk '{ print $14 }')
 	if [ ${RXDROPPED} -ne ${RXDROPPED_RETRY} ] || [ ${TXDROPPED} -ne ${TXDROPPED_RETRY} ] || [ ${COLLISIONS} -ne ${COLLISIONS_RETRY} ]
 	then
 	    echo "WARNING - ${HOST} ${ETH} ${DESCRIPTION} has packet loss"
-	    echo "${HOST} ${ETH} RX dropped per 60 secs:  ${RXDROPPED_RETRY}/${RXDROPPED}  TX dropped: ${TXDROPPED_RETRY}/${TXDROPPED}"
-	    echo "${HOST} ${ETH} Collisions per 60 secs:  ${COLLISIONS_RETRY}/${COLLISIONS}"
+	    echo "${HOST} ${ETH} RX dropped per ${retry_wait} secs:  ${RXDROPPED_RETRY}/${RXDROPPED}  TX dropped: ${TXDROPPED_RETRY}/${TXDROPPED}"
+	    echo "${HOST} ${ETH} Collisions per ${retry_wait} secs:  ${COLLISIONS_RETRY}/${COLLISIONS}"
 	    has_warning="1"
 	fi
     fi

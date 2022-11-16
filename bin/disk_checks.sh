@@ -6,9 +6,9 @@
 # Shell: BASH shell
 # Original Author(s): DataReel Software Development
 # File Creation Date: 05/25/2013
-# Date Last Modified: 02/20/2018
+# Date Last Modified: 11/16/2022
 #
-# Version control: 1.13
+# Version control: 1.14
 #
 # Contributor(s):
 # ----------------------------------------------------------- 
@@ -53,19 +53,22 @@ do
 	FSTYPE=$(echo "${DATLINE}" | awk '{ print $3 }')
 	DIR=$(echo "${DATLINE}" | awk '{ print $2 }')
 	if [ "${FSTYPE}" == "xfs" ] || [ "${FSTYPE}" == "ext4" ] || [ "${FSTYPE}" == "ext3" ] || [ "${FSTYPE}" == "ext2" ]; then
+	    skip_check=0
 	    for d in ${SKIPDIRS}
 	    do
 		if [ "${DIR}" == "${d}" ]; then
 		    echo "Skipping DIR check on ${d}"
-		    continue
+		    skip_check=1
+		    break
 		fi
 	    done
+	    if [ ${skip_check} -eq 1 ]; then continue; fi
 	    DISKSPACE=$(df -HP ${DIR} | sed '1d' | awk '{print $5}' | cut -d'%' -f1)
 	    if [ ${DISKSPACE} -ge ${ALERT} ] 
 	    then
 		if [ ${DISKSPACE} -ge ${MAX} ]
 		then
-		    echo "ERROR - ${HOST}:${DIR} is fill at ${DISKSPACE}% capacity."
+		    echo "ERROR - ${HOST}:${DIR} is full at ${DISKSPACE}% capacity."
 		    has_error="1"
 		else
 		    echo "WARNING - ${HOST}:${DIR} is at ${DISKSPACE}% capacity."

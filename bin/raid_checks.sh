@@ -6,9 +6,9 @@
 # Shell: BASH shell
 # Original Author(s): DataReel Software Development
 # File Creation Date: 02/20/2018
-# Date Last Modified: 05/22/2018
+# Date Last Modified: 06/21/2019
 #
-# Version control: 1.03
+# Version control: 1.04
 #
 # Contributor(s):
 # ----------------------------------------------------------- 
@@ -84,11 +84,27 @@ fi
 
 sudo /opt/MegaRAID/MegaCli/MegaCli64 -PdList -aAll  | grep -i Failed
 if [ $? -eq 0 ]; then
-    echo "ERROR - One or more hard drives have failed in RAID array"
-    echo "ERROR - For more info run: /opt/MegaRAID/MegaCli/MegaCli64 -PdList -aAll"
+    echo "ERROR - $(hostname -s) One or more hard drives have failed in RAID array"
+    echo "ERROR - $(hostname -s) For more info run: /opt/MegaRAID/MegaCli/MegaCli64 -PdList -aAll"
     exit 2
 else
-    echo "INFO - All drives RAID drives check good" 
+    has_drive_warning=0
+    drive_warnings=$(sudo /opt/MegaRAID/MegaCli/MegaCli64 -PdList -aAll | grep 'Predictive Failure Count')
+    for d in ${drive_warnings}
+    do
+	count=$(echo "${d}" | grep -E '^\-?[0-9]+$')
+	if [ "${count}" != "" ] && [ ${count} -eq ${count} ]
+	then
+	    if [ ${count} -ne 0 ]; then
+		has_drive_warning=1
+	    fi
+	fi
+    done
+    if [ ${has_drive_warning} -ne 0 ]; then
+	echo "WARNING - $(hostname -s) One or more hard drives predictive failure"
+    else
+	echo "INFO - All drives RAID drives check good" 
+    fi
 fi
 
 exit 0
