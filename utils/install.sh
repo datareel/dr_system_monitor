@@ -152,6 +152,8 @@ echo "Installing PHP code"
 files="checks.php \
 default_footer.php \
 default_header.php \
+drsm_lib.php \
+heatmap.php \
 index.php \
 query_post_validation.php \
 readreport.php \
@@ -171,6 +173,14 @@ cp -fv ${BASEdir}/www/images/* ${WWWdir}/images/.
 chmod 775 ${WWWdir}/images
 chmod 664 ${WWWdir}/images/*
 chown ${SYSADMIN_USERNAME}:${SYSADMIN_GROUPNAME} ${WWWdir}/images/*
+for d in css js
+do
+    mkdir -pv ${WWWdir}/${d}
+    cp -fv ${BASEdir}/www/${d}/* ${WWWdir}/${d}/.
+    chmod 775 ${WWWdir}/${d}
+    chmod 664 ${WWWdir}/${d}/*
+    chown ${SYSADMIN_USERNAME}:${SYSADMIN_GROUPNAME} ${WWWdir}/${d} ${WWWdir}/${d}/*
+done
 if [ ! -f  ${WWWdir}/index.php ]; then
     echo "Creating default index page"
     cat /dev/null > ${WWWdir}/index.php

@@ -2,6 +2,43 @@
 
 All notable changes to the DataReel System Monitor (DRSM) are listed here.
 
+## Unreleased: Web interface redesign
+
+A new look for the Web interface. Written by
+[Claude Code](https://claude.com/claude-code) at the request of the
+project owner. The pages read the same report files as before, so
+`system_report.sh`, `system_check.sh` and `drsm_run.sh` reports all
+show.
+
+### Added
+
+- Overview page for situational awareness: overall state banner, host
+  counts, group connectivity and health checks, a "Needs attention"
+  list of every current error and warning linked to its plugin, a host
+  matrix, and a card per host with CPU, memory and disk bars and plugin
+  states. Search and filter by state and host group.
+- Heat map page: hosts against plugin checks colored by state, or
+  against CPU, memory, disk, load per CPU and swap use.
+- Host report page with resource gauges and a collapsible panel per
+  plugin, problems first, with error and warning lines highlighted.
+- Hosts table, sortable by any column. Connectivity page covers the
+  connectivity and health reports for every host group.
+- Light and dark themes, auto refresh with pause, wall display mode,
+  relative report times, and stale host detection (`$STALEminutes`).
+- Works on phones, tablets and desktops, under any URL path (for
+  example `/drsm/dashboard`), with no fonts or scripts loaded from the
+  internet.
+- `www/php/drsm_lib.php`, shared report parsing and page layout.
+  `site/custom.css` and `$SITEtitle` for site branding.
+- `tests/www_test.sh` renders every page from real `drsm_run.sh`
+  reports. CI lints and tests the pages with PHP 7.2 and 8.3.
+
+### Changed
+
+- The Web pages need PHP 7.2 or higher.
+- A custom `site/page_header.php` must print `drsm_head_assets()` to
+  get the new styles, see README.txt.
+
 ## Unreleased
 
 Plugin framework, phase 1 of the plugin module design. Written by
