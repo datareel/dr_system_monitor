@@ -138,7 +138,7 @@ drsm_page_start($hst["name"], "hosts", $hst["state"]);
 <?php foreach($meta as $k => $v) { if($v == "") continue; ?>
       <dt><?php echo h($k); ?></dt><dd><?php echo h($v); ?></dd>
 <?php } ?>
-<?php if(isset($rep["fields"]["REPORT_TIME"])) { ?>
+<?php if(isset($rep["fields"]["REPORT_TIME"]) && $DEMObuilt == 0) { ?>
       <dt>Report time</dt><dd><?php echo h($rep["fields"]["REPORT_TIME"]); ?></dd>
 <?php } ?>
     </dl>

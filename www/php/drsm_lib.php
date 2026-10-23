@@ -45,6 +45,9 @@ Optional settings, set them in config/drsm.php:
 $SITEtitle      = 'DR System Monitor';  // Name in the page header
 $REFRESHseconds = 60;   // Page auto refresh, 0 turns it off
 $STALEminutes   = 60;   // Host report age that counts as stale, 0 off
+$DEMObuilt      = 0;    // Sample data build time, set by
+                        // utils/make_web_demo.sh so report times
+                        // stay recent on a live demo
 */
 // ----------------------------------------------------------- //
 // SCRIPT CONTENT STARTS BELOW.
@@ -52,6 +55,7 @@ $STALEminutes   = 60;   // Host report age that counts as stale, 0 off
 if(!isset($SITEtitle) || $SITEtitle == "") $SITEtitle = "DR System Monitor";
 if(!isset($REFRESHseconds)) $REFRESHseconds = 60;
 if(!isset($STALEminutes)) $STALEminutes = 60;
+if(!isset($DEMObuilt)) $DEMObuilt = 0;
 if(!isset($REPORTvpath)) $REPORTvpath = "{$WWWvpath}/reports";
 if(!isset($REPORTarchivevpath)) $REPORTarchivevpath = "{$REPORTvpath}/archive";
 
@@ -60,6 +64,14 @@ date_default_timezone_set(@date_default_timezone_get());
 
 // Largest report file we will read, bigger files are cut
 define("DRSM_MAX_REPORT_BYTES", 4194304);
+
+// Sample data keeps its age relative to now instead of its build time
+function drsm_demo_time($t)
+{
+  global $DEMObuilt;
+  if($DEMObuilt > 0 && $t > 0) return $t + (time() - (int)$DEMObuilt);
+  return $t;
+}
 
 function h($s)
 {
@@ -142,7 +154,7 @@ function drsm_parse_report($fname)
   $lines = drsm_read_lines($fname);
   if($lines === false) return $r;
   $r["exists"] = true;
-  $r["mtime"] = (int)@filemtime($fname);
+  $r["mtime"] = drsm_demo_time((int)@filemtime($fname));
 
   $cur = -1;
   foreach($lines as $line) {
@@ -290,7 +302,7 @@ function drsm_load_host($hostdir)
     "group" => (isset($f["GROUP"]) && $f["GROUP"] != "") ? $f["GROUP"] : "production",
     "platform" => isset($f["PLATFORM"]) ? $f["PLATFORM"] : "",
     "collector" => isset($f["COLLECTOR"]) ? $f["COLLECTOR"] : "",
-    "time" => (isset($f["ETIME"]) && ctype_digit($f["ETIME"])) ? (int)$f["ETIME"] : $rep["mtime"],
+    "time" => (isset($f["ETIME"]) && ctype_digit($f["ETIME"])) ? drsm_demo_time((int)$f["ETIME"]) : $rep["mtime"],
     "plugins" => array(),
     "report" => $rep,
     "state" => $rep["state"],
