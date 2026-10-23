@@ -307,30 +307,65 @@ Host-based firewall settings, Debian and Ubuntu (ufw):
 
 Customizing the Web Interface:
 -----------------------------
-To customize your index page, page headers and footers, from your
-sysadmin user account:
+The Web interface has four views, linked from the top bar:
+
+Overview      Situational awareness: overall state, host counts, group
+              connectivity and health checks, a "Needs attention" list
+              of every current error and warning, a host matrix, and a
+              card for each host with CPU, memory and disk use
+Heat map      Every host against every plugin check, colored by state,
+              or against CPU, memory, disk, load and swap use
+Hosts         Sortable table of all hosts, select a host for its report
+Connectivity  Group connectivity and health reports, by host group
+
+The pages work on phones, tablets and desktops, have light and dark
+themes, refresh themselves, and have a wall display mode for a NOC
+screen. They load no fonts or scripts from the internet. PHP 7.2 or
+higher is required.
+
+Optional settings, add them to $CONFIGdir/drsm.php:
+
+$SITEtitle = 'MY System Monitor';  // Name in the top bar
+$REFRESHseconds = 60;              // Auto refresh, 0 turns it off
+$STALEminutes = 60;                // Report age that counts as not
+                                   // reporting, 0 turns it off
+
+To change colors or styles, from your sysadmin user account:
 
 $ source ~/.drsm.sh
-$ cd $WWWdir/site
+$ vi $WWWdir/site/custom.css
 
-Add or create the page_header.php and page_footer.php files:
+custom.css is loaded after the DRSM styles. The colors are CSS
+variables, for example:
 
-$ vi page_header.php
+:root { --accent: #e11d48; }
+
+To replace the page header and footer, add page_header.php and
+page_footer.php to $WWWdir/site. Print drsm_head_assets() in your
+header to keep the DRSM styles and scripts, and keep the <main> tag
+open for the page content:
+
+$ vi $WWWdir/site/page_header.php
 
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>MY System Monitor</title>
+<?php echo drsm_head_assets(); ?>
 </head>
-<body>
-<h1>MY System Monitoring Pages</h1>
-<hr />
+<body data-refresh="<?php echo (int)$REFRESHseconds; ?>">
+<main class="page">
 
-$ vi page_footer.php
+$ vi $WWWdir/site/page_footer.php
 
-<hr />
+</main>
 </body>
 </html>
+
+NOTE: A page_header.php from an older DRSM release still works, but
+the pages will not be styled until it prints drsm_head_assets().
 
 To customize your sysadmin index page:
 

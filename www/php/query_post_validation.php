@@ -4,7 +4,7 @@
 // ------------------------------- //
 // ----------------------------------------------------------- //
 // PHP Source Code File
-// PHP Version: 7.4 or higher, tested with PHP 8
+// PHP Version: 7.2 or higher, tested with PHP 8
 // Original Author(s): DataReel Software Development 
 // File Creation Date: 02/05/2009
 // Date Last Modified: 10/23/2026
