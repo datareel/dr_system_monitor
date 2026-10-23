@@ -19,7 +19,7 @@ export SITEincludes=${WWWdir}/site
 # Setup umask, user name, and group name for the sysadmin account
 umask 0002
 export SYSADMIN_USERNAME=$(whoami)
-export SYSADMIN_GROUPNAME=$(getent group | grep $(id -g) | cut -d: -f1)
+export SYSADMIN_GROUPNAME=$(id -gn)
 
 # Set the timezone
 export TZ=UTC

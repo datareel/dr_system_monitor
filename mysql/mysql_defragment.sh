@@ -6,9 +6,9 @@
 # Shell: BASH shell
 # Original Author(s): DataReel Software Development
 # File Creation Date: 06/10/2013
-# Date Last Modified: 05/08/2017
+# Date Last Modified: 10/23/2026
 #
-# Version control: 1.15
+# Version control: 1.16
 #
 # Contributor(s):
 # ----------------------------------------------------------- 
@@ -52,15 +52,17 @@ source ${DRSMHOME}/bin/system_functions.sh
 HOST="$1"
 USER="$2"
 PW="$3"
+# A password of - is read from the DRSM_MYSQL_PW environment variable
+if [ "${PW}" == "-" ]; then PW="${DRSM_MYSQL_PW}"; fi
 autodefrag="$4"
 
 function SaveMySQLAuth {
     if [ ! -d ${DRSMHOME}/.auth ]; then mkdir -p ${DRSMHOME}/.auth; chmod 700 ${DRSMHOME}/.auth; fi
     cat /dev/null > ${DRSMHOME}/.auth/${HOST}.mysql; chmod 600 ${DRSMHOME}/.auth/${HOST}.mysql
     echo "" >> ${DRSMHOME}/.auth/${HOST}.mysql
-    echo -n "export HOST='" >> ${DRSMHOME}/.auth/${HOST}.mysql; echo -n "${HOST}" >> ${DRSMHOME}/.auth/${HOST}.mysql; echo "'" >> ${DRSMHOME}/.auth/${HOST}.mysql
-    echo -n "export USER='" >> ${DRSMHOME}/.auth/${HOST}.mysql; echo -n "${USER}" >> ${DRSMHOME}/.auth/${HOST}.mysql; echo "'" >> ${DRSMHOME}/.auth/${HOST}.mysql
-    echo -n "export PW='" >> ${DRSMHOME}/.auth/${HOST}.mysql; echo -n "${PW}" >> ${DRSMHOME}/.auth/${HOST}.mysql; echo "'" >> ${DRSMHOME}/.auth/${HOST}.mysql
+    printf "export HOST=%q\n" "${HOST}" >> ${DRSMHOME}/.auth/${HOST}.mysql
+    printf "export USER=%q\n" "${USER}" >> ${DRSMHOME}/.auth/${HOST}.mysql
+    printf "export PW=%q\n" "${PW}" >> ${DRSMHOME}/.auth/${HOST}.mysql
     echo "" >> ${DRSMHOME}/.auth/${HOST}.mysql
 }
 
@@ -85,6 +87,7 @@ MINold="15"
 verbose="false"
 
 if [ ! -e ${VARdir} ]; then mkdir -p ${VARdir}; fi
+MySQLOptionFile "${USER}" "${PW}"
 source ${DRSMHOME}/bin/process_lock.sh
 
 LockFileCheck $MINold
@@ -99,8 +102,10 @@ PROCdir="${OUTPUTdir}/${HOST}"
 if [ "${verbose}" == "true" ]; then echo "Writing table stats to ${PROCdir}/table_stats"; fi
 cat /dev/null > ${PROCdir}/table_stats/fraglist.txt
 
-mysql -h $HOST -u $USER -p"$PW" -NBe "SHOW DATABASES;" | grep -v 'lost+found' | while read database ; do
-    mysql -h $HOST -u $USER -p"$PW" -NBe "SHOW TABLE STATUS;" $database | while read name engine version rowformat rows avgrowlength datalength maxdatalength indexlength datafree autoincrement createtime updatetime checktime collation checksum createoptions comment ; do
+# Skip the MySQL system schemas
+mysql --defaults-extra-file=${MYCNF} -h ${HOST} -NBe "SHOW DATABASES;" | grep -vxE 'lost\+found|information_schema|performance_schema|sys|mysql' | while read database ; do
+    # Columns are tab separated, create and update times contain spaces
+    mysql --defaults-extra-file=${MYCNF} -h ${HOST} -NBe "SHOW TABLE STATUS;" "$database" | while IFS=$'\t' read name engine version rowformat rows avgrowlength datalength maxdatalength indexlength datafree autoincrement createtime updatetime checktime collation checksum createoptions comment ; do
 
 	fname="${PROCdir}/table_stats/${database}_${name}.txt"
 	cat /dev/null > ${fname}
@@ -127,14 +132,16 @@ mysql -h $HOST -u $USER -p"$PW" -NBe "SHOW DATABASES;" | grep -v 'lost+found' | 
 	if [ -z ${datafree} ]; then datafree=0; fi
 	if [ ${datafree} == NULL ] || [ "${datafree}" == "NULL" ]; then datafree=0; fi
 
-	if [ $datafree -gt 0 ] ; then
+	if [ -z ${datalength} ] || [ "${datalength}" == "NULL" ]; then datalength=0; fi
+
+	if [ $datafree -gt 0 ] && [ $datalength -gt 0 ] ; then
 	    fragmentation=$(($datafree * 100 / $datalength))
 	    echo "$database.$name is $fragmentation% fragmented." | tee -a ${PROCdir}/table_stats/fraglist.txt
 	    if [ "$autodefrag" == "YES" ]
 		then 
 		cat /dev/null > "${PROCdir}/table_stats/${database}_${name}_defrag.txt"
 		echo "Defragmenting $database DB $name TABLE" | tee -a ${PROCdir}/table_stats/${database}_${name}_defrag.txt
-		mysql -h $HOST -u "$USER" -p"$PW" -NBe "OPTIMIZE TABLE $name;" "$database" | tee -a ${PROCdir}/table_stats/${database}_${name}_defrag.txt
+		mysql --defaults-extra-file=${MYCNF} -h ${HOST} -NBe "OPTIMIZE TABLE \`$name\`;" "$database" | tee -a ${PROCdir}/table_stats/${database}_${name}_defrag.txt
 	    fi
 	fi
     done

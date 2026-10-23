@@ -4,12 +4,12 @@
 // ------------------------------- //
 // ----------------------------------------------------------- //
 // PHP Source Code File
-// PHP Version: 5.1.6 or higher
+// PHP Version: 7.4 or higher, tested with PHP 8
 // Original Author(s): DataReel Software Development 
 // File Creation Date: 02/05/2009
-// Date Last Modified: 05/02/2017
+// Date Last Modified: 10/23/2026
 //
-// Version control: 1.09
+// Version control: 1.10
 //
 // Contributor(s):
 // ----------------------------------------------------------- //
@@ -48,7 +48,7 @@ function CleanQueryAsString($unsafe_buffer, $max_len = 255)
   // Our main driver function
   
   $safe_buffer = "";
-  if(!isSet($unsafe_buffer)) return $safe_buffer;
+  if(!isSet($unsafe_buffer) || !is_string($unsafe_buffer)) return $safe_buffer;
 
   if(strlen($unsafe_buffer) > $max_len) {
     // If we went past this length some is trying to buffer overflow this GET or POST
@@ -229,8 +229,8 @@ function IsBlacklisted($fname, $email)
 	$line = trim($line); // Remove leading and trailing spaces
 	if(($email) == ($line)) {
 	  // Email address has been blacklisted
-	  return true;
 	  fclose($fp);
+	  return true;
 	}
       }
       fclose($fp);

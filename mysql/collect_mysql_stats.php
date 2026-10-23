@@ -4,12 +4,12 @@
 // ------------------------------- //
 // ----------------------------------------------------------- //
 // PHP Source Code File
-// PHP Version: 5.1.6 or higher
+// PHP Version: 7.4 or higher, tested with PHP 8
 // Original Author(s): DataReel Software Development 
 // File Creation Date: 04/04/2013
-// Date Last Modified: 05/05/2017
+// Date Last Modified: 10/23/2026
 //
-// Version control: 1.14
+// Version control: 1.15
 //
 // Contributor(s):
 // ----------------------------------------------------------- //
@@ -44,10 +44,11 @@ if ( isset($_SERVER['argc']) && $_SERVER['argc']>=1 ) {
 } 
 
 if($cli_mode == false) {
-  echo "ERROR - This utitliy can only be ran from command line PHP\n";
+  echo "ERROR - This utility can only be ran from command line PHP\n";
+  exit(1);
 }
 
-if($argc < 4) {
+if($argc < 7) {
   echo 'ERROR - You must supply hostname, username, pw, $DRSMHOME, $VARdir, and $LOGdir to this script';
   echo "\n";
   echo "USAGE:\n";
@@ -55,43 +56,47 @@ if($argc < 4) {
   echo "\n";
   echo '       php collect_mysql_stats.php mysqlhost username \'pw\' $DRSMHOME $VARdir $LOGdir';
   echo "\n";
+  echo '       Use - for the pw to read the password from the DRSM_MYSQL_PW environment variable';
+  echo "\n";
   exit(1);
 }
 
 $mysqlip = $argv[1];
 $mysqluser = $argv[2];
 $mysqlpass = $argv[3];
+// Passing - keeps the password out of the process list
+if($mysqlpass == "-") $mysqlpass = getenv("DRSM_MYSQL_PW");
 
 $DRSMHOME = $argv[4];
 $VARdir = $argv[5];
 $LOGdir = $argv[6];
 
-$OUTPUTdir = "${VARdir}/collect_mysql_stats.tmp";
-$logfile = "${LOGdir}/collect_mysql_stats_php.log";
+$OUTPUTdir = "{$VARdir}/collect_mysql_stats.tmp";
+$logfile = "{$LOGdir}/collect_mysql_stats_php.log";
 $verbose = false;
 
-if(!file_exists("${DRSMHOME}")) {
-  echo "ERROR - Bad DRSMHOME, missing ${DRSMHOME}\n";
+if(!file_exists("{$DRSMHOME}")) {
+  echo "ERROR - Bad DRSMHOME, missing {$DRSMHOME}\n";
   exit(1);
 
 }
 
-if(!file_exists("${VARdir}")) mkdir("${VARdir}");
-if(!file_exists("${LOGdir}")) mkdir("${LOGdir}");
-if(!file_exists("${OUTPUTdir}")) mkdir("${OUTPUTdir}");
+if(!file_exists("{$VARdir}")) mkdir("{$VARdir}");
+if(!file_exists("{$LOGdir}")) mkdir("{$LOGdir}");
+if(!file_exists("{$OUTPUTdir}")) mkdir("{$OUTPUTdir}");
 
-if(!file_exists("${VARdir}")) { 
-  echo "ERROR - Cannot create DIR ${VARdir}\n";
+if(!file_exists("{$VARdir}")) { 
+  echo "ERROR - Cannot create DIR {$VARdir}\n";
   exit(1);
 }
 
-if(!file_exists("${LOGdir}")) { 
-  echo "ERROR - Cannot create DIR ${LOGdir}\n";
+if(!file_exists("{$LOGdir}")) { 
+  echo "ERROR - Cannot create DIR {$LOGdir}\n";
   exit(1);
 }
 
-if(!file_exists("${OUTPUTdir}")) { 
-  echo "ERROR - Cannot create DIR ${OUTPUTdir}\n";
+if(!file_exists("{$OUTPUTdir}")) { 
+  echo "ERROR - Cannot create DIR {$OUTPUTdir}\n";
   exit(1);
 }
 
@@ -104,27 +109,33 @@ function WriteMySQLStat($host, $user, $pass, $ofname, $verbose)
   if($verbose) echo "Writing stats output to $ofname\n";
 
   $fp = @fopen($ofname, "w") or die("Could not open $ofname\n");
-  $link = mysql_connect($host, $user, $pass);
-  if (!$link) die("\n\nCan not connect to Database Server\n\n");
-  
-  $array = explode("  ", mysql_stat());
-  foreach ($array as $value){
-    fputs($fp, "${value}\n");
+  // The mysql_* API was removed in PHP 7, use mysqli
+  mysqli_report(MYSQLI_REPORT_OFF);
+  $link = @mysqli_connect($host, $user, $pass);
+  if (!$link) {
+    echo "\n\nCan not connect to Database Server: " . mysqli_connect_error() . "\n\n";
+    exit(1);
   }
   
-  $result = mysql_query('SHOW STATUS', $link);
-  while ($row = mysql_fetch_assoc($result)) {
+  $array = explode("  ", mysqli_stat($link));
+  foreach ($array as $value){
+    fputs($fp, "{$value}\n");
+  }
+  
+  $result = mysqli_query($link, 'SHOW GLOBAL STATUS');
+  while ($result && ($row = mysqli_fetch_assoc($result))) {
     $mesg = $row['Variable_name'] . ': ' . $row['Value'] . "\n";
-    fputs($fp, "${mesg}");
+    fputs($fp, "{$mesg}");
   }
   if($verbose) echo "Stat collection complete\n";
-  mysql_close($link);
+  mysqli_close($link);
   fclose($fp);
 
   $stat_array = array();
   $fp = fopen($ofname, "r");
-  while (($row = fgetcsv($fp, 1000, ":")) !== FALSE) {
-    $stat_array[$row[0]] = $row[1];
+  while (($line = fgets($fp)) !== FALSE) {
+    $row = explode(":", rtrim($line, "\n"), 2);
+    if(count($row) == 2) $stat_array[trim($row[0])] = trim($row[1]);
   }
   fclose($fp);
   return $stat_array;
@@ -132,8 +143,8 @@ function WriteMySQLStat($host, $user, $pass, $ofname, $verbose)
 
 function anaylze_stats($mysqlip, $stat_array)
 {
-  $stats_string = "MySQL flagged STATS for ${mysqlip} server:\n";
-  $stats_sub_string = "\nMySQL non-zero value STATS for ${mysqlip} server:\n";
+  $stats_string = "MySQL flagged STATS for {$mysqlip} server:\n";
+  $stats_sub_string = "\nMySQL non-zero value STATS for {$mysqlip} server:\n";
   $Key_read_requests = 0;
   $Key_reads = 0;
   
@@ -159,28 +170,28 @@ function anaylze_stats($mysqlip, $stat_array)
 	  $stats_string .= "Uptime since flush = $days Days, $hours Hours, $minutes Minutes, $seconds Seconds\n";
 	  break;
 	case "Connections":
-	  $stats_string .= "${value} number of connection attempts (successful or not)\n";
+	  $stats_string .= "{$value} number of connection attempts (successful or not)\n";
 	  break;
 	case "Aborted_clients":
-	  $stats_string .= "${value} connections aborted because client died without closing the connection properly\n";
+	  $stats_string .= "{$value} connections aborted because client died without closing the connection properly\n";
 	  break;
 	case "Aborted_connects":
-	  $stats_string .= "${value} failed attempts to connect to the MySQL server\n";
+	  $stats_string .= "{$value} failed attempts to connect to the MySQL server\n";
 	  break;
 	case "Open_tables":
-	  $stats_string .= "${value} tables are open. If Open_tables value remains high may need to increase table_open_cache\n"; 
+	  $stats_string .= "{$value} tables are open. If Open_tables value remains high may need to increase table_open_cache\n"; 
 	  break;
 	case "Qcache_lowmem_prunes":
-	  $stats_string .= "${value} queries were deleted from the query cache because of low memory\n";
+	  $stats_string .= "{$value} queries were deleted from the query cache because of low memory\n";
 	  break;
 	case "Queries":
-	  $stats_string .= "${value} statements executed by the server\n";
+	  $stats_string .= "{$value} statements executed by the server\n";
 	  break;
 	case "Threads_created":
-	  $stats_string .= "${value} threads created to handle connections If Threads_created high increase thread_cache_size\n";
+	  $stats_string .= "{$value} threads created to handle connections If Threads_created high increase thread_cache_size\n";
 	  break;
 	case "Table_locks_waited":
-	  $stats_string .= "${value} table locks could not be granted immediately, performance problem optimize queries or split tables\n";
+	  $stats_string .= "{$value} table locks could not be granted immediately, performance problem optimize queries or split tables\n";
 	  break;
 	case "Key_read_requests":
 	  $Key_read_requests = $value;
@@ -197,11 +208,11 @@ function anaylze_stats($mysqlip, $stat_array)
   }
 
   if(($Key_read_requests > 0) && ($Key_reads > 0)) {
-    $cache_missrate = floor($Key_reads / $Key_read_requests);
-    $stats_string .=  "Cache miss rate is ${cache_missrate}\n";
+    $cache_missrate = round(100 * $Key_reads / $Key_read_requests, 2);
+    $stats_string .=  "Key cache miss rate is {$cache_missrate}%\n";
   }
   
-  $stats_sub_string .= "\nMySQL zero value STATS for ${mysqlip} server:\n";
+  $stats_sub_string .= "\nMySQL zero value STATS for {$mysqlip} server:\n";
   foreach ($stat_array as $key => $value) {
     if($value <= 0) {
       $stats_sub_string .= "$key = $value\n";
@@ -213,23 +224,23 @@ function anaylze_stats($mysqlip, $stat_array)
   return $stats_string;
 }
 
-$PROCdir = "${OUTPUTdir}/${mysqlip}";
-if(!file_exists("${PROCdir}")) mkdir("${PROCdir}");
+$PROCdir = "{$OUTPUTdir}/{$mysqlip}";
+if(!file_exists("{$PROCdir}")) mkdir("{$PROCdir}");
 
-echo "Collecting MySQL database stats for ${mysqlip}\n";
-$stat_array = WriteMySQLStat($mysqlip, $mysqluser, $mysqlpass, "${PROCdir}/${mysqlip}_mysql_stats_phpout.txt", $verbose); 
+echo "Collecting MySQL database stats for {$mysqlip}\n";
+$stat_array = WriteMySQLStat($mysqlip, $mysqluser, $mysqlpass, "{$PROCdir}/{$mysqlip}_mysql_stats_phpout.txt", $verbose); 
 $stats = anaylze_stats($mysqlip, $stat_array); 
 
 echo $stats;
 echo "\n";
-echo "Collecting MySQL table stats for ${mysqlip}\n";
-system("${DRSMHOME}/mysql/mysql_defragment.sh ${mysqlip} ${mysqluser} '${mysqlpass}' NO");   
+echo "Collecting MySQL table stats for {$mysqlip}\n";
+putenv("DRSM_MYSQL_PW={$mysqlpass}");
+system(escapeshellarg("{$DRSMHOME}/mysql/mysql_defragment.sh") . " " . escapeshellarg($mysqlip) . " " . escapeshellarg($mysqluser) . " - NO");   
 
-$fname = "${PROCdir}/table_stats/numfrag.txt";
-$fp = fopen($fname, "r");
-$numfrag = fgets($fp);
-$numfrag = trim($numfrag, "\n");
-$opt_message = "Database optimization is required on ${mysqlip}\n";
+$fname = "{$PROCdir}/table_stats/numfrag.txt";
+$numfrag = 0;
+if(file_exists($fname)) $numfrag = (int)trim(file_get_contents($fname));
+$opt_message = "Database optimization is required on {$mysqlip}\n";
 
 if($numfrag > 0) {
   echo "\n";

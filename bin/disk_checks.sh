@@ -6,9 +6,9 @@
 # Shell: BASH shell
 # Original Author(s): DataReel Software Development
 # File Creation Date: 05/25/2013
-# Date Last Modified: 11/16/2022
+# Date Last Modified: 10/23/2026
 #
-# Version control: 1.14
+# Version control: 1.15
 #
 # Contributor(s):
 # ----------------------------------------------------------- 
@@ -39,53 +39,75 @@ MAX=99
 HOST=$(hostname -s)
 has_error="0"
 has_warning="0"
+# Local disk file system types to check
+FSTYPES="xfs ext2 ext3 ext4 btrfs zfs f2fs jfs reiserfs"
 
 echo "Disk usage checks for ${HOST}"
 
-if [ "${1}" != "" ]; then SKIPDIRS="${1}"; fi
+if [ "${1}" != "" ] && [ "${1^^}" != "NONE" ]; then SKIPDIRS="${1}"; fi
 if [ "${2}" != "" ]; then ALERT="${2}"; fi
 if [ "${3}" != "" ]; then MAX="${3}"; fi
 
-while read line
+# Check every mounted local file system, including mounts that are
+# not listed in /etc/fstab (systemd mount units, cloud-init disks).
+# Columns: type, use%, inode use%, mount point
+while read -r FSTYPE PCENT IPCENT DIR
 do
-    DATLINE=$(echo $line | grep -v "^#")
-    if [ "${DATLINE}" != "" ]; then
-	FSTYPE=$(echo "${DATLINE}" | awk '{ print $3 }')
-	DIR=$(echo "${DATLINE}" | awk '{ print $2 }')
-	if [ "${FSTYPE}" == "xfs" ] || [ "${FSTYPE}" == "ext4" ] || [ "${FSTYPE}" == "ext3" ] || [ "${FSTYPE}" == "ext2" ]; then
-	    skip_check=0
-	    for d in ${SKIPDIRS}
-	    do
-		if [ "${DIR}" == "${d}" ]; then
-		    echo "Skipping DIR check on ${d}"
-		    skip_check=1
-		    break
-		fi
-	    done
-	    if [ ${skip_check} -eq 1 ]; then continue; fi
-	    DISKSPACE=$(df -HP ${DIR} | sed '1d' | awk '{print $5}' | cut -d'%' -f1)
-	    if [ ${DISKSPACE} -ge ${ALERT} ] 
-	    then
-		if [ ${DISKSPACE} -ge ${MAX} ]
-		then
-		    echo "ERROR - ${HOST}:${DIR} is full at ${DISKSPACE}% capacity."
-		    has_error="1"
-		else
-		    echo "WARNING - ${HOST}:${DIR} is at ${DISKSPACE}% capacity."
-		    has_warning="1"
-		fi
-	    else 
-		echo "${HOST}:${DIR} checks good at ${DISKSPACE}% capacity."
-	    fi
+    match=0
+    for t in ${FSTYPES}; do
+	if [ "${FSTYPE}" == "${t}" ]; then match=1; break; fi
+    done
+    if [ ${match} -eq 0 ]; then continue; fi
+
+    skip_check=0
+    for d in ${SKIPDIRS}
+    do
+	if [ "${DIR}" == "${d}" ]; then
+	    echo "Skipping DIR check on ${d}"
+	    skip_check=1
+	    break
+	fi
+    done
+    if [ ${skip_check} -eq 1 ]; then continue; fi
+
+    DISKSPACE="${PCENT%\%}"
+    INODES="${IPCENT%\%}"
+    if [ "${DISKSPACE}" == "-" ] || [ "${DISKSPACE}" == "" ]; then continue; fi
+    if [ ${DISKSPACE} -ge ${ALERT} ] 
+    then
+	if [ ${DISKSPACE} -ge ${MAX} ]
+	then
+	    echo "ERROR - ${HOST}:${DIR} is full at ${DISKSPACE}% capacity."
+	    has_error="1"
+	else
+	    echo "WARNING - ${HOST}:${DIR} is at ${DISKSPACE}% capacity."
+	    has_warning="1"
+	fi
+    else 
+	echo "${HOST}:${DIR} checks good at ${DISKSPACE}% capacity."
+    fi
+
+    # Btrfs and ZFS do not use fixed inode tables and report "-"
+    if [[ "${INODES}" =~ ^[0-9]+$ ]] && [ ${INODES} -ge ${ALERT} ]
+    then
+	if [ ${INODES} -ge ${MAX} ]
+	then
+	    echo "ERROR - ${HOST}:${DIR} is out of inodes at ${INODES}% inode usage."
+	    has_error="1"
+	else
+	    echo "WARNING - ${HOST}:${DIR} is at ${INODES}% inode usage."
+	    has_warning="1"
 	fi
     fi
-done < /etc/fstab
+done < <(df --output=fstype,pcent,ipcent,target 2> /dev/null | sed '1d' | sort -u -k4)
 
-if [ -f ${HOME}/drsm/health_check_scripts/raid_checks.sh ]; then
+SCRIPTdir=$(dirname "$(readlink -f "$0")")
+if [ -f ${SCRIPTdir}/raid_checks.sh ]; then
     echo ""
-    ${HOME}/drsm/health_check_scripts/raid_checks.sh
-    if [ $? -eq 2 ]; then has_error=1; fi
-    if [ $? -eq 1 ]; then has_warning=1; fi
+    bash ${SCRIPTdir}/raid_checks.sh
+    raid_rv=$?
+    if [ ${raid_rv} -eq 2 ]; then has_error=1; fi
+    if [ ${raid_rv} -eq 1 ]; then has_warning=1; fi
 fi
 
 if [ "${has_error}" == "1" ]

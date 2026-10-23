@@ -6,9 +6,9 @@
 # Shell: BASH shell
 # Original Author(s): DataReel Software Development
 # File Creation Date: 06/10/2013
-# Date Last Modified: 05/09/2017
+# Date Last Modified: 10/23/2026
 #
-# Version control: 1.16
+# Version control: 1.17
 #
 # Contributor(s):
 # ----------------------------------------------------------- 
@@ -52,14 +52,16 @@ source ${DRSMHOME}/bin/system_functions.sh
 HOST="${1}"
 USER="${2}"
 PW="${3}"
+# A password of - is read from the DRSM_MYSQL_PW environment variable
+if [ "${PW}" == "-" ]; then PW="${DRSM_MYSQL_PW}"; fi
 
 function SaveMySQLAuth {
     if [ ! -d ${DRSMHOME}/.auth ]; then mkdir -p ${DRSMHOME}/.auth; chmod 700 ${DRSMHOME}/.auth; fi
     cat /dev/null > ${DRSMHOME}/.auth/${HOST}.mysql; chmod 600 ${DRSMHOME}/.auth/${HOST}.mysql
     echo "" >> ${DRSMHOME}/.auth/${HOST}.mysql
-    echo -n "export HOST='" >> ${DRSMHOME}/.auth/${HOST}.mysql; echo -n "${HOST}" >> ${DRSMHOME}/.auth/${HOST}.mysql; echo "'" >> ${DRSMHOME}/.auth/${HOST}.mysql
-    echo -n "export USER='" >> ${DRSMHOME}/.auth/${HOST}.mysql; echo -n "${USER}" >> ${DRSMHOME}/.auth/${HOST}.mysql; echo "'" >> ${DRSMHOME}/.auth/${HOST}.mysql
-    echo -n "export PW='" >> ${DRSMHOME}/.auth/${HOST}.mysql; echo -n "${PW}" >> ${DRSMHOME}/.auth/${HOST}.mysql; echo "'" >> ${DRSMHOME}/.auth/${HOST}.mysql
+    printf "export HOST=%q\n" "${HOST}" >> ${DRSMHOME}/.auth/${HOST}.mysql
+    printf "export USER=%q\n" "${USER}" >> ${DRSMHOME}/.auth/${HOST}.mysql
+    printf "export PW=%q\n" "${PW}" >> ${DRSMHOME}/.auth/${HOST}.mysql
     echo "" >> ${DRSMHOME}/.auth/${HOST}.mysql
 }
 
@@ -81,6 +83,7 @@ LOCKfile="${VARdir}/collect_mysql_stats_${HOST}.lck"
 MINold="30"
 
 if [ ! -e ${VARdir} ]; then mkdir -p ${VARdir}; fi
+MySQLOptionFile "${USER}" "${PW}"
 source ${DRSMHOME}/bin/process_lock.sh
 
 LockFileCheck $MINold
@@ -101,7 +104,7 @@ echo "${HOST} stats report, ${datetime}" | tee -a ${logfile}
 echo "${HOST} stats report, ${datetime}" >> ${OUTPUTdir}/${HOST}/${HOST}_mysql_stats.txt
 echo "" >> ${OUTPUTdir}/${HOST}/${HOST}_mysql_stats.txt
 
-/usr/bin/php ${DRSMHOME}/mysql/collect_mysql_stats.php "${HOST}" "${USER}" "${PW}" ${DRSMHOME} ${VARdir} ${LOGdir} >> ${OUTPUTdir}/${HOST}/${HOST}_mysql_stats.txt
+DRSM_MYSQL_PW="${PW}" php ${DRSMHOME}/mysql/collect_mysql_stats.php "${HOST}" "${USER}" - ${DRSMHOME} ${VARdir} ${LOGdir} >> ${OUTPUTdir}/${HOST}/${HOST}_mysql_stats.txt
 if [ "$?" != "0" ]
 then
     echo "ERROR - collect_mysql_stats.php returned errors" | tee -a ${logfile}

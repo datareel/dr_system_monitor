@@ -1,3 +1,4 @@
+#!/bin/bash
 # ----------------------------------------------------------- 
 # BASH Script
 # Operating System(s): RHEL/CENTOS
@@ -5,9 +6,9 @@
 # Shell: BASH shell
 # Original Author(s): DataReel Software Development
 # File Creation Date: 08/01/2008
-# Date Last Modified: 05/08/2017
+# Date Last Modified: 10/23/2026
 #
-# Version control: 1.15
+# Version control: 1.16
 #
 # Contributor(s):
 # ----------------------------------------------------------- 
@@ -29,7 +30,7 @@
 # along with the DataReel software distribution.  If not, see
 # <http://www.gnu.org/licenses/>.
 #
-# Include script used to text and email system or process alearts
+# Include script used to text and email system or process alerts
 #
 # -----------------------------------------------------------
 if [ "${BASEdir}" == "" ]; then export BASEdir="${HOME}/drsm"; fi
@@ -64,18 +65,19 @@ if [ "${SENDTEXT}" == "" ]; then export SENDTEXT="TRUE"; fi
 if [ ! -e ${TIMEFILE} ]
     then
     date +%s > ${TIMEFILE}
-    chmod 666 ${TIMEFILE}
+    chmod 664 ${TIMEFILE}
 fi
 
 LASTTIME=$(cat ${TIMEFILE})
 CURRTIME=$(date +%s)
 
-TIMESPAN_SECS=$(echo "${TIMESPAN} * 3600" | bc)
-ELAPSED_SECS=$(echo "${CURRTIME} - ${LASTTIME}" | bc)
+if ! [[ "${LASTTIME}" =~ ^[0-9]+$ ]]; then LASTTIME=0; fi
+TIMESPAN_SECS=$(( TIMESPAN * 3600 ))
+ELAPSED_SECS=$(( CURRTIME - LASTTIME ))
 
-HRS=$(echo "${ELAPSED_SECS} / 3600" | bc)
-MIN=$(echo "${ELAPSED_SECS} % 3600 / 60" | bc)
-SEC=$(echo "${ELAPSED_SECS} % 3600 % 60" | bc)
+HRS=$(( ELAPSED_SECS / 3600 ))
+MIN=$(( ELAPSED_SECS % 3600 / 60 ))
+SEC=$(( ELAPSED_SECS % 60 ))
 
 echo -n "Our last alert email was sent: "
 if [ $HRS -gt 0 ]
@@ -107,10 +109,10 @@ if [ ${ELAPSED_SECS} -lt ${TIMESPAN_SECS} ] && [ -e ${INITFILE} ]
     SENDALERT="FALSE"
 else
     date +%s > ${INITFILE}
-    chmod 666 ${INITFILE}
+    chmod 664 ${INITFILE}
     echo "Sending alert email..."
     date +%s > ${TIMEFILE}
-    chmod 666 ${TIMEFILE}
+    chmod 664 ${TIMEFILE}
     SENDALERT="TRUE"
 fi
 
@@ -158,7 +160,7 @@ function email_alert() {
 
     if [ "$3" != "" ]
 	then
-	EMAILlist="$3"
+	local EMAILlist="$3"
     fi
 
     if [ "$SUBJECT" == "" ]
@@ -181,16 +183,25 @@ function email_alert() {
 	BODY="${VARdir}/body.$$"
     fi
 
-    if [ "$EMAILlist" != "" ] && [ "${SENDEMAIL}" == "TRUE" ]
+    # mail is provided by the s-nail, mailx, or bsd-mailx packages.
+    # Set MAILcmd in your DRSM config to use another mailer.
+    if [ "${MAILcmd}" == "" ]; then MAILcmd=$(command -v mail || command -v mailx || command -v s-nail); fi
+    if [ "${MAILcmd}" == "" ]
     then
-	echo "Emailing message to: $EMAILlist"
-	/bin/mail -s "$SUBJECT" $EMAILlist < $BODY 
+	echo "ERROR - No mail command found, install the s-nail, mailx, or bsd-mailx package"
     fi
 
-    if [ "$TEXTlist" != "" ]  && [ "${SENDTEXT}" == "TRUE" ]
+    # Email and text lists are comma delimited
+    if [ "$EMAILlist" != "" ] && [ "${SENDEMAIL}" == "TRUE" ] && [ "${MAILcmd}" != "" ]
+    then
+	echo "Emailing message to: $EMAILlist"
+	${MAILcmd} -s "$SUBJECT" ${EMAILlist//,/ } < $BODY 
+    fi
+
+    if [ "$TEXTlist" != "" ]  && [ "${SENDTEXT}" == "TRUE" ] && [ "${MAILcmd}" != "" ]
     then
 	echo "Text messaging to: $TEXTlist"
-	/bin/mail -s "$SUBJECT" $TEXTlist < $BODY 
+	${MAILcmd} -s "$SUBJECT" ${TEXTlist//,/ } < $BODY 
     fi
     
     # Remove any temp files

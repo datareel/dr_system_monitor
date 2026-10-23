@@ -6,9 +6,9 @@
 # Shell: BASH shell
 # Original Author(s): DataReel Software Development
 # File Creation Date: 05/25/2013
-# Date Last Modified: 05/04/2017
+# Date Last Modified: 10/23/2026
 #
-# Version control: 1.13
+# Version control: 1.14
 #
 # Contributor(s):
 # ----------------------------------------------------------- 
@@ -30,7 +30,7 @@
 # along with the DataReel software distribution.  If not, see
 # <http://www.gnu.org/licenses/>.
 #
-# DRSM purge script
+# DRSM report archive script
 #
 # ----------------------------------------------------------- 
 if [ "${BASEdir}" == "" ]; then export BASEdir="${HOME}/drsm"; fi
@@ -79,7 +79,7 @@ fi
 ARCHFILE="${OFFLINEarchive}/${YEAR}/${MONTH}/${OFFLINEprefix}_${YEAR}${MONTH}${DAY}.tar.gz"
 if [ -e ${ARCHFILE} ]; then rm -f ${ARCHFILE}; fi
 
-tar cvfz ${ARCHFILE} ${REPORTdir}
+tar cvfz ${ARCHFILE} -C $(dirname ${REPORTdir}) $(basename ${REPORTdir})
 
 # Keep *.gz files for at lease ${OFFLINEfile_age}
 touch ${OFFLINEarchive}/${YEAR}/${MONTH}/*.gz

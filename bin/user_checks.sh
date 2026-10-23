@@ -6,9 +6,9 @@
 # Shell: BASH shell
 # Original Author(s): DataReel Software Development
 # File Creation Date: 05/25/2013
-# Date Last Modified: 05/01/2017
+# Date Last Modified: 10/23/2026
 #
-# Version control: 1.09
+# Version control: 1.10
 #
 # Contributor(s):
 # ----------------------------------------------------------- 
@@ -36,17 +36,19 @@
 
 BLACKLIST=""
 WARNLIST=""
-if [ "${1}" != "" ]; then BLACKLIST=$1; fi
-if [ "${2}" != "" ]; then WARNLIST=$2; fi
+if [ "${1}" != "" ] && [ "${1^^}" != "NONE" ]; then BLACKLIST=$1; fi
+if [ "${2}" != "" ] && [ "${2^^}" != "NONE" ]; then WARNLIST=$2; fi
 
 HOST=$(hostname -s)
 has_error="0"
 has_warning="0"
 
+# Unique list of logged in user names
+LOGGEDIN=$(who 2> /dev/null | awk '{ print $1 }' | sort -u)
+
 for u in ${BLACKLIST}
 do
-    w | grep "${u}" &> /dev/null
-    if [ "$?" == "0" ]
+    if echo "${LOGGEDIN}" | grep -qx "${u}"
     then
 	echo "ERROR - ${HOST} black listed user ${u} logged in"
 	has_error="1"
@@ -55,8 +57,7 @@ done
 
 for u in ${WARNLIST}
 do
-    w | grep "${u}" &> /dev/null
-    if [ "$?" == "0" ]
+    if echo "${LOGGEDIN}" | grep -qx "${u}"
     then
 	echo "WARNING - ${HOST} user ${u} logged in"
 	has_warning="1"
@@ -64,9 +65,9 @@ do
 done
 
 echo "User information for ${HOST}"
-NUM=$(w | grep "load average:" | awk -F, '{ print $3 }')
-echo "Number of users logged in:${NUM}"
-w | grep -v "load average:"
+NUM=$(who 2> /dev/null | wc -l)
+echo "Number of user sessions logged in: ${NUM}"
+w -h 2> /dev/null
 
 if [ "${has_error}" == "1" ]
 then

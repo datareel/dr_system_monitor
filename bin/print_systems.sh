@@ -6,7 +6,7 @@
 # Shell: BASH shell
 # Original Author(s): DataReel Software Development
 # File Creation Date: 05/25/2013
-# Date Last Modified: 05/05/2017
+# Date Last Modified: 10/23/2026
 #
 # Version control: 1.14
 #
@@ -52,61 +52,17 @@ source ${DRSMHOME}/bin/system_functions.sh
 
 HOST=$(hostname -s)
 
-cat ${CONFIGdir}/systems.dat > ${VARdir}/print_systems_linuxsystems.dat
-cat ${CONFIGdir}/dev_systems.dat >> ${VARdir}/print_systems_linuxsystems.dat
-
 dbfile="${VARdir}/print_systems_linuxsystems.dat"
-PROGRAMname="$0"
+cat /dev/null > ${dbfile}
+for f in ${CONFIGdir}/systems.dat ${CONFIGdir}/dev_systems.dat; do
+    if [ -f ${f} ]; then cat ${f} >> ${dbfile}; echo "" >> ${dbfile}; fi
+done
 
-if [ ! -e ${dbfile} ]
-then
-    has_errors="1"
-    echo "ERROR - ${dbfile} not found"  >> ${errorfile}
-    echo "ERROR - ${dbfile} not found"  | tee -a ${statusfile}
-    exit 1
-fi
+LoadSystemList "${dbfile}" "1"
 
-cat /dev/null > ${VARdir}/printsystemslist.sh
-echo "#!/bin/bash" >> ${VARdir}/printsystemslist.sh
-echo -n 'export SYSTEMLIST="' >> ${VARdir}/printsystemslist.sh
-
-sort ${dbfile} > ${VARdir}/printsystemslist_sorted.dat
-
-while read line
+for system in "${SYSTEMLIST[@]}"
 do
-    DATLINE=$(echo $line | grep -v "^#")
-    if [ "${DATLINE}" != "" ]
-    then
-	DATLINE=$(echo "${DATLINE}" | sed s/' '/'%20'/g)
-	echo -n "${DATLINE} " >> ${VARdir}/printsystemslist.sh
-    fi
-done < ${VARdir}/printsystemslist_sorted.dat
-
-echo -n '"' >> ${VARdir}/printsystemslist.sh
-sed -i s/' "'/'"'/g ${VARdir}/printsystemslist.sh
-sed -i s/' ,'/','/g ${VARdir}/printsystemslist.sh
-
-source ${VARdir}/printsystemslist.sh
-
-for system in ${SYSTEMLIST}
-do
-    host=$(echo "${system}" | awk -F, '{ print $1 }')
-    description=$(echo "${system}" | awk -F, '{ print $2 }' | sed s/'%20'/' '/g)
-    impact=$(echo "${system}" | awk -F, '{ print $3 }'  | sed s/'%20'/' '/g)
-    is_web_server=$(echo "${system}" | awk -F, '{ print $4 }' | tr [:lower:] [:upper:])
-    WEBPROTOS="HTTP"
-
-    echo "${is_web_server}" | grep ':' &> /dev/null
-    if [ "$?" == "0" ] 
-	then
-	WEBPROTOS=$(echo "${is_web_server}" | awk -F: '{ print $2 }' | tr [:lower:] [:upper:])
-	is_web_server=$(echo "${is_web_server}" | awk -F: '{ print $1 }' | tr [:lower:] [:upper:])
-    fi
-
-    is_linux=$(echo "${system}" | awk -F, '{ print $5 }' | tr [:lower:] [:upper:])
-    is_cluser_ip=$(echo "${system}" | awk -F, '{ print $6 }' | tr [:lower:] [:upper:])
-    can_ping=$(echo "${system}" | awk -F, '{ print $7 }' | tr [:lower:] [:upper:])
-    can_ssh=$(echo "${system}" | awk -F, '{ print $8 }' | tr [:lower:] [:upper:])
+    ParseSystemEntry "${system}"
 
     if [ "${is_cluser_ip}" == "YES" ] 
     then 
