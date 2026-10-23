@@ -46,23 +46,23 @@ Documented Usage:
 Requirements:
 ------------
 * Linux system with network access to systems being monitored.
-  Tested distributions: RHEL/Rocky/Alma 8+, Fedora, Debian 11+,
-  and Ubuntu 20.04+
+  Tested distributions: RHEL/Rocky/Alma 8, 9, and 10, Fedora,
+  Debian 11+, and Ubuntu 20.04+
 * Bash 4 or higher, OpenSSH 7.6 or higher
-* Apache with PHP 7.4 or higher if using Web interface, PHP 8 is
+* Apache with PHP 7.2 or higher if using Web interface, PHP 8 is
   supported
 * User account to run DRSM software
 * Keyed SSH access if using health checking
-* Packages on the monitoring host: wget, iputils (ping), procps,
+* Packages on the monitoring host: curl, iputils (ping), procps,
   and a mail command (s-nail, mailx, or bsd-mailx)
 * Packages on the monitored hosts: procps. The lm_sensors package
   (lm-sensors on Debian/Ubuntu) is optional for CPU temperatures.
 
 RHEL, Rocky, Alma, and Fedora:
-# dnf install wget iputils procps-ng s-nail
+# dnf install curl iputils procps-ng s-nail
 
 Debian and Ubuntu:
-# apt install wget iputils-ping procps bsd-mailx
+# apt install curl iputils-ping procps bsd-mailx
 
 Setting up the system admin user:
 -------------------------------
@@ -564,6 +564,11 @@ Monitoring cloud servers:
   StrictHostKeyChecking=accept-new. A new host's key is accepted on
   first contact, a changed host key is refused. To change the options
   set SSH_OPTS and SCP_OPTS in your ~/.drsm.sh file.
+
+* Shared hosting accounts (for example HostGator shared plans) use a
+  jailed SSH shell, often on port 2222. Set the port in ~/.ssh/config.
+  On shared hosting the CPU, load, and process checks show the shared
+  server, not just your account.
 
 * To monitor the workstation running DRSM, add it to systems.dat and
   set up keyed SSH from the DRSM account to itself.

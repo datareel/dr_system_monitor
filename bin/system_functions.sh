@@ -127,17 +127,18 @@ function PingCheck()
 function WebCheck()
 {
     # $1 == URL, $2 == label for messages
-    # The service is up if the server answers at all. wget exits 8
-    # when the server sends an error or redirect response, which
-    # still proves the service is listening.
-    wget --tries=3 --timeout=15 --max-redirect=0 -q -O /dev/null "${1}" &> /dev/null
+    # The service is up if the server answers at all, an error or
+    # redirect response still proves the service is listening. curl
+    # is used since RHEL 10 replaced wget with wget2. HTTPS
+    # certificate errors are reported as failures.
+    curl -s -o /dev/null --connect-timeout 15 --max-time 30 --retry 2 "${1}" &> /dev/null
     local rv=$?
-    if [ ${rv} -eq 0 ] || [ ${rv} -eq 8 ]
+    if [ ${rv} -eq 0 ]
     then
 	if [ "${verbose}" == "1" ]; then echo "${2} test passed for ${1}"; fi
 	return 0
     fi
-    if [ "${verbose}" == "1" ]; then echo "${2} test failed for ${1}, wget exit code ${rv}"; fi
+    if [ "${verbose}" == "1" ]; then echo "${2} test failed for ${1}, curl exit code ${rv}"; fi
     return 1
 }
 
@@ -153,15 +154,7 @@ function HTTPSCheck()
 
 function FTPCheck()
 {
-    wget --tries=3 --timeout=15 -q -O /dev/null "ftp://${1}" &> /dev/null
-    if [ $? -ne 0 ] 
-    then
-	if [ "${verbose}" == "1" ]; then echo "FTP test failed for ${1}"; fi
-	return 1
-    fi
-    
-    if [ "${verbose}" == "1" ]; then echo "FTP test passed for ${1}"; fi
-    return 0
+    WebCheck "ftp://${1}" "FTP"
 }
 
 function SSHCheck()

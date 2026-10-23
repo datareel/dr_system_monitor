@@ -7,8 +7,8 @@ All notable changes to the DataReel System Monitor (DRSM) are listed here.
 This release is a full code review and modernization pass. The code was
 reviewed and updated by [Claude Code](https://claude.com/claude-code), with
 the changes made at the request of the project owner. The goal is to run
-DRSM on current Linux distributions (RHEL/Rocky/Alma 8+, Fedora, Debian 11+,
-Ubuntu 20.04+), PHP 8, and cloud servers.
+DRSM on current Linux distributions (RHEL/Rocky/Alma 8, 9, and 10, Fedora,
+Debian 11+, Ubuntu 20.04+), PHP 7.2 through 8, and cloud servers.
 
 ### Fixed: monitoring did not work or reported wrong results
 
@@ -23,10 +23,10 @@ Ubuntu 20.04+), PHP 8, and cloud servers.
   returns nothing is reported as an ERROR.
 - `HTTPCheck` always passed, even when the web server was down. The exit
   code it tested had already been overwritten. HTTP, HTTPS, and FTP checks
-  now share one check, and a server that answers with an error or redirect
-  still counts as up.
-- The web checks saved every downloaded page to disk. They now write to
-  `/dev/null`.
+  now share one check that uses `curl` (RHEL 10 replaced `wget` with
+  `wget2`). A server that answers with an error or redirect still counts as
+  up, and an invalid HTTPS certificate counts as a failure.
+- The web checks saved every downloaded page to disk. They no longer do.
 - `cpu_checks.sh` reported the average CPU usage since boot, not the current
   usage. It now samples `/proc/stat` twice. On hosts with 10 or more CPUs the
   per-CPU lines (`cpu1`, `cpu10`, ...) also matched each other and broke the
