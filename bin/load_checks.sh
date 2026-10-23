@@ -6,9 +6,9 @@
 # Shell: BASH shell
 # Original Author(s): DataReel Software Development
 # File Creation Date: 05/25/2013
-# Date Last Modified: 05/01/2017
+# Date Last Modified: 10/23/2026
 #
-# Version control: 1.09
+# Version control: 1.10
 #
 # Contributor(s):
 # ----------------------------------------------------------- 
@@ -33,38 +33,38 @@
 # System monitoring script for load average
 #
 # ----------------------------------------------------------- 
-THRESHOLD=35
-MAX=50
+# By default the alert levels scale with the number of CPUs, a
+# warning at 2x and an error at 4x the CPU count. Pass explicit
+# levels to override.
+NUMCPUS=$(nproc 2> /dev/null || grep -c '^processor' /proc/cpuinfo)
+THRESHOLD=$((NUMCPUS * 2))
+MAX=$((NUMCPUS * 4))
 if [ "${1}" != "" ]; then THRESHOLD=$1; fi
 if [ "${2}" != "" ]; then MAX=$2; fi
 
 HOST=$(hostname -s)
 has_error="0"
 has_warning="0"
-TRUE="1"
 
-# 1 minute load average
-LA1M=$(uptime | awk -F "load average:" '{ print $2 }' | cut -d, -f1 | sed s/' '//g)
-# 5 min load average
-LA5M=$(uptime | awk -F "load average:" '{ print $2 }' | cut -d, -f2 | sed s/' '//g)
-# 15 min load average
-LA15M=$(uptime | awk -F "load average:" '{ print $2 }' | cut -d, -f3 | sed s/' '//g)
+# 1, 5, and 15 minute load averages
+read -r LA1M LA5M LA15M rest < /proc/loadavg
 
-RESULT=$(echo "$LA15M > $MAX" | bc)
-if [ "$RESULT" == "$TRUE" ]
+# Compare as floating point numbers with awk, bc is not installed on
+# many minimal and cloud images
+function gt() { awk -v a="$1" -v b="$2" 'BEGIN { exit !(a > b) }'; }
+
+if gt "${LA15M}" "${MAX}"
 then
-    echo "ERROR - ${HOST} 15 minute load average is above ${MAX}%"
+    echo "ERROR - ${HOST} 15 minute load average ${LA15M} is above ${MAX}"
     has_error="1"
-fi
-
-RESULT=$(echo "$LA15M > $THRESHOLD" | bc)
-if [ "$RESULT" == "$TRUE" ]
+elif gt "${LA15M}" "${THRESHOLD}"
 then
-    echo "WARNING - ${HOST} 15 minute load average is above ${THRESHOLD}%"
-    has_error="1"
+    echo "WARNING - ${HOST} 15 minute load average ${LA15M} is above ${THRESHOLD}"
+    has_warning="1"
 fi
 
 echo "Load averages for ${HOST}"
+echo "Number of CPUs: ${NUMCPUS}"
 echo "1 minute load:  ${LA1M}"
 echo "5 minute load:  ${LA5M}"
 echo "15 minute load: ${LA15M}" 
@@ -80,7 +80,6 @@ then
 fi
 
 exit 0
-
 # ----------------------------------------------------------- 
 # ******************************* 
 # ********* End of File ********* 

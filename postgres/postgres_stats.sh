@@ -6,9 +6,9 @@
 # Shell: BASH shell
 # Original Author(s): DataReel Software Development
 # File Creation Date: 06/14/2013
-# Date Last Modified: 05/09/2017
+# Date Last Modified: 10/23/2026
 #
-# Version control: 1.16
+# Version control: 1.17
 #
 # Contributor(s):
 # ----------------------------------------------------------- 
@@ -69,12 +69,9 @@ function SavePGAuth {
     if [ ! -d ${DRSMHOME}/.auth ]; then mkdir -p ${DRSMHOME}/.auth; chmod 700 ${DRSMHOME}/.auth; fi
     cat /dev/null > ${DRSMHOME}/.auth/${PGHOST}.pg; chmod 600 ${DRSMHOME}/.auth/${PGHOST}.pg
     echo "" >> ${DRSMHOME}/.auth/${PGHOST}.pg
-    echo -n "export PGHOST='" >> ${DRSMHOME}/.auth/${PGHOST}.pg; 
-    echo -n "${PGHOST}" >> ${DRSMHOME}/.auth/${PGHOST}.pg; echo "'" >> ${DRSMHOME}/.auth/${PGHOST}.pg
-    echo -n "export PGUSER='" >> ${DRSMHOME}/.auth/${PGHOST}.pg; 
-    echo -n "${PGUSER}" >> ${DRSMHOME}/.auth/${PGHOST}.pg; echo "'" >> ${DRSMHOME}/.auth/${PGHOST}.pg
-    echo -n "export PGPASSWORD='" >> ${DRSMHOME}/.auth/${PGHOST}.pg; 
-    echo -n "${PGPASSWORD}" >> ${DRSMHOME}/.auth/${PGHOST}.pg; echo "'" >> ${DRSMHOME}/.auth/${PGHOST}.pg
+    printf "export PGHOST=%q\n" "${PGHOST}" >> ${DRSMHOME}/.auth/${PGHOST}.pg
+    printf "export PGUSER=%q\n" "${PGUSER}" >> ${DRSMHOME}/.auth/${PGHOST}.pg
+    printf "export PGPASSWORD=%q\n" "${PGPASSWORD}" >> ${DRSMHOME}/.auth/${PGHOST}.pg
     echo "" >> ${DRSMHOME}/.auth/${PGHOST}.pg
 }
 
@@ -122,9 +119,9 @@ echo "${DISPLAYHOST} postgresql stats, ${datetime}" | tee -a ${logfile}
 
 if [ "${PGHOST}" == "localhost" ] 
 then 
-    DBLIST=$(${PSQL} -lt |awk '{ print $1}' |grep -vE '^-|:|^List|^Name|template[0|1]' | grep -v '|')
+    DBLIST=$(${PSQL} -Atc "SELECT datname FROM pg_database WHERE datallowconn AND NOT datistemplate ORDER BY datname" postgres)
 else
-    DBLIST=$(${PSQL} --host=${PGHOST} -lt |awk '{ print $1}' |grep -vE '^-|:|^List|^Name|template[0|1]' | grep -v '|')
+    DBLIST=$(${PSQL} --host=${PGHOST} -Atc "SELECT datname FROM pg_database WHERE datallowconn AND NOT datistemplate ORDER BY datname" postgres)
 fi
 
 for db in ${DBLIST}

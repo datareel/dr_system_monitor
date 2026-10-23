@@ -6,9 +6,9 @@
 # Shell: BASH shell
 # Original Author(s): DataReel Software Development
 # File Creation Date: 05/25/2013
-# Date Last Modified: 08/09/2017
+# Date Last Modified: 10/23/2026
 #
-# Version control: 1.13
+# Version control: 1.14
 #
 # Contributor(s):
 # ----------------------------------------------------------- 
@@ -45,35 +45,39 @@ HOST=$(hostname -s)
 has_error="0"
 has_warning="0"
 
-total_physical=$(free -mt | grep Mem | awk '{print $2}')
-used_physical=$(free -mt | grep Mem | awk '{print $3}')
-free_physical=$(free -mt | grep Mem | awk '{print $4}')
-total_swap=$(free -mt | grep Swap | awk '{print $2}')
-used_swap=$(free -mt | grep Swap | awk '{print $3}')
-free_swap=$(free -mt | grep Swap | awk '{print $4}')
-free=$(free -mt | grep Total | awk '{print $4}')
-buffers_kb=$(cat /proc/meminfo | grep -E '^Buffers:' | awk '{ print $2 }')
-cache_kb=$(cat /proc/meminfo | grep -E '^Cached:' | awk '{ print $2 }')
-buffers=$(echo "${buffers_kb} / 1024" | bc)
-cache=$(echo "${cache_kb} / 1024" | bc)
-MemAvailable_kb=$(cat /proc/meminfo | grep -E '^MemAvailable:' | awk '{ print $2 }')
-MemAvailable=$(echo "${buffers} + ${cache} + ${free_physical}" | bc)
+# Read a /proc/meminfo value in MB
+function meminfo() { awk -v k="$1:" '$1 == k { printf "%d", $2 / 1024; f=1 } END { if (!f) print 0 }' /proc/meminfo; }
+
+total_physical=$(meminfo MemTotal)
+free_physical=$(meminfo MemFree)
+buffers=$(meminfo Buffers)
+cache=$(( $(meminfo Cached) + $(meminfo SReclaimable) ))
+# MemAvailable is the kernel's estimate of memory available to start
+# new programs without swapping, it accounts for cache that cannot be
+# reclaimed
+MemAvailable=$(meminfo MemAvailable)
+if [ ${MemAvailable} -eq 0 ]; then MemAvailable=$((free_physical + buffers + cache)); fi
+used_physical=$((total_physical - MemAvailable))
+total_swap=$(meminfo SwapTotal)
+free_swap=$(meminfo SwapFree)
+used_swap=$((total_swap - free_swap))
+free=$((MemAvailable + free_swap))
 
 # Get our top processes
-PROCS=$(ps -eo %mem,pid,user,args | grep -v '%MEM' | grep -v " 0.0 " | sort -rn | head -n $NUMPROCS)
+PROCS=$(ps -eo %mem,pid,user,args --sort=-%mem | sed '1d' | grep -v "^ *0.0 " | head -n $NUMPROCS)
 
-if [ $MemAvailable -le $ALERT ] 
+if [ ${MemAvailable} -le ${ALERT} ] 
 then
-    echo "ERROR - ${HOST} total free memory is below ${free} MB"
+    echo "ERROR - ${HOST} available memory ${MemAvailable} MB is at or below ${ALERT} MB"
     has_error="1"
 fi
 
-if [ $used_swap -ge $SWAPALERT ] 
+# Only warn when swap use is high and more than the memory still
+# available, idle pages swapped out on a healthy host are normal
+if [ ${used_swap} -ge ${SWAPALERT} ] && [ ${used_swap} -gt ${MemAvailable} ]
 then
-    if [ $used_swap -gt $MemAvailable ]; then
-	echo "WARNING - ${HOST} is using ${used_swap} MB of SWAP space"
-	has_warning="1"
-    fi
+    echo "WARNING - ${HOST} is using ${used_swap} MB of SWAP space"
+    has_warning="1"
 fi
 
 echo "Memory stats for ${HOST}"

@@ -6,9 +6,9 @@
 # Shell: BASH shell
 # Original Author(s): DataReel Software Development
 # File Creation Date: 06/17/2013
-# Date Last Modified: 05/09/2017
+# Date Last Modified: 10/23/2026
 #
-# Version control: 1.16
+# Version control: 1.17
 #
 # Contributor(s):
 # ----------------------------------------------------------- 
@@ -58,12 +58,9 @@ function SavePGAuth {
     if [ ! -d ${DRSMHOME}/.auth ]; then mkdir -p ${DRSMHOME}/.auth; chmod 700 ${DRSMHOME}/.auth; fi
     cat /dev/null > ${DRSMHOME}/.auth/${PGHOST}.pg; chmod 600 ${DRSMHOME}/.auth/${PGHOST}.pg
     echo "" >> ${DRSMHOME}/.auth/${PGHOST}.pg
-    echo -n "export PGHOST='" >> ${DRSMHOME}/.auth/${PGHOST}.pg; 
-    echo -n "${PGHOST}" >> ${DRSMHOME}/.auth/${PGHOST}.pg; echo "'" >> ${DRSMHOME}/.auth/${PGHOST}.pg
-    echo -n "export PGUSER='" >> ${DRSMHOME}/.auth/${PGHOST}.pg; 
-    echo -n "${PGUSER}" >> ${DRSMHOME}/.auth/${PGHOST}.pg; echo "'" >> ${DRSMHOME}/.auth/${PGHOST}.pg
-    echo -n "export PGPASSWORD='" >> ${DRSMHOME}/.auth/${PGHOST}.pg; 
-    echo -n "${PGPASSWORD}" >> ${DRSMHOME}/.auth/${PGHOST}.pg; echo "'" >> ${DRSMHOME}/.auth/${PGHOST}.pg
+    printf "export PGHOST=%q\n" "${PGHOST}" >> ${DRSMHOME}/.auth/${PGHOST}.pg
+    printf "export PGUSER=%q\n" "${PGUSER}" >> ${DRSMHOME}/.auth/${PGHOST}.pg
+    printf "export PGPASSWORD=%q\n" "${PGPASSWORD}" >> ${DRSMHOME}/.auth/${PGHOST}.pg
     echo "" >> ${DRSMHOME}/.auth/${PGHOST}.pg
 }
 
@@ -78,7 +75,7 @@ if [ "${PGPASSWORD}" == "" ]; then
     if [ "${prompt^^}" == "YES" ] || [ "${prompt^^}" == "Y" ]; then SavePGAuth; fi 
 fi
 
-if [ -z ${emailstatusreport} ]; then emailstatusreport="NO"; fi
+if [ -z "${emailstatusreport}" ]; then emailstatusreport="NO"; fi
 
 if [ "${PSQL}" == "" ]; then export PSQL="psql"; fi
 if [ "${PG_DUMP}" == "" ]; then export PG_DUMP="pg_dump"; fi
@@ -92,9 +89,10 @@ MINold="15"
 errorfile="${OUTPUTdir}/${PGHOST}_errors.txt"
 statusfile="${OUTPUTdir}/${PGHOST}_status.txt"
 has_errors="0"
+has_warning="0"
 verbose="1"
 DISPLAYHOST=$(hostname -s)
-emailstatusreport=$(echo "${emailstatusreport}" | tr [:lower:] [:upper:])
+emailstatusreport="${emailstatusreport^^}"
 
 if [ ! -e ${VARdir} ]; then mkdir -p ${VARdir}; fi
 source ${DRSMHOME}/bin/process_lock.sh
@@ -189,7 +187,7 @@ fi
 
 if [ "${emailstatusreport}" == "YES" ]
 then
-    echo "${DISPLAYHOST} postgresql DB checks check good, sending status message, sening status message" | tee -a ${logfile}
+    echo "${DISPLAYHOST} postgresql DB checks check good, sending status message" | tee -a ${logfile}
     SUBJECT="[!INFO!] ${DISPLAYHOST} Postgresql DB Checks"
     BODY=${statusfile}
     TIMESPAN="4"

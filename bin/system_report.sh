@@ -1,3 +1,4 @@
+#!/bin/bash
 # ----------------------------------------------------------- 
 # BASH Script
 # Operating System(s): RHEL/CENTOS
@@ -5,9 +6,9 @@
 # Shell: BASH shell
 # Original Author(s): DataReel Software Development
 # File Creation Date: 05/25/2013
-# Date Last Modified: 02/20/2018
+# Date Last Modified: 10/23/2026
 #
-# Version control: 1.17
+# Version control: 1.18
 #
 # Contributor(s):
 # ----------------------------------------------------------- 
@@ -52,6 +53,7 @@ source ${DRSMHOME}/bin/system_functions.sh
 
 HOST=$(hostname -s)
 has_errors="0"
+has_warning="0"
 verbose="1"
 sortnodes="0"
 emailstatusreport="NO"
@@ -68,11 +70,11 @@ systemreportlistfile="systemreportlist"
 systemhealthreportfile="system_health_report"
 
 if [ "${1}" != "" ]; then emailstatusreport="${1}"; fi
-emailstatusreport=$(echo "${emailstatusreport}" | tr [:lower:] [:upper:]) 
+emailstatusreport="${emailstatusreport^^}"
 
 # Set our report type to PRODUCTION or DEV
 dbfile="${CONFIGdir}/systems.dat"
-if [ "${2}" != "" ]; then reporttype="${2}"; fi
+if [ "${2}" != "" ]; then reporttype="${2^^}"; fi
 if [ "${reporttype}" == "DEV" ]; 
 then 
     dbfile="${CONFIGdir}/dev_systems.dat"
@@ -117,33 +119,7 @@ then
     exit 1
 fi
 
-cat /dev/null > ${VARdir}/${systemreportlistfile}.sh
-echo "#!/bin/bash" >> ${VARdir}/${systemreportlistfile}.sh
-echo -n 'export SYSTEMLIST="' >> ${VARdir}/${systemreportlistfile}.sh
-
-# Sort by site ID                                                                                              
-if [ "${sortnodes}" == "1" ]
-then
-    sort ${dbfile} > ${VARdir}/${systemreportlistfile}_sorted.dat
-else
-    cat ${dbfile} > ${VARdir}/${systemreportlistfile}_sorted.dat
-fi
-
-while read line
-do
-    DATLINE=$(echo $line | grep -v "^#")
-    if [ "${DATLINE}" != "" ]
-    then
-	DATLINE=$(echo "${DATLINE}" | sed s/' '/'%20'/g)
-	echo -n "${DATLINE} " >> ${VARdir}/${systemreportlistfile}.sh
-    fi
-done < ${VARdir}/${systemreportlistfile}_sorted.dat
-
-echo -n '"' >> ${VARdir}/${systemreportlistfile}.sh
-sed -i s/' "'/'"'/g ${VARdir}/${systemreportlistfile}.sh
-sed -i s/' ,'/','/g ${VARdir}/${systemreportlistfile}.sh
-
-source ${VARdir}/${systemreportlistfile}.sh
+LoadSystemList "${dbfile}" "${sortnodes}"
 
 if [ "${singletesthost}" != "" ]
 then
@@ -152,9 +128,9 @@ fi
 
 found_single_host="0"
 
-for system in ${SYSTEMLIST}
+for system in "${SYSTEMLIST[@]}"
 do
-    host=$(echo "${system}" | awk -F, '{ print $1 }')
+    ParseSystemEntry "${system}"
 
     # Single host report, for testing only
     if [ "${singletesthost}" != "" ]
@@ -167,23 +143,6 @@ do
 	    found_single_host="1"
 	fi
     fi
-
-    description=$(echo "${system}" | awk -F, '{ print $2 }' | sed s/'%20'/' '/g)
-    impact=$(echo "${system}" | awk -F, '{ print $3 }'  | sed s/'%20'/' '/g)
-    is_web_server=$(echo "${system}" | awk -F, '{ print $4 }' | tr [:lower:] [:upper:])
-    WEBPROTOS="HTTP"
-
-    echo "${is_web_server}" | grep ':' &> /dev/null
-    if [ "$?" == "0" ] 
-	then
-	WEBPROTOS=$(echo "${is_web_server}" | awk -F: '{ print $2 }' | tr [:lower:] [:upper:])
-	is_web_server=$(echo "${is_web_server}" | awk -F: '{ print $1 }' | tr [:lower:] [:upper:])
-    fi
-
-    is_linux=$(echo "${system}" | awk -F, '{ print $5 }' | tr [:lower:] [:upper:])
-    is_cluser_ip=$(echo "${system}" | awk -F, '{ print $6 }' | tr [:lower:] [:upper:])
-    can_ping=$(echo "${system}" | awk -F, '{ print $7 }' | tr [:lower:] [:upper:])
-    can_ssh=$(echo "${system}" | awk -F, '{ print $8 }' | tr [:lower:] [:upper:])
 
     if [ "${is_cluser_ip}" == "YES" ] 
     then 
@@ -234,8 +193,8 @@ do
 	echo '    # Where $1 == DIR list to skip or NONE' >> ${CONFIGdir}/${host}_profile.sh
 	echo '    # Where $2 == Warning threshold' >> ${CONFIGdir}/${host}_profile.sh
 	echo '    # Where $3 == Error threshold' >> ${CONFIGdir}/${host}_profile.sh
-	echo '    ssh -q -x -o stricthostkeychecking=no -o PasswordAuthentication=no ${host} \' >> ${CONFIGdir}/${host}_profile.sh
-	echo '	"${DRSMHOME}/health_check_scripts/disk_checks.sh" > ${OUTPUTdir}/${host}/disk.txt' >> ${CONFIGdir}/${host}_profile.sh
+	echo '    ssh ${SSH_OPTS} ${host} \' >> ${CONFIGdir}/${host}_profile.sh
+	echo '	"${REMOTEdir}/disk_checks.sh" > ${OUTPUTdir}/${host}/disk.txt' >> ${CONFIGdir}/${host}_profile.sh
 	echo "" >> ${CONFIGdir}/${host}_profile.sh
 	echo '    # Run remote CPU check:' >> ${CONFIGdir}/${host}_profile.sh
 	echo '    # To set custom alert level: cpu_checks.sh 85 95 100' >> ${CONFIGdir}/${host}_profile.sh
@@ -243,39 +202,39 @@ do
 	echo '    # Where $1 == Warning threshold' >> ${CONFIGdir}/${host}_profile.sh
 	echo '    # Where $2 == Error threshold' >> ${CONFIGdir}/${host}_profile.sh
 	echo '    # Where $3 == Number of processes to list' >> ${CONFIGdir}/${host}_profile.sh
-	echo '    ssh -q -x -o stricthostkeychecking=no -o PasswordAuthentication=no ${host} \' >> ${CONFIGdir}/${host}_profile.sh
-	echo '	"${DRSMHOME}/health_check_scripts/cpu_checks.sh" > ${OUTPUTdir}/${host}/cpu.txt ' >> ${CONFIGdir}/${host}_profile.sh
+	echo '    ssh ${SSH_OPTS} ${host} \' >> ${CONFIGdir}/${host}_profile.sh
+	echo '	"${REMOTEdir}/cpu_checks.sh" > ${OUTPUTdir}/${host}/cpu.txt ' >> ${CONFIGdir}/${host}_profile.sh
 	echo "" >> ${CONFIGdir}/${host}_profile.sh
 	echo '    # Run remote load checks' >> ${CONFIGdir}/${host}_profile.sh
 	echo '    # To set custom alert level: load_checks.sh 35 50' >> ${CONFIGdir}/${host}_profile.sh
-	echo '    # Where $1 == Warning threshold' >> ${CONFIGdir}/${host}_profile.sh
-	echo '    # Where $2 == Error threshold' >> ${CONFIGdir}/${host}_profile.sh
-	echo '    ssh -q -x -o stricthostkeychecking=no -o PasswordAuthentication=no ${host} \' >> ${CONFIGdir}/${host}_profile.sh
-	echo '	"${DRSMHOME}/health_check_scripts/load_checks.sh" > ${OUTPUTdir}/${host}/load.txt' >> ${CONFIGdir}/${host}_profile.sh
+	echo '    # Where $1 == Warning threshold, default is 2x the number of CPUs' >> ${CONFIGdir}/${host}_profile.sh
+	echo '    # Where $2 == Error threshold, default is 4x the number of CPUs' >> ${CONFIGdir}/${host}_profile.sh
+	echo '    ssh ${SSH_OPTS} ${host} \' >> ${CONFIGdir}/${host}_profile.sh
+	echo '	"${REMOTEdir}/load_checks.sh" > ${OUTPUTdir}/${host}/load.txt' >> ${CONFIGdir}/${host}_profile.sh
 	echo "" >> ${CONFIGdir}/${host}_profile.sh
 	echo '    # Run remote memory checks' >> ${CONFIGdir}/${host}_profile.sh
 	echo '    # To set custom alert level: memory_checks.sh 256 1024 100' >> ${CONFIGdir}/${host}_profile.sh
 	echo '    # Where $1 == Error if free memory is below value in MB' >> ${CONFIGdir}/${host}_profile.sh
 	echo '    # Where $2 == Warning if using MB value or more of SWAP' >> ${CONFIGdir}/${host}_profile.sh
 	echo '    # Where $3 == Number of processes to list' >> ${CONFIGdir}/${host}_profile.sh
-	echo '    ssh -q -x -o stricthostkeychecking=no -o PasswordAuthentication=no ${host} \' >> ${CONFIGdir}/${host}_profile.sh
-	echo '	"${DRSMHOME}/health_check_scripts/memory_checks.sh" > ${OUTPUTdir}/${host}/memory.txt' >> ${CONFIGdir}/${host}_profile.sh
+	echo '    ssh ${SSH_OPTS} ${host} \' >> ${CONFIGdir}/${host}_profile.sh
+	echo '	"${REMOTEdir}/memory_checks.sh" > ${OUTPUTdir}/${host}/memory.txt' >> ${CONFIGdir}/${host}_profile.sh
 	echo '' >> ${CONFIGdir}/${host}_profile.sh
 	echo '    # Run remote network checks, checks all active NICs by default' >> ${CONFIGdir}/${host}_profile.sh
 	echo "    # To set custom alert for specifed NICs: network_checks.sh 'eth0 eth1 eth2'" >> ${CONFIGdir}/${host}_profile.sh
 	echo '    # Where $1 == Is a list of NICs to check' >> ${CONFIGdir}/${host}_profile.sh
-	echo '    # Where $2 == Is MAX number of dropped packets, default is 5000' >> ${CONFIGdir}/${host}_profile.sh
-	echo '    # Where $3 == Is MAX number of collisions, default is 5000' >> ${CONFIGdir}/${host}_profile.sh
-	echo '    # Where $4 == Is MAX number of errors, default is 5000' >> ${CONFIGdir}/${host}_profile.sh
-	echo '    ssh -q -x -o stricthostkeychecking=no -o PasswordAuthentication=no ${host} \' >> ${CONFIGdir}/${host}_profile.sh
-	echo '	"${DRSMHOME}/health_check_scripts/network_checks.sh" > ${OUTPUTdir}/${host}/network.txt' >> ${CONFIGdir}/${host}_profile.sh
+	echo '    # Where $2 == Is MAX dropped packets in a 5 second sample, default is 1000' >> ${CONFIGdir}/${host}_profile.sh
+	echo '    # Where $3 == Is MAX collisions in a 5 second sample, default is 100' >> ${CONFIGdir}/${host}_profile.sh
+	echo '    # Where $4 == Is MAX errors in a 5 second sample, default is 100' >> ${CONFIGdir}/${host}_profile.sh
+	echo '    ssh ${SSH_OPTS} ${host} \' >> ${CONFIGdir}/${host}_profile.sh
+	echo '	"${REMOTEdir}/network_checks.sh" > ${OUTPUTdir}/${host}/network.txt' >> ${CONFIGdir}/${host}_profile.sh
 	echo "" >> ${CONFIGdir}/${host}_profile.sh
 	echo '    # Run remote user checks' >> ${CONFIGdir}/${host}_profile.sh
 	echo "    # To set user alerts: user_checks.sh 'usr1 usr2' 'usr3 usr4'" >> ${CONFIGdir}/${host}_profile.sh
 	echo '    # Where $1 == Report error for any user in list' >> ${CONFIGdir}/${host}_profile.sh
 	echo '    # Where $2 == Report warning for any user in list' >> ${CONFIGdir}/${host}_profile.sh
-	echo '    ssh -q -x -o stricthostkeychecking=no -o PasswordAuthentication=no ${host} \' >> ${CONFIGdir}/${host}_profile.sh
-	echo '	"${DRSMHOME}/health_check_scripts/user_checks.sh" > ${OUTPUTdir}/${host}/user.txt' >> ${CONFIGdir}/${host}_profile.sh
+	echo '    ssh ${SSH_OPTS} ${host} \' >> ${CONFIGdir}/${host}_profile.sh
+	echo '	"${REMOTEdir}/user_checks.sh" > ${OUTPUTdir}/${host}/user.txt' >> ${CONFIGdir}/${host}_profile.sh
 	echo 'fi' >> ${CONFIGdir}/${host}_profile.sh
 	echo "" >> ${CONFIGdir}/${host}_profile.sh
     fi
@@ -314,11 +273,11 @@ do
     fi
 
     SSHCheck ${host} | tee -a ${logfile}
-    if [ $? -ne 0 ] 
+    if [ ${PIPESTATUS[0]} -ne 0 ] 
     then
-	echo "ERROR - Sytem report script cannot SSH to ${host}, ${description}"  | tee -a ${logfile}
+	echo "ERROR - System report script cannot SSH to ${host}, ${description}"  | tee -a ${logfile} ${statusfile}
 	has_errors="1"
-        echo "ERROR - Sytem report script cannot SSH to ${host}, ${description}" >> ${OUTPUTdir}/${host}/${host}_report.txt
+        echo "ERROR - System report script cannot SSH to ${host}, ${description}" >> ${OUTPUTdir}/${host}/${host}_report.txt
         echo "" >> ${OUTPUTdir}/${host}/${host}_report.txt
         echo "INFO - End of ${host} system health check report" >> ${OUTPUTdir}/${host}/${host}_report.txt
         echo "" >> ${OUTPUTdir}/${host}/${host}_report.txt
@@ -327,8 +286,8 @@ do
 	continue
     fi
 
-    ssh -q -x -o stricthostkeychecking=no -o PasswordAuthentication=no "${host}" mkdir -p ${DRSMHOME}/health_check_scripts
-    scp -q -o stricthostkeychecking=no -o PasswordAuthentication=no -p ${DRSMHOME}/bin/disk_checks.sh \
+    ssh ${SSH_OPTS} "${host}" mkdir -p "${REMOTEdir}"
+    scp ${SCP_OPTS} -p ${DRSMHOME}/bin/disk_checks.sh \
 	${DRSMHOME}/bin/cpu_checks.sh \
 	${DRSMHOME}/bin/load_checks.sh \
 	${DRSMHOME}/bin/memory_checks.sh \
@@ -336,20 +295,54 @@ do
 	${DRSMHOME}/bin/user_checks.sh \
 	${DRSMHOME}/bin/read_cpu_temps.sh \
 	${DRSMHOME}/bin/raid_checks.sh \
-	${host}:${DRSMHOME}/health_check_scripts/.
+	${host}:${REMOTEdir}/
+    if [ $? -ne 0 ]
+    then
+	echo "WARNING - Cannot copy health check scripts to ${host}:${REMOTEdir}" | tee -a ${logfile} ${statusfile}
+    fi
+
+    # Remove the last run's output so a failed remote check cannot
+    # report stale results
+    for f in disk cpu load memory network user; do
+	rm -f ${OUTPUTdir}/${host}/${f}.txt
+    done
 
     source ${CONFIGdir}/${host}_profile.sh
-    cat ${OUTPUTdir}/${host}/disk.txt >> ${OUTPUTdir}/${host}/${host}_report.txt
+    if [ -s ${OUTPUTdir}/${host}/disk.txt ]; then
+	cat ${OUTPUTdir}/${host}/disk.txt >> ${OUTPUTdir}/${host}/${host}_report.txt
+    else
+	echo "ERROR - ${host} disk check returned no output" >> ${OUTPUTdir}/${host}/${host}_report.txt
+    fi
     echo "" >> ${OUTPUTdir}/${host}/${host}_report.txt
-    cat ${OUTPUTdir}/${host}/cpu.txt >> ${OUTPUTdir}/${host}/${host}_report.txt
+    if [ -s ${OUTPUTdir}/${host}/cpu.txt ]; then
+	cat ${OUTPUTdir}/${host}/cpu.txt >> ${OUTPUTdir}/${host}/${host}_report.txt
+    else
+	echo "ERROR - ${host} cpu check returned no output" >> ${OUTPUTdir}/${host}/${host}_report.txt
+    fi
     echo "" >> ${OUTPUTdir}/${host}/${host}_report.txt
-    cat ${OUTPUTdir}/${host}/load.txt >> ${OUTPUTdir}/${host}/${host}_report.txt
+    if [ -s ${OUTPUTdir}/${host}/load.txt ]; then
+	cat ${OUTPUTdir}/${host}/load.txt >> ${OUTPUTdir}/${host}/${host}_report.txt
+    else
+	echo "ERROR - ${host} load check returned no output" >> ${OUTPUTdir}/${host}/${host}_report.txt
+    fi
     echo "" >> ${OUTPUTdir}/${host}/${host}_report.txt
-    cat ${OUTPUTdir}/${host}/memory.txt >> ${OUTPUTdir}/${host}/${host}_report.txt
+    if [ -s ${OUTPUTdir}/${host}/memory.txt ]; then
+	cat ${OUTPUTdir}/${host}/memory.txt >> ${OUTPUTdir}/${host}/${host}_report.txt
+    else
+	echo "ERROR - ${host} memory check returned no output" >> ${OUTPUTdir}/${host}/${host}_report.txt
+    fi
     echo "" >> ${OUTPUTdir}/${host}/${host}_report.txt
-    cat ${OUTPUTdir}/${host}/network.txt >> ${OUTPUTdir}/${host}/${host}_report.txt
+    if [ -s ${OUTPUTdir}/${host}/network.txt ]; then
+	cat ${OUTPUTdir}/${host}/network.txt >> ${OUTPUTdir}/${host}/${host}_report.txt
+    else
+	echo "ERROR - ${host} network check returned no output" >> ${OUTPUTdir}/${host}/${host}_report.txt
+    fi
     echo "" >> ${OUTPUTdir}/${host}/${host}_report.txt
-    cat ${OUTPUTdir}/${host}/user.txt >> ${OUTPUTdir}/${host}/${host}_report.txt
+    if [ -s ${OUTPUTdir}/${host}/user.txt ]; then
+	cat ${OUTPUTdir}/${host}/user.txt >> ${OUTPUTdir}/${host}/${host}_report.txt
+    else
+	echo "ERROR - ${host} user check returned no output" >> ${OUTPUTdir}/${host}/${host}_report.txt
+    fi
     echo "" >> ${OUTPUTdir}/${host}/${host}_report.txt
     echo "INFO - End of ${host} system health check report" >> ${OUTPUTdir}/${host}/${host}_report.txt
     echo "" >> ${OUTPUTdir}/${host}/${host}_report.txt
@@ -442,7 +435,7 @@ fi
 
 if [ "${emailstatusreport}" == "YES" ] 
 then 
-    echo "All systems check good, sending status message, sening status message" | tee -a ${logfile}
+    echo "All systems check good, sending status message" | tee -a ${logfile}
     SUBJECT="[!INFO!] ${SITEID} Systems Health Check Report"
     BODY=${statusfile}
     TIMESPAN="4"
@@ -450,7 +443,7 @@ then
     SENDTEXT="FALSE"
     if [ "${reporttype}" == "DEV" ] 
     then 
-	SUBJECT="[!INFO!] ${SITEID} Dev Systems Systems Health Check Report"
+	SUBJECT="[!INFO!] ${SITEID} Dev Systems Health Check Report"
 	TIMEFILE="${VARdir}/email_alert_dev.timefile"
 	INITFILE="${VARdir}/email_alert_dev.initfile"
     fi

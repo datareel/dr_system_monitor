@@ -4,12 +4,12 @@
 // ------------------------------- //
 // ----------------------------------------------------------- //
 // PHP Source Code File
-// PHP Version: 5.1.6 or higher
+// PHP Version: 7.4 or higher, tested with PHP 8
 // Original Author(s): DataReel Software Development 
 // File Creation Date: 05/25/2013
-// Date Last Modified: 05/02/2017
+// Date Last Modified: 10/23/2026
 //
-// Version control: 1.09
+// Version control: 1.10
 //
 // Contributor(s):
 // ----------------------------------------------------------- //
@@ -40,15 +40,16 @@ DRSM index page.
 require_once("../config/drsm.php");
 
   // Our required includes
-require_once("${WWWdir}/php/query_post_validation.php");
+require_once("{$WWWdir}/php/query_post_validation.php");
 
 function CheckServerStatus($servername, &$status, &$has_errors, &$has_warnings)
 {
-  $fname = "${REPORTdir}/systems/${servername}/${servername}_report.txt";
+  global $REPORTdir, $WWWvpath;
+  $fname = "{$REPORTdir}/systems/{$servername}/{$servername}_report.txt";
   $has_errors = "0";
   $has_warnings = "0";
-  $status = "ERROR - ${servername} not reporting";
-  if(!file_exists("${fname}")) return 0;
+  $status = "ERROR - {$servername} not reporting";
+  if(!file_exists("{$fname}")) return 0;
   $fp = fopen("$fname", "r");
   if(!$fp) return 0;
   if($fp) {
@@ -58,25 +59,25 @@ function CheckServerStatus($servername, &$status, &$has_errors, &$has_warnings)
     }
     fclose($fp);
   }
-  $status = "<img src=\"${WWWvpath}/images/circle2.jpg\" height=\"12\" width=\"12\">";
-  if($has_warnings == "1") $status = "<img src=\"${WWWvpath}/images/circle3.jpg\" height=\"12\" width=\"12\">";
-  if($has_errors == "1") $status = "<img src=\"${WWWvpath}/images/circle1.jpg\" height=\"12\" width=\"12\">";
+  $status = "<img src=\"{$WWWvpath}/images/circle2.jpg\" height=\"12\" width=\"12\">";
+  if($has_warnings == "1") $status = "<img src=\"{$WWWvpath}/images/circle3.jpg\" height=\"12\" width=\"12\">";
+  if($has_errors == "1") $status = "<img src=\"{$WWWvpath}/images/circle1.jpg\" height=\"12\" width=\"12\">";
     return 1;
 }
 
-if(file_exists("${SITEincludes}/page_header.php")) {
-  include_once("${SITEincludes}/page_header.php");
+if(file_exists("{$SITEincludes}/page_header.php")) {
+  include_once("{$SITEincludes}/page_header.php");
 }
 else {
-  include_once("${WWWdir}/php/default_header.php");
+  include_once("{$WWWdir}/php/default_header.php");
 }
 
 echo "<b>All systems connectivity tests</b><br />\n";
 echo "<ul>\n";
-$fname = "${REPORTdir}/system_check_report.txt";
+$fname = "{$REPORTdir}/system_check_report.txt";
 $has_errors = "0";
 $has_warnings = "0";
-if(file_exists("${fname}")) {
+if(file_exists("{$fname}")) {
 $fp = fopen("$fname", "r");
 if($fp) {
   while (($buffer = fgets($fp, 1024)) !== false) {
@@ -93,18 +94,18 @@ else {
      $has_errors = 1;
 }
 
-$status = "<img src=\"${WWWvpath}/images/circle2.jpg\" height=\"12\" width=\"12\">";
-if($has_warnings == "1") $status = "<img src=\"${WWWvpath}/images/circle3.jpg\" height=\"12\" width=\"12\">";
-if($has_errors == "1") $status = "<img src=\"${WWWvpath}/images/circle1.jpg\" height=\"12\" width=\"12\">";
-echo "<li><a href=\"${WWWvpath}/php/checks.php\">Systems Connectivity Tests</a> ${status}</li>\n";
+$status = "<img src=\"{$WWWvpath}/images/circle2.jpg\" height=\"12\" width=\"12\">";
+if($has_warnings == "1") $status = "<img src=\"{$WWWvpath}/images/circle3.jpg\" height=\"12\" width=\"12\">";
+if($has_errors == "1") $status = "<img src=\"{$WWWvpath}/images/circle1.jpg\" height=\"12\" width=\"12\">";
+echo "<li><a href=\"{$WWWvpath}/php/checks.php\">Systems Connectivity Tests</a> {$status}</li>\n";
 echo "</ul>\n";
 
 echo "<b>All systems health checks</b><br />\n";
 echo "<ul>\n";
-$fname = "${REPORTdir}/system_health_report.txt";
+$fname = "{$REPORTdir}/system_health_report.txt";
 $has_errors = "0";
 $has_warnings = "0";
-if(file_exists("${fname}")) {
+if(file_exists("{$fname}")) {
 $fp = fopen("$fname", "r");
 if($fp) {
   while (($buffer = fgets($fp, 1024)) !== false) {
@@ -121,17 +122,17 @@ else {
      $has_errors = 1;
 }
 
-$status = "<img src=\"${WWWvpath}/images/circle2.jpg\" height=\"12\" width=\"12\">";
-if($has_warnings == "1") $status = "<img src=\"${WWWvpath}/images/circle3.jpg\" height=\"12\" width=\"12\">";
-if($has_errors == "1") $status = "<img src=\"${WWWvpath}/images/circle1.jpg\" height=\"12\" width=\"12\">";
-echo "<li><a href=\"${WWWvpath}/php/reports.php\">Systems Reporting Page</a> ${status}</li>\n";
+$status = "<img src=\"{$WWWvpath}/images/circle2.jpg\" height=\"12\" width=\"12\">";
+if($has_warnings == "1") $status = "<img src=\"{$WWWvpath}/images/circle3.jpg\" height=\"12\" width=\"12\">";
+if($has_errors == "1") $status = "<img src=\"{$WWWvpath}/images/circle1.jpg\" height=\"12\" width=\"12\">";
+echo "<li><a href=\"{$WWWvpath}/php/reports.php\">Systems Reporting Page</a> {$status}</li>\n";
 echo "</ul>\n";
 
-if(file_exists("${SITEincludes}/page_footer.php")) {
-  include_once("${SITEincludes}/page_footer.php");
+if(file_exists("{$SITEincludes}/page_footer.php")) {
+  include_once("{$SITEincludes}/page_footer.php");
 }
 else {
-  include_once("${WWWdir}/php/default_footer.php");   
+  include_once("{$WWWdir}/php/default_footer.php");   
 }
 
 // SCRIPT CONTENT ENDS ABOVE.

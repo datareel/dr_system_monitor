@@ -6,9 +6,9 @@
 # Shell: BASH shell
 # Original Author(s): DataReel Software Development
 # File Creation Date: 05/25/2013
-# Date Last Modified: 05/04/2017
+# Date Last Modified: 10/23/2026
 #
-# Version control: 1.13
+# Version control: 1.14
 #
 # Contributor(s):
 # ----------------------------------------------------------- 
@@ -53,19 +53,19 @@ source ${CONFIG_FILE}
 # Age off $VARdir files
 if [ -d ${VARdir} ]; then
     echo "Purging ${VARdir}"
-    find ${VARdir} -type f -mmin +${TEMPfile_age} -print | xargs rm -fv &> ${LOGdir}/var_purge.log
+    find ${VARdir} -type f -mmin +${TEMPfile_age} -print -delete &> ${LOGdir}/var_purge.log
 fi
 
 # Age off report files
 if [ -d ${REPORTdir} ]; then
     echo "Purging ${REPORTdir}"
-    find ${REPORTdir} -type f -mtime +${REPORTSfile_age} -print | xargs rm -fv &> ${LOGdir}/reports_purge.log
+    find ${REPORTdir} -type f -mtime +${REPORTSfile_age} -print -delete &> ${LOGdir}/reports_purge.log
 fi
 
 # Age off files in our offline report archive
 if [ -d ${OFFLINEarchive} ]; then
     echo "Purging ${OFFLINEarchive}"
-    find ${OFFLINEarchive} -type f -mtime +${OFFLINEfile_age} -print | xargs rm -rfv &> ${LOGdir}/reports_purge.log
+    find ${OFFLINEarchive} -type f -mtime +${OFFLINEfile_age} -print -delete &> ${LOGdir}/offline_archive_purge.log
 fi
 
 exit 0

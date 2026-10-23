@@ -4,12 +4,12 @@
 // ------------------------------- //
 // ----------------------------------------------------------- //
 // PHP Source Code File
-// PHP Version: 5.1.6 or higher
+// PHP Version: 7.4 or higher, tested with PHP 8
 // Original Author(s): DataReel Software Development 
 // File Creation Date: 05/25/2013
-// Date Last Modified: 05/02/2017
+// Date Last Modified: 10/23/2026
 //
-// Version control: 1.09
+// Version control: 1.10
 //
 // Contributor(s):
 // ----------------------------------------------------------- //
@@ -40,25 +40,47 @@ System report processing script.
 require_once("../config/drsm.php");
 
   // Our required includes
-require_once("${WWWdir}/php/query_post_validation.php");
+require_once("{$WWWdir}/php/query_post_validation.php");
 
-$n = CleanQueryAsString($_GET['n'], 1024);
+$n = isset($_GET['n']) ? CleanQueryAsString($_GET['n'], 255) : "";
 
-$dir = "${REPORTdir}/systems";
-$fname = "${dir}/${n}/${n}_report.txt";
-
-if(!file_exists("${fname}")) {
-  echo "<p><h1>ERROR - Request is not a valid server</h1></p>\n";
-  echo "<hr />\n";
-  echo "<p>Check all required input variables</p>\n";
-  exit;
+// Only accept a plain host name, this blocks ../ path traversal
+if(!preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]*$/', $n) || strpos($n, "..") !== false) {
+  $n = "";
 }
 
-echo "<h1>${n} Health Check Report</h1>\n";
-echo "<a href=\"${REPORTvpath}/systems/${n}/archive\">Archived Reports</a><br /><br />\n";
-echo "<pre>\n";
-include("$fname");
-echo "</pre>\n";
+$dir = "{$REPORTdir}/systems";
+$fname = "{$dir}/{$n}/{$n}_report.txt";
+
+if(file_exists("{$SITEincludes}/page_header.php")) {
+  include_once("{$SITEincludes}/page_header.php");
+}
+else {
+  include_once("{$WWWdir}/php/default_header.php");
+}
+
+if(($n == "") || !file_exists("{$fname}")) {
+  http_response_code(404);
+  echo "<p><b>ERROR - Request is not a valid server</b></p>\n";
+  echo "<p>Check all required input variables</p>\n";
+}
+else {
+  $host = htmlspecialchars($n);
+  echo "<p><b>{$host} Health Check Report</b><br />\n";
+  echo "<a href=\"{$REPORTvpath}/systems/{$host}/archive\">Archived Reports</a><br /><br />\n";
+  // Print the report as text. The report holds remote command output,
+  // so escape it and never include() it as PHP code.
+  echo "<pre>\n";
+  echo htmlspecialchars(file_get_contents($fname));
+  echo "</pre>\n";
+}
+
+if(file_exists("{$SITEincludes}/page_footer.php")) {
+  include_once("{$SITEincludes}/page_footer.php");
+}
+else {
+  include_once("{$WWWdir}/php/default_footer.php");   
+}
 
 // SCRIPT CONTENT ENDS ABOVE.
 // ----------------------------------------------------------- //

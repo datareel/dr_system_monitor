@@ -1,9 +1,9 @@
 #!/bin/bash
 # DRSM installation script
-# Last modified: 05/05/2017
+# Last modified: 10/23/2026
 
-cd ../
-BASEdir=$(pwd)
+# Base directory is the parent of this script's utils directory
+BASEdir=$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)
 if [ "${1}" != "" ]; then BASEdir="${1}"; fi
 
 if [ ! -d ${BASEdir}/bin ] || [ ! -d ${BASEdir}/etc ] || [ ! -d ${BASEdir}/utils ] || [ ! -d ${BASEdir}/www ]; then
@@ -22,9 +22,13 @@ echo "WARRANTY; without even the implied warranty of MERCHANTABILITY or"
 echo "FITNESS FOR A PARTICULAR PURPOSE."
 echo ""
 
-echo -n "Accept EULA (Yes/no)> "
-read prompt
-if [ "${prompt^^}" == "YES" ] || [ "${prompt^}" == "Y" ];
+# Set DRSM_ACCEPT_EULA=yes to install without the prompt
+prompt="${DRSM_ACCEPT_EULA}"
+if [ "${prompt}" == "" ]; then
+    echo -n "Accept EULA (Yes/no)> "
+    read prompt
+fi
+if [ "${prompt^^}" == "YES" ] || [ "${prompt^^}" == "Y" ];
 then
     echo "EULA accepted, continue install"
 else
@@ -58,7 +62,7 @@ if [ "${USERNAME}" != "${SYSADMIN_USERNAME}" ]; then
     fi
 fi
 
-echo "Installing DSRM to ${DRSMHOME}"
+echo "Installing DRSM to ${DRSMHOME}"
 mkdir -pv ${DRSMHOME}
 if [ $? -ne 0 ]; then 
     echo "ERROR - Cannot make install DIR ${DRSMHOME}"
@@ -66,7 +70,7 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-dirs="bin etc mysql utils www"
+dirs="bin etc mysql postgres utils www"
 for d in ${dirs}
 do
     cp -rfv ${BASEdir}/${d} ${DRSMHOME}/.
@@ -81,9 +85,9 @@ do
     fi
 done 
 
-find ${DRSMHOME} -name "*.sh" -print | xargs chmod 755
+find ${DRSMHOME} -name "*.sh" -exec chmod 755 {} +
 
-files="README.txt version.txt license.txt"
+files="README.txt CHANGELOG.md version.txt license.txt"
 for f in ${files}
 do
     cp -fv ${BASEdir}/${f} ${DRSMHOME}/${f}

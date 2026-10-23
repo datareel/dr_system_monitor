@@ -6,9 +6,9 @@
 # Shell: BASH shell
 # Original Author(s): DataReel Software Development
 # File Creation Date: 05/25/2013
-# Date Last Modified: 10/25/2018
+# Date Last Modified: 10/23/2026
 #
-# Version control: 1.10
+# Version control: 1.11
 #
 # Contributor(s):
 # ----------------------------------------------------------- 
@@ -32,55 +32,51 @@
 #
 # System monitoring CPU temps 
 #
-# NOTE: On servers you must install the lm_sensors package 
-# and run sensors-detect:
+# NOTE: To read CPU temps install the lm_sensors (RHEL/Fedora) or
+# lm-sensors (Debian/Ubuntu) package and run sensors-detect as root.
+# Cloud VMs do not expose temperature sensors.
 #
-# yum -y install lm_sensors
-# sensors-detect 
-#
-# Answer YES to all propmts
-#
-# ----------------------------------------------------------- 
-if [ ! -e /usr/bin/sensors ]
+if ! command -v sensors &> /dev/null
 then
     echo "INFO: Install the lm_sensors package if you want to monitor CPU temps"
     exit 0
 fi
 
-if [ ! -e /etc/sysconfig/lm_sensors ]
+temps=$(sensors 2> /dev/null | awk '
+    /^(Core [0-9]+|Package id [0-9]+|Tctl|Tdie):/ {
+	split($0, a, ":"); label=a[1]; gsub(/ /, "_", label)
+	n=0; delete v
+	s=a[2]
+	while (match(s, /[+-]?[0-9]+(\.[0-9]+)?°C/)) {
+	    t=substr(s, RSTART, RLENGTH); gsub(/[+°C]/, "", t)
+	    v[++n]=int(t); s=substr(s, RSTART+RLENGTH)
+	}
+	if (n >= 1) printf "%s,%d,%s,%s\n", label, v[1], (n>=2 ? v[2] : ""), (n>=3 ? v[3] : "")
+    }')
+
+if [ "${temps}" == "" ]
 then
-    echo "INFO: You must run sensors-detect as root to configure the system sensors"
+    echo "INFO: No CPU temperature sensors found, run sensors-detect as root to configure the system sensors"
     exit 0
 fi
 
-temps=$(sensors | grep "Core [0-9]" | sed s/' '//g | sed s/'°C'//g | sed s/'(high='/,/g | sed s/'crit='//g | sed s/')'//g | sed s/'+'//g)
-
 for t in ${temps}
 do
-    core=$(echo "${t}" | awk -F: '{ print $1 }')
-    templine=$(echo "${t}" | awk -F: '{ print $2 }')
-    acutal=$(echo "${templine}" | awk -F, '{ print $1 }')
-    acutal=$(echo "${acutal}" | awk -F. '{ print $1 }')
-    high=$(echo "${templine}" | awk -F, '{ print $2 }')
-    high=$(echo "${high}" | awk -F. '{ print $1 }')
-    crit=$(echo "${templine}" | awk -F, '{ print $3 }')
-    crit=$(echo "${crit}" | awk -F. '{ print $1 }')
-
-    if [ $acutal -ge $crit ]
+    IFS=, read -r core actual high crit <<< "${t}"
+    core="${core//_/ }"
+    if [ "${crit}" != "" ] && [ ${actual} -ge ${crit} ]
     then
-	echo "ERROR - $(hostname) ${core} is at or above critical tempature: actual_temp=${acutal}°C high_temp=${high}°C crit_temp=${crit}°C" 
+	echo "ERROR - $(hostname -s) ${core} is at or above critical temperature: actual_temp=${actual}°C high_temp=${high}°C crit_temp=${crit}°C" 
 	continue
     fi
 
-
-    if [ $acutal -ge $high ] && [ $acutal -lt $crit ]
+    if [ "${high}" != "" ] && [ ${actual} -ge ${high} ]
     then
-	echo "WARNING - $(hostname) ${core} is at or above high tempature: actual_temp=${acutal}°C high_temp=${high}°C crit_temp=${crit}°C" 
+	echo "WARNING - $(hostname -s) ${core} is at or above high temperature: actual_temp=${actual}°C high_temp=${high}°C crit_temp=${crit}°C" 
 	continue
     fi
     
-    echo "INFO - ${core} tempature: actual_temp=${acutal}°C high_temp=${high}°C crit_temp=${crit}°C" 
-
+    echo "INFO - ${core} temperature: actual_temp=${actual}°C high_temp=${high}°C crit_temp=${crit}°C" 
 done
 
 exit 0

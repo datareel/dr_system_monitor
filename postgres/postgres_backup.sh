@@ -6,9 +6,9 @@
 # Shell: BASH shell
 # Original Author(s): DataReel Software Development
 # File Creation Date: 06/17/2013
-# Date Last Modified: 05/09/2017
+# Date Last Modified: 10/23/2026
 #
-# Version control: 1.17
+# Version control: 1.18
 #
 # Contributor(s):
 # ----------------------------------------------------------- 
@@ -57,12 +57,9 @@ function SavePGAuth {
     if [ ! -d ${DRSMHOME}/.auth ]; then mkdir -p ${DRSMHOME}/.auth; chmod 700 ${DRSMHOME}/.auth; fi
     cat /dev/null > ${DRSMHOME}/.auth/${PGHOST}.pg; chmod 600 ${DRSMHOME}/.auth/${PGHOST}.pg
     echo "" >> ${DRSMHOME}/.auth/${PGHOST}.pg
-    echo -n "export PGHOST='" >> ${DRSMHOME}/.auth/${PGHOST}.pg; 
-    echo -n "${PGHOST}" >> ${DRSMHOME}/.auth/${PGHOST}.pg; echo "'" >> ${DRSMHOME}/.auth/${PGHOST}.pg
-    echo -n "export PGUSER='" >> ${DRSMHOME}/.auth/${PGHOST}.pg; 
-    echo -n "${PGUSER}" >> ${DRSMHOME}/.auth/${PGHOST}.pg; echo "'" >> ${DRSMHOME}/.auth/${PGHOST}.pg
-    echo -n "export PGPASSWORD='" >> ${DRSMHOME}/.auth/${PGHOST}.pg; 
-    echo -n "${PGPASSWORD}" >> ${DRSMHOME}/.auth/${PGHOST}.pg; echo "'" >> ${DRSMHOME}/.auth/${PGHOST}.pg
+    printf "export PGHOST=%q\n" "${PGHOST}" >> ${DRSMHOME}/.auth/${PGHOST}.pg
+    printf "export PGUSER=%q\n" "${PGUSER}" >> ${DRSMHOME}/.auth/${PGHOST}.pg
+    printf "export PGPASSWORD=%q\n" "${PGPASSWORD}" >> ${DRSMHOME}/.auth/${PGHOST}.pg
     echo "" >> ${DRSMHOME}/.auth/${PGHOST}.pg
 }
 
@@ -102,7 +99,7 @@ if [ ! -e ${OUTPUTdir}/${DISPLAYHOST} ]; then mkdir -p ${OUTPUTdir}/${DISPLAYHOS
 cat /dev/null > ${logfile}
 
 DATEEXT=$(date +%Y%m%d)
-echo "${DISPLAYHOST} postgre backup, $(date)" | tee -a ${logfile}
+echo "${DISPLAYHOST} postgres backup, $(date)" | tee -a ${logfile}
 
 if [ ! -d ${BACKUPdir}/postgres/${PGHOST}/${DATEEXT} ]; then 
     mkdir -pv ${BACKUPdir}/postgres/${PGHOST}/${DATEEXT} | tee -a ${logfile} 
@@ -119,13 +116,14 @@ fi
 
 echo "Purging ${BACKUPdir}/postgres/${PGHOST} files older than ${BACKUP_age}" | tee -a ${logfile} 
 touch ${BACKUPdir}/postgres/${PGHOST}
-find ${BACKUPdir}/postgres/${PGHOST} -type f -mtime +${BACKUP_age} -print | xargs rm -rfv | tee -a ${logfile}
+find ${BACKUPdir}/postgres/${PGHOST} -type f -mtime +${BACKUP_age} -print -delete | tee -a ${logfile}
+find ${BACKUPdir}/postgres/${PGHOST} -mindepth 1 -type d -empty -delete
 
 if [ "${PGHOST}" == "localhost" ] 
 then 
-    DBLIST=$(${PSQL} -lt |awk '{ print $1}' |grep -vE '^-|:|^List|^Name|template[0|1]' | grep -v '|')
+    DBLIST=$(${PSQL} -Atc "SELECT datname FROM pg_database WHERE datallowconn AND NOT datistemplate ORDER BY datname" postgres)
 else
-    DBLIST=$(${PSQL} --host=${PGHOST} -lt |awk '{ print $1}' |grep -vE '^-|:|^List|^Name|template[0|1]' | grep -v '|')
+    DBLIST=$(${PSQL} --host=${PGHOST} -Atc "SELECT datname FROM pg_database WHERE datallowconn AND NOT datistemplate ORDER BY datname" postgres)
 fi
 
 echo "Schema only backups" | tee -a ${logfile} 
@@ -134,10 +132,10 @@ do
     if [ "${PGHOST}" == "localhost" ] 
     then 
 	echo "${PG_DUMP} -s ${db} > ${db}.schema" | tee -a ${logfile} 
-	${PG_DUMP} -s ${db} > ${BACKUPdir}/postgres/${PGHOST}/${DATEEXT}/${db}.schema | tee -a ${logfile} 
+	${PG_DUMP} -s ${db} > ${BACKUPdir}/postgres/${PGHOST}/${DATEEXT}/${db}.schema 2>> ${logfile}
     else
 	echo "${PG_DUMP} -h ${PGHOST} -s ${db} > ${db}.schema" | tee -a ${logfile} 
-	${PG_DUMP} -h ${PGHOST} -s ${db} > ${BACKUPdir}/postgres/${PGHOST}/${DATEEXT}/${db}.schema | tee -a ${logfile} 
+	${PG_DUMP} -h ${PGHOST} -s ${db} > ${BACKUPdir}/postgres/${PGHOST}/${DATEEXT}/${db}.schema 2>> ${logfile}
     fi
 done
 
@@ -147,12 +145,12 @@ do
     if [ "${PGHOST}" == "localhost" ] 
     then 
 	echo "${PG_DUMP} ${db} > ${db}.sql" | tee -a ${logfile} 
-	${PG_DUMP} ${db} > ${BACKUPdir}/postgres/${PGHOST}/${DATEEXT}/${db}.sql | tee -a ${logfile} 
+	${PG_DUMP} ${db} > ${BACKUPdir}/postgres/${PGHOST}/${DATEEXT}/${db}.sql 2>> ${logfile}
     else
 	echo "${PG_DUMP} -h ${PGHOST} ${db} > ${db}.sql" | tee -a ${logfile} 
-	${PG_DUMP} -h ${PGHOST} ${db} > ${BACKUPdir}/postgres/${PGHOST}/${DATEEXT}/${db}.sql | tee -a ${logfile} 
+	${PG_DUMP} -h ${PGHOST} ${db} > ${BACKUPdir}/postgres/${PGHOST}/${DATEEXT}/${db}.sql 2>> ${logfile}
     fi
-    gzip -f ${BACKUPdir}/postgres/${PGHOST}/${DATEEXT}/${db}.sql | tee -a ${logfile} 
+    gzip -f ${BACKUPdir}/postgres/${PGHOST}/${DATEEXT}/${db}.sql 2>> ${logfile}
 done
 
 echo "PGSQL backup complete" | tee -a ${logfile} 

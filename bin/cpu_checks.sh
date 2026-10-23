@@ -6,9 +6,9 @@
 # Shell: BASH shell
 # Original Author(s): DataReel Software Development
 # File Creation Date: 05/25/2013
-# Date Last Modified: 05/01/2017
+# Date Last Modified: 10/23/2026
 #
-# Version control: 1.09
+# Version control: 1.10
 #
 # Contributor(s):
 # ----------------------------------------------------------- 
@@ -36,6 +36,7 @@
 THRESHOLD=85
 MAX=95
 NUMPROCS=100
+SAMPLE_SECS=2
 
 if [ "${1}" != "" ]; then THRESHOLD=$1; fi
 if [ "${2}" != "" ]; then MAX=$2; fi
@@ -46,37 +47,43 @@ has_error="0"
 has_warning="0"
 
 # Get the number of CPUs 
-num_cpus=$(cat /proc/cpuinfo | grep 'processor' | wc -l)
+num_cpus=$(grep -c '^cpu[0-9]' /proc/stat)
 
-# Calculate our total usage for all CPUs
-prev_total=0
-prev_idle=0
-cpu=$(cat /proc/stat | grep "^cpu " | sed s/'cpu  '//)
-user=`echo $cpu | awk '{print $1}'`
-system=`echo $cpu | awk '{print $2}'`
-nice=`echo $cpu | awk '{print $3}'`
-idle=`echo $cpu | awk '{print $4}'`
-wait=`echo $cpu | awk '{print $5}'`
-irq=`echo $cpu | awk '{print $6}'`
-srq=`echo $cpu | awk '{print $7}'`
-zero=`echo $cpu | awk '{print $8}'`
-total=$(($user+$system+$nice+$idle+$wait+$irq+$srq+$zero))
-diff_idle=$(($idle-$prev_idle))
-diff_total=$(($total-$prev_total))
-cpu_usage=$(($((1000*$(($diff_total-$diff_idle))/$diff_total+5))/10))
-# Use /proc/stat for total average instead of TOP
-##cpu_usage=$(top -b -n 1  | awk -F'[:,]' '/^Cpu/{sub("\\..*","",$2); print $2}' | sed s/' '//g)
+# /proc/stat counters are totals since boot, so take two samples and
+# use the difference to get the current usage.
+# Fields: user nice system idle iowait irq softirq steal
+declare -A prev_total prev_idle prev_steal
+while read -r name user nice system idle iowait irq softirq steal rest
+do
+    prev_total[$name]=$((user+nice+system+idle+iowait+irq+softirq+steal))
+    prev_idle[$name]=$((idle+iowait))
+    prev_steal[$name]=${steal}
+done < <(grep '^cpu' /proc/stat)
+
+sleep ${SAMPLE_SECS}
+
+declare -A usage steal_pct
+while read -r name user nice system idle iowait irq softirq steal rest
+do
+    total=$((user+nice+system+idle+iowait+irq+softirq+steal))
+    diff_total=$((total - ${prev_total[$name]:-0}))
+    diff_idle=$((idle + iowait - ${prev_idle[$name]:-0}))
+    diff_steal=$((steal - ${prev_steal[$name]:-0}))
+    if [ ${diff_total} -le 0 ]; then diff_total=1; fi
+    usage[$name]=$(( (1000 * (diff_total - diff_idle) / diff_total + 5) / 10 ))
+    steal_pct[$name]=$(( (1000 * diff_steal / diff_total + 5) / 10 ))
+done < <(grep '^cpu' /proc/stat)
+
+cpu_usage=${usage[cpu]}
 
 # Get our top processes
-PROCS=$(ps -eo "%cpu,%mem,etime,args" | grep -v '%CPU' | grep -v " 0.0  0.0 " | sort -rn -k 1 | head -n $NUMPROCS)
+PROCS=$(ps -eo "%cpu,%mem,etime,args" --sort=-%cpu | sed '1d' | grep -v " 0.0  0.0 " | head -n $NUMPROCS)
 
 if [ ${cpu_usage} -gt ${MAX} ] 
 then
     echo "ERROR - ${HOST} total CPU usage is above ${MAX}%"
     has_error="1"
-fi
-
-if [ ${cpu_usage} -gt ${THRESHOLD} ] 
+elif [ ${cpu_usage} -gt ${THRESHOLD} ] 
 then
     echo "WARNING - ${HOST} total CPU usage is above ${THRESHOLD}%"
     has_warning="1"
@@ -84,71 +91,55 @@ fi
 
 echo "Total CPU stats for ${HOST}"
 echo "Total CPUs: ${num_cpus}"
-for (( i=0 ; i < "${num_cpus}" ; i=i+1 )); do
-    prev_total=0
-    prev_idle=0
-    cpu=$(cat /proc/stat | grep "cpu${i}" | sed s/cpu${i}//)
-    user=`echo $cpu | awk '{print $1}'`
-    system=`echo $cpu | awk '{print $2}'`
-    nice=`echo $cpu | awk '{print $3}'`
-    idle=`echo $cpu | awk '{print $4}'`
-    wait=`echo $cpu | awk '{print $5}'`
-    irq=`echo $cpu | awk '{print $6}'`
-    srq=`echo $cpu | awk '{print $7}'`
-    zero=`echo $cpu | awk '{print $8}'`
-    total=$(($user+$system+$nice+$idle+$wait+$irq+$srq+$zero))
-    diff_idle=$(($idle-$prev_idle))
-    diff_total=$(($total-$prev_total))
-    usage=$(($((1000*$(($diff_total-$diff_idle))/$diff_total+5))/10))
-    echo "CPU $i usage: $usage%"
-    prev_total=$total
-    prev_idle=$idle
+for (( i=0 ; i < num_cpus ; i=i+1 )); do
+    if [ "${usage[cpu${i}]}" == "" ]; then continue; fi
+    echo "CPU $i usage: ${usage[cpu${i}]}%"
 done
 
 echo "Total usage: ${cpu_usage}%"
+# Steal time is CPU time taken by the hypervisor, mostly seen on cloud VMs
+echo "Total steal: ${steal_pct[cpu]}%"
 echo "Process usage:"
 echo ' %CPU %MEM     ELAPSED COMMAND'
 echo "${PROCS}"
 
-
-## NOTE: On servers you must install the lm_sensors package and run sensors-detect
-## # yum -y install lm_sensors
-## # sensors-detect 
-## Answer YES to all propmts
-
-if [ -e /usr/bin/sensors ] && [ -e /etc/sysconfig/lm_sensors ]
+## NOTE: To include CPU temps install the lm_sensors (RHEL/Fedora) or
+## lm-sensors (Debian/Ubuntu) package and run sensors-detect as root.
+## Cloud VMs do not expose temperature sensors.
+if command -v sensors &> /dev/null
 then
-    echo ""
+    temps=$(sensors 2> /dev/null | awk '
+	/^(Core [0-9]+|Package id [0-9]+|Tctl|Tdie):/ {
+	    split($0, a, ":"); label=a[1]; gsub(/ /, "_", label)
+	    n=0; delete v
+	    s=a[2]
+	    while (match(s, /[+-]?[0-9]+(\.[0-9]+)?°C/)) {
+		t=substr(s, RSTART, RLENGTH); gsub(/[+°C]/, "", t)
+		v[++n]=int(t); s=substr(s, RSTART+RLENGTH)
+	    }
+	    if (n >= 1) printf "%s,%d,%s,%s\n", label, v[1], (n>=2 ? v[2] : ""), (n>=3 ? v[3] : "")
+	}')
 
-    temps=$(sensors | grep "Core [0-9]" | sed s/' '//g | sed s/'°C'//g | sed s/'(high='/,/g | sed s/'crit='//g | sed s/')'//g | sed s/'+'//g)
-    
+    if [ "${temps}" != "" ]; then echo ""; fi
     for t in ${temps}
     do
-	core=$(echo "${t}" | awk -F: '{ print $1 }')
-	templine=$(echo "${t}" | awk -F: '{ print $2 }')
-	acutal=$(echo "${templine}" | awk -F, '{ print $1 }')
-	acutal=$(echo "${acutal}" | awk -F. '{ print $1 }')
-	high=$(echo "${templine}" | awk -F, '{ print $2 }')
-	high=$(echo "${high}" | awk -F. '{ print $1 }')
-	crit=$(echo "${templine}" | awk -F, '{ print $3 }')
-	crit=$(echo "${crit}" | awk -F. '{ print $1 }')
-	
-	if [ $acutal -ge $crit ]
+	IFS=, read -r core actual high crit <<< "${t}"
+	core="${core//_/ }"
+	if [ "${crit}" != "" ] && [ ${actual} -ge ${crit} ]
 	then
-	    echo "ERROR - ${core} is at or above critical tempature: actual_temp=${acutal}°C high_temp=${high}°C crit_temp=${crit}°C" 
+	    echo "ERROR - ${HOST} ${core} is at or above critical temperature: actual_temp=${actual}°C high_temp=${high}°C crit_temp=${crit}°C" 
 	    has_error="1"
 	    continue
 	fi
-	
-	
-	if [ $acutal -ge $high ] && [ $acutal -lt $crit ]
+
+	if [ "${high}" != "" ] && [ ${actual} -ge ${high} ]
 	then
-	    echo "WARNING - ${core} is at or above high tempature: actual_temp=${acutal}°C high_temp=${high}°C crit_temp=${crit}°C" 
+	    echo "WARNING - ${HOST} ${core} is at or above high temperature: actual_temp=${actual}°C high_temp=${high}°C crit_temp=${crit}°C" 
 	    has_warning="1"
 	    continue
 	fi
 	
-	echo "INFO - ${core} tempature: actual_temp=${acutal}°C high_temp=${high}°C crit_temp=${crit}°C" 
+	echo "INFO - ${core} temperature: actual_temp=${actual}°C high_temp=${high}°C crit_temp=${crit}°C" 
     done
 fi
 

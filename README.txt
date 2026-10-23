@@ -1,5 +1,5 @@
 DataReel System Admin Monitor README file
-Last Modified: 05/10/2017
+Last Modified: 10/23/2026
 
 Contents:
 --------
@@ -14,6 +14,7 @@ Contents:
 * Customizing the Web Interface
 * Setting custom alert thresholds
 * Email Text messaging setup
+* Monitoring cloud servers
 * Monitoring Crons
 * MySQL Utilities
 * Postgres Utilities
@@ -44,10 +45,24 @@ Documented Usage:
 
 Requirements:
 ------------
-* Linux system with network access to systems being monitored
-* Apache with PHP if using Web interface 
+* Linux system with network access to systems being monitored.
+  Tested distributions: RHEL/Rocky/Alma 8, 9, and 10, Fedora,
+  Debian 11+, and Ubuntu 20.04+
+* Bash 4 or higher, OpenSSH 7.6 or higher
+* Apache with PHP 7.2 or higher if using Web interface, PHP 8 is
+  supported
 * User account to run DRSM software
 * Keyed SSH access if using health checking
+* Packages on the monitoring host: curl, iputils (ping), procps,
+  and a mail command (s-nail, mailx, or bsd-mailx)
+* Packages on the monitored hosts: procps. The lm_sensors package
+  (lm-sensors on Debian/Ubuntu) is optional for CPU temperatures.
+
+RHEL, Rocky, Alma, and Fedora:
+# dnf install curl iputils procps-ng s-nail
+
+Debian and Ubuntu:
+# apt install curl iputils-ping procps bsd-mailx
 
 Setting up the system admin user:
 -------------------------------
@@ -60,8 +75,9 @@ $ sudo su - root
 # useradd -u 3500 -g 3500 sysadmin
 # passwd sysadmin
 # su - sysadmin
-$ ssh-keygen -t dsa
-$ ssh-keygen -t rsa
+$ ssh-keygen -t ed25519
+
+NOTE: DSA keys are no longer supported by current OpenSSH releases.
 
 To create sysadmin accounts on systems you want to generate health
 check reports: 
@@ -79,7 +95,7 @@ check reports:
 $ sudo su - sysadmin
 $ for s in server1 server2 server3 server4; do
 > echo $s
-> ssh-copy-id -i ~/.ssh/id_rsa.pub $s
+> ssh-copy-id -i ~/.ssh/id_ed25519.pub $s
 > done
 
 Installing:
@@ -122,7 +138,12 @@ Accept EULA (Yes/no)> Yes
 ...
 Install complete
 
-When the install completes DRSM will be installed to ${HOME}/dsrm
+When the install completes DRSM will be installed to ${HOME}/drsm
+
+To install without the EULA prompt, for example from a provisioning
+script:
+
+$ DRSM_ACCEPT_EULA=yes ./install.sh
 
 To test your installation:
 
@@ -227,15 +248,35 @@ Web Server Setup:
 On your workstation or server running the DRSM package you will need
 to have Apache and PHP installed:
 
+RHEL, Rocky, Alma, and Fedora:
 $ sudo su - root
-# yum groupinstall 'Web Server'
-# yum groupinstall 'PHP Support'
+# dnf install httpd php
+# systemctl enable --now httpd
 
-For testing:
-# yum install wget
-# yum install firefox
+Debian and Ubuntu:
+$ sudo su - root
+# apt install apache2 libapache2-mod-php
+# systemctl enable --now apache2
 
-Apache and PHP Configuration files:
+The archived report links use Apache directory listings, so enable
+"Options Indexes" for the ${WWWdir}/reports directory.
+
+The reports include process lists and logged in user names. Do not
+expose the sysadmin Web directory to the internet. Limit access with
+the firewall rules below and/or Apache basic authentication, for
+example in /etc/httpd/conf.d/sysadmin.conf (RHEL) or
+/etc/apache2/conf-available/sysadmin.conf (Debian/Ubuntu):
+
+<Directory /var/www/html/sysadmin>
+    AuthType Basic
+    AuthName "DRSM"
+    AuthUserFile /etc/httpd/drsm.htpasswd
+    Require valid-user
+</Directory>
+
+# htpasswd -c /etc/httpd/drsm.htpasswd sysadmin
+
+RHEL Apache and PHP Configuration files:
 /etc/httpd/conf/httpd.conf
 /etc/httpf/conf.d/*.conf
 /etc/httpd/conf.modules.d/*.conf
@@ -244,7 +285,10 @@ Apache and PHP Configuration files:
 Apache Log files:
 /var/log/httpd
 
-Host-based firewall settings:
+Debian and Ubuntu Apache configuration files are in /etc/apache2 and
+log files are in /var/log/apache2.
+
+Host-based firewall settings, RHEL family (firewalld):
 # firewall-cmd --list-services
 # firewall-cmd --list-rich-rules
 
@@ -257,9 +301,8 @@ If no HTTP services are listed above:
 Where  192.168.122.0/24 is the subnet you will allow to view your
 system admin reports.
 
-Start and enable the HTTPD service:
-# systemctl start httpd
-# systemctl enable httpd
+Host-based firewall settings, Debian and Ubuntu (ufw):
+# ufw allow from 192.168.122.0/24 to any port 80,443 proto tcp
 
 Customizing the Web Interface:
 -----------------------------
@@ -312,6 +355,14 @@ $ source ~/.drsm.sh
 $ cd $CONFIGdir
 $ ls *profile.sh
 
+The health check scripts are copied to each monitored host in the
+${REMOTEdir} directory. The default is drsm/health_check_scripts
+relative to the remote SSH user's home directory. To change it set
+REMOTEdir in your ~/.drsm.sh file. Profiles created by older DRSM
+versions call ${DRSMHOME}/health_check_scripts, which is the same
+directory when the remote and local users have the same home
+directory. Delete an old profile to have a new one generated.
+
 Edit the system profile you need to modify, for example:
 
 $ vi vm1_profile.sh
@@ -322,34 +373,35 @@ If you want to skip the check on some of your mounted partitions you
 need to supply a space separated list. To customize disk checking
 alerts, edit the disk check section inside the double quotes:
 
-"${DRSMHOME}/health_check_scripts/disk_checks.sh '/tmp /usr1' 80 90" 
+"${REMOTEdir}/disk_checks.sh '/tmp /usr1' 80 90" 
 
 In the example above, we will skip checks on /tmp and /usr1. We will
 send a warning if we are at 80% disk usage on mounted partitions and
 send an error if we are at 90% disk usage. If you want to set the
 warning or error thresholds without skipping any mounted partitions:
 
-"${DRSMHOME}/health_check_scripts/disk_checks.sh NONE 80 90"
+"${REMOTEdir}/disk_checks.sh NONE 80 90"
 
 By default the CPU check montiors the CPU usage for all sockets,
-physical cores, and logical cores. The default waning level is 85
+physical cores, and logical cores. The default warning level is 85
 percent total usage and the default error level is 95 percent total
 usage. By default the CPU check will list the top 100 processes in the
 system report. To customize CPU checking alerts, edit the CPU check
 section inside the double quotes:
 
-"${DRSMHOME}/health_check_scripts/cpu_checks.sh 75 85 200"
+"${REMOTEdir}/cpu_checks.sh 75 85 200"
 
 In the example above, we will send a warning if we are at 75% percent
 CPU usage, send an error if we are a 85% CPU usage, and list the top
 200 processes in our health check report.
 
-The load check monitors the 15 minute load average. The default waning
-level is 35 and the default error level is 50. To customize load
+The load check monitors the 15 minute load average. The default warning
+level is 2 times the number of CPUs and the default error level is 4
+times the number of CPUs. To customize load
 average checking alerts, edit the load check section inside the double
 quotes:
 
-"${DRSMHOME}/health_check_scripts/load_checks.sh 100 250"
+"${REMOTEdir}/load_checks.sh 100 250"
 
 In the example above, we will send a warning if our 15 minute load
 average reaches 100 and send an error if our 15 minute load average
@@ -363,22 +415,29 @@ processes listed in the report defaults to 100. To customize memory
 checking alerts, edit the memory check section inside the double
 quotes:
 
-"${DRSMHOME}/health_check_scripts/memory_checks.sh 128 4096 300"
+"${REMOTEdir}/memory_checks.sh 128 4096 300"
 
 In the example above, we will send an error if our available free
 memory is at or below 128 MB. We will send a warning if we are using
 4096 MB or more of SWAP space, and list the top 300 processes in our
 health check report.
 
-By default the network checks monitor all active NICs. Reports uptime,
-the total number of bytes received and the number bytes transmitted.
-Errors and warning are based excessive packet loss, excessive number
-of dropped packets, and/or excessive number of collisions. If you only
+By default the network checks monitor all active NICs, skipping
+loopback, bridge, container, and VM tap devices. Reports uptime, the
+total number of bytes received and the number bytes transmitted. The
+check samples the NIC counters over 5 seconds. An error is sent if
+more than 100 RX or TX errors occur in the sample, and a warning if
+more than 1000 packets are dropped or more than 100 collisions occur.
+To change the levels pass the NIC list (or '' for all NICs), dropped
+packets, collisions, errors, and the sample time in seconds:
+
+"${REMOTEdir}/network_checks.sh '' 5000 500 500 10"
+ If you only
 want to monitor specific Ethernet interfaces you need to supply a space
 separated list. To customize network checking alerts, edit the network
 check section inside the double quotes:
 
-"${DRSMHOME}/health_check_scripts/network_checks.sh 'eth1 eth2'" 
+"${REMOTEdir}/network_checks.sh 'eth1 eth2'" 
 
 In the example above, we will only monitor the eth1 and eth2
 interfaces, all other active interfaces will be skipped.
@@ -387,11 +446,11 @@ The user check, generates a list of all users logged into the server
 or workstation you are monitoring. If you want to generate an error
 alert if a certain user or list of users are logged in:
 
-"${DRSMHOME}/health_check_scripts/user_checks.sh 'usr1 usr2 usr3'"
+"${REMOTEdir}/user_checks.sh 'usr1 usr2 usr3'"
 
 If you want to generate a warning alert if a certain user or list of users are logged in:
 
-"${DRSMHOME}/health_check_scripts/user_checks.sh NONE 'usr4 usr5 usr6'"
+"${REMOTEdir}/user_checks.sh NONE 'usr4 usr5 usr6'"
 
 Email Text messaging setup:
 -------------------------
@@ -420,15 +479,17 @@ export EMAILlist="root,example@example.com"
 export TEXTlist="5555555555@vtext.com,5555555555@txt.att.net"
 
 For SMS, text messaging, use the “mobile number”@”domain” for mobile
-provider. The most common domains are:
+provider, for example:
   
 Verizon Wireless: mobile_number@vtext.com
-AT&T: mobile_number@txt.att.net
-Cingular: mobile_number@mycingular.com
-Nextel: mobile_number@messaging.nextel.com
 T-Mobile: mobile_number@tmomail.net
-Sprint: mobile_number@messaging.sprintpcs.com
-Trac: mobile_number@mmst5.tracfone.com
+
+NOTE: Several carriers have shut down their email to text gateways,
+including AT&T (2025), Sprint, Nextel, and Cingular. Check with your
+carrier before relying on text alerts.
+
+DRSM uses the first mail, mailx, or s-nail command found in the PATH.
+To use another mailer set MAILcmd in your ~/.drsm.sh file.
 
 If your postfix configuration is not configured for a relay host or
 smart host you may not be able to email or text from the workstation
@@ -481,6 +542,37 @@ restart postfix to load the configuration changes and new hash tables:
 
 # systemctl restart postfix
  
+Monitoring cloud servers:
+------------------------
+* Most cloud providers block ICMP ping by default. Set can_ping to no
+  for cloud servers. When can_ping is no and can_ssh is yes, the
+  connectivity check uses an SSH login to test that the host is up.
+
+* Most cloud providers block outbound SMTP on port 25. Use a smart
+  host on port 587 as shown in the email setup section above.
+
+* If the SSH user, port, or key differ from the monitoring account,
+  set them in the monitoring account's ~/.ssh/config file using the
+  same host name you put in systems.dat:
+
+  Host cloud1.example.com
+      User ubuntu
+      Port 22
+      IdentityFile ~/.ssh/id_ed25519
+
+* SSH connections use BatchMode, a 15 second connect timeout, and
+  StrictHostKeyChecking=accept-new. A new host's key is accepted on
+  first contact, a changed host key is refused. To change the options
+  set SSH_OPTS and SCP_OPTS in your ~/.drsm.sh file.
+
+* Shared hosting accounts (for example HostGator shared plans) use a
+  jailed SSH shell, often on port 2222. Set the port in ~/.ssh/config.
+  On shared hosting the CPU, load, and process checks show the shared
+  server, not just your account.
+
+* To monitor the workstation running DRSM, add it to systems.dat and
+  set up keyed SSH from the DRSM account to itself.
+
 Monitoring Crons:
 ----------------
 To run the DRSM package for production and development system
@@ -489,8 +581,8 @@ scripts. In the example crontab entries below we are using
 /home/sysadmin/drsm as our installation directory:
 
 # Check for production system errors every 30 minutes
-30 * * * * /home/sysadmin/drsm/bin/system_check.sh &> /dev/null
-45 * * * * /home/sysadmin/drsm/bin/system_report.sh &> /dev/null
+*/30 * * * * /home/sysadmin/drsm/bin/system_check.sh &> /dev/null
+15,45 * * * * /home/sysadmin/drsm/bin/system_report.sh &> /dev/null
 
 # Send a status report every week day at 13:00
 00 13 * * mon,tue,wed,thu,fri /home/sysadmin/drsm/bin/system_check.sh YES &> /dev/null
@@ -508,8 +600,8 @@ If you are running the DRSM package on a server cluster, the following
 is an HA crontab example using the sysadmin user account:
 
 # Check for production system errors every 30 minutes
-30 * * * * sysadmin bash -c '/home/sysadmin/drsm/bin/system_check.sh &> /dev/null'
-45 * * * * sysadmin bash -c '/home/sysadmin/drsm/bin/system_report.sh &> /dev/null'
+*/30 * * * * sysadmin bash -c '/home/sysadmin/drsm/bin/system_check.sh &> /dev/null'
+15,45 * * * * sysadmin bash -c '/home/sysadmin/drsm/bin/system_report.sh &> /dev/null'
 
 # Send a status report every week day at 13:00
 00 13 * * mon,tue,wed,thu,fri sysadmin bash -c '/home/sysadmin/drsm/bin/system_check.sh YES &> /dev/null'
@@ -656,6 +748,8 @@ server's hostname.
 Remaining Work on This Project:
 ------------------------------
 * Rewrite of Postgres stat collection
+
+See CHANGELOG.md for the list of changes in each release.
 
 Support and Bug Tracking:
 ------------------------

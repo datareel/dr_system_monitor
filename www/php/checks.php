@@ -4,12 +4,12 @@
 // ------------------------------- //
 // ----------------------------------------------------------- //
 // PHP Source Code File
-// PHP Version: 5.1.6 or higher
+// PHP Version: 7.4 or higher, tested with PHP 8
 // Original Author(s): DataReel Software Development 
 // File Creation Date: 05/25/2013
-// Date Last Modified: 05/02/2017
+// Date Last Modified: 10/23/2026
 //
-// Version control: 1.09
+// Version control: 1.10
 //
 // Contributor(s):
 // ----------------------------------------------------------- //
@@ -39,34 +39,36 @@ System connectivity check processing script.
 
 require_once("../config/drsm.php");
 
-$fname = "${REPORTdir}/system_check_report.txt";
+$fname = "{$REPORTdir}/system_check_report.txt";
 
-if(file_exists("${SITEincludes}/page_header.php")) {
-  include_once("${SITEincludes}/page_header.php");
+if(file_exists("{$SITEincludes}/page_header.php")) {
+  include_once("{$SITEincludes}/page_header.php");
 }
 else {
-  include_once("${WWWdir}/php/default_header.php");
+  include_once("{$WWWdir}/php/default_header.php");
 }
 
 echo "<p><b>Connectivity tests</b><br />\n";
 
 if(file_exists("$fname")) {
 
-echo "<a href=\"${REPORTarchivevpath}\">Archived Reports</a><br /><br />\n";
+echo "<a href=\"{$REPORTarchivevpath}\">Archived Reports</a><br /><br />\n";
 
+// Print the report as text. The report holds remote command output,
+// so escape it and never include() it as PHP code.
 echo "<pre>\n";
-include("$fname");
+echo htmlspecialchars(file_get_contents($fname));
 echo "</pre>\n";
 }
 else {
   echo "<p><font color=\"red\">No system check file posted</font></p>\n";
 }
 
-if(file_exists("${SITEincludes}/page_footer.php")) {
-  include_once("${SITEincludes}/page_footer.php");
+if(file_exists("{$SITEincludes}/page_footer.php")) {
+  include_once("{$SITEincludes}/page_footer.php");
 }
 else {
-  include_once("${WWWdir}/php/default_footer.php");   
+  include_once("{$WWWdir}/php/default_footer.php");   
 }
 
 // SCRIPT CONTENT ENDS ABOVE.

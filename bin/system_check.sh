@@ -6,9 +6,9 @@
 # Shell: BASH shell
 # Original Author(s): DataReel Software Development
 # File Creation Date: 05/25/2013
-# Date Last Modified: 05/08/2017
+# Date Last Modified: 10/23/2026
 #
-# Version control: 1.15
+# Version control: 1.16
 #
 # Contributor(s):
 # ----------------------------------------------------------- 
@@ -67,11 +67,11 @@ systemlistfile="systemlist"
 systemcheckfile="system_check"
 
 if [ "${1}" != "" ]; then emailstatusreport="${1}"; fi
-emailstatusreport=$(echo "${emailstatusreport}" | tr [:lower:] [:upper:]) 
+emailstatusreport="${emailstatusreport^^}"
 
 # Set our report type to PRODUCTION or DEV
 dbfile="${CONFIGdir}/systems.dat"
-if [ "${2}" != "" ]; then reporttype="${2}"; fi
+if [ "${2}" != "" ]; then reporttype="${2^^}"; fi
 if [ "${reporttype}" == "DEV" ] 
 then 
     dbfile="${CONFIGdir}/dev_systems.dat" 
@@ -114,53 +114,11 @@ then
 fi
 
 
-cat /dev/null > ${VARdir}/${systemlistfile}.sh
-echo "#!/bin/bash" >> ${VARdir}/${systemlistfile}.sh
-echo -n 'export SYSTEMLIST="' >> ${VARdir}/${systemlistfile}.sh
+LoadSystemList "${dbfile}" "${sortnodes}"
 
-# Sort by site ID                                                                                              
-if [ "${sortnodes}" == "1" ]
-then
-    sort ${dbfile} > ${VARdir}/${systemlistfile}_sorted.dat
-else
-    cat ${dbfile} > ${VARdir}/${systemlistfile}_sorted.dat
-fi
-
-while read line
+for system in "${SYSTEMLIST[@]}"
 do
-    DATLINE=$(echo $line | grep -v "^#")
-    if [ "${DATLINE}" != "" ]
-    then
-	DATLINE=$(echo "${DATLINE}" | sed s/' '/'%20'/g)
-	echo -n "${DATLINE} " >> ${VARdir}/${systemlistfile}.sh
-    fi
-done < ${VARdir}/${systemlistfile}_sorted.dat
-
-echo -n '"' >> ${VARdir}/${systemlistfile}.sh
-sed -i s/' "'/'"'/g ${VARdir}/${systemlistfile}.sh
-sed -i s/' ,'/','/g ${VARdir}/${systemlistfile}.sh
-
-source ${VARdir}/${systemlistfile}.sh
-
-for system in ${SYSTEMLIST}
-do
-    host=$(echo "${system}" | awk -F, '{ print $1 }')
-    description=$(echo "${system}" | awk -F, '{ print $2 }' | sed s/'%20'/' '/g)
-    impact=$(echo "${system}" | awk -F, '{ print $3 }'  | sed s/'%20'/' '/g)
-    is_web_server=$(echo "${system}" | awk -F, '{ print $4 }' | tr [:lower:] [:upper:])
-    WEBPROTOS="HTTP"
-
-    echo "${is_web_server}" | grep ':' &> /dev/null
-    if [ "$?" == "0" ] 
-	then
-	WEBPROTOS=$(echo "${is_web_server}" | awk -F: '{ print $2 }' | tr [:lower:] [:upper:])
-	is_web_server=$(echo "${is_web_server}" | awk -F: '{ print $1 }' | tr [:lower:] [:upper:])
-    fi
-
-    is_linux=$(echo "${system}" | awk -F, '{ print $5 }' | tr [:lower:] [:upper:])
-    is_cluser_ip=$(echo "${system}" | awk -F, '{ print $6 }' | tr [:lower:] [:upper:])
-    can_ping=$(echo "${system}" | awk -F, '{ print $7 }' | tr [:lower:] [:upper:])
-    can_ssh=$(echo "${system}" | awk -F, '{ print $8 }' | tr [:lower:] [:upper:])
+    ParseSystemEntry "${system}"
 
     if [ "${can_ping}" == "YES" ]
     then
@@ -168,11 +126,24 @@ do
 	if [ $? -ne 0 ] 
 	then
 	    echo "ERROR - Network connectivity failed on ${host}, ${description}" >> ${errorfile}
-	    echo "IMPACT - ${host} down, ${impact}"
+	    echo "IMPACT - ${host} down, ${impact}" >> ${errorfile}
 	    echo "ERROR - Network connectivity failed on ${host}" | tee -a ${statusfile}
 	    has_errors="1"
 	else
 	    echo "INFO - Network connectivity test passed on ${host}, ${description}" | tee -a ${statusfile}
+	fi
+    elif [ "${can_ssh}" == "YES" ]
+    then
+	# Many cloud hosts block ICMP, so use SSH to test connectivity
+	SSHCheck ${host}
+	if [ $? -ne 0 ] 
+	then
+	    echo "ERROR - SSH connectivity failed on ${host}, ${description}" >> ${errorfile}
+	    echo "IMPACT - ${host} down, ${impact}" >> ${errorfile}
+	    echo "ERROR - SSH connectivity failed on ${host}" | tee -a ${statusfile}
+	    has_errors="1"
+	else
+	    echo "INFO - SSH connectivity test passed on ${host}, ${description}" | tee -a ${statusfile}
 	fi
     else
 	echo "INFO - Network connectivity skipped for ${host}, ${description}" | tee -a ${statusfile}
@@ -189,7 +160,7 @@ do
 		if [ $? -ne 0 ]
 		then
 		    echo "ERROR - HTTP connectivity failed on ${host}, ${description}" >> ${errorfile}
-		    echo "IMPACT - ${host} web service down, ${impact}"
+		    echo "IMPACT - ${host} web service down, ${impact}" >> ${errorfile}
 		    echo "ERROR - HTTP connectivity failed on ${host}, ${description}" | tee -a ${statusfile}
 		    echo "IMPACT - ${host} web service down, ${impact}" | tee -a ${statusfile}
 		    has_errors="1"
@@ -204,7 +175,7 @@ do
 		if [ $? -ne 0 ]
 		then
 		    echo "ERROR - FTP connectivity failed on ${host}, ${description}" >> ${errorfile}
-		    echo "IMPACT - ${host} ftp service down, ${impact}"
+		    echo "IMPACT - ${host} ftp service down, ${impact}" >> ${errorfile}
 		    echo "ERROR - FTP connectivity failed on ${host}, ${description}" | tee -a ${statusfile}
 		    echo "IMPACT - ${host} FTP service down, ${impact}" | tee -a ${statusfile}
 		    has_errors="1"
@@ -219,7 +190,7 @@ do
 		if [ $? -ne 0 ]
 		then
 		    echo "ERROR - HTTPS connectivity failed on ${host}, ${description}" >> ${errorfile}
-		    echo "IMPACT - ${host} secure web service down, ${impact}"
+		    echo "IMPACT - ${host} secure web service down, ${impact}" >> ${errorfile}
 		    echo "ERROR - HTTPS connectivity failed on ${host}, ${description}" | tee -a ${statusfile}
 		    echo "IMPACT - ${host} HTTPS service down, ${impact}" | tee -a ${statusfile}
 		    has_errors="1"

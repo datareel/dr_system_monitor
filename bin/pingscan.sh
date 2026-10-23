@@ -6,9 +6,9 @@
 # Shell: BASH shell
 # Original Author(s): DataReel Software Development
 # File Creation Date: 05/25/2013
-# Date Last Modified: 05/01/2017
+# Date Last Modified: 10/23/2026
 #
-# Version control: 1.09
+# Version control: 1.10
 #
 # Contributor(s):
 # ----------------------------------------------------------- 
@@ -62,7 +62,7 @@ oct3=$(echo "${NET}" | awk -F. '{ print $3 }')
 count=$(echo "${NET}" | awk -F. '{ print $4 }')
 let count=count+1
 
-NUM=$(echo "255-${MASK}" | bc)
+NUM=$((255 - MASK))
 if [ $NUM -eq 0 ]; then NUM=255; fi
 
 cat /dev/null > ${LOGfile}
@@ -74,13 +74,14 @@ do
     if [ "${alive}" != "" ]
 	then
 	host=$(echo $alive | sed s/://g)
-	ARP=$(arp -a $oct1.$oct2.$oct3.$count)
-	HOSTNAME=$(echo "${ARP}" | awk '{ print $1 }')
-	MAC=$(echo "${ARP}" | awk '{ print $4 }')
+	HOSTNAME=$(getent hosts $oct1.$oct2.$oct3.$count | awk '{ print $2 }')
+	if [ "${HOSTNAME}" == "" ]; then HOSTNAME="NONE"; fi
+	MAC=$(ip neigh show $oct1.$oct2.$oct3.$count 2> /dev/null | awk '{ for(i=1;i<NF;i++) if ($i == "lladdr") print $(i+1) }')
+	if [ "${MAC}" == "" ]; then MAC="NONE"; fi
 	echo "${host}, UP, ${HOSTNAME}, ${MAC}" | tee -a ${LOGfile}
     else
 	host="${oct1}.${oct2}.${oct3}.${count}"
-	HOSTNAME=$(host $oct1.$oct2.$oct3.$count | grep -v 'not found')
+	HOSTNAME=$(getent hosts $oct1.$oct2.$oct3.$count | awk '{ print $2 }')
 	if [ "${HOSTNAME}" == "" ]; then HOSTNAME="NONE"; fi
 	MAC="NONE"
 	echo "${host}, DOWN, ${HOSTNAME}, ${MAC}" | tee -a ${LOGfile}

@@ -6,9 +6,9 @@
 # Shell: BASH shell
 # Original Author(s): DataReel Software Development
 # File Creation Date: 09/20/2007
-# Date Last Modified: 05/01/2017
+# Date Last Modified: 10/23/2026
 #
-# Version control: 1.09
+# Version control: 1.10
 #
 # Contributor(s):
 # ----------------------------------------------------------- 
@@ -41,14 +41,33 @@ function CreateLockFile()
 {
     # Build a new lock file using "hostname:PID" format
     hostname=`hostname`
-    echo -n "${hostname}:" > ${LOCKfile}
-    echo -n $$ >> ${LOCKfile}
-    chmod 777 ${LOCKfile}
+    echo -n "${hostname}:$$" > ${LOCKfile}
+    chmod 664 ${LOCKfile}
 }
 
 function RemoveLockFile()
 {
     rm -f ${LOCKfile}
+}
+
+function IsPidRunning()
+{
+    # Exact PID match, a grep of ps output also matches other PIDs
+    # that contain the same digits
+    if [ "${1}" == "" ]; then return 1; fi
+    ps -p "${1}" &> /dev/null
+}
+
+function KillProcessTree()
+{
+    # Kill a PID and all of its child processes, children first
+    local child
+    for child in $(ps -o pid= --ppid "${1}" 2> /dev/null)
+    do
+	KillProcessTree ${child}
+    done
+    echo "Killing PID ${1}"
+    kill ${1} &> /dev/null
 }
 
 function SimpleLockFileCheck()
@@ -102,67 +121,37 @@ function LockFileCheck()
 	    SimpleLockFileCheck $MINold
 	    return 
 	fi
+
+	if ! IsPidRunning ${LOCKpid}
+	    then
+	    echo "PID ${LOCKpid} is not running"
+	    echo "Removing the old lock file and continuing to run"
+	    rm -f ${LOCKfile}
+	    return
+	fi
+
 	echo "Checking to see how long the process has been running"
 	currlockfile=`find ${LOCKfile} -mmin +$MINold -type f -print`
-	if [ "${currlockfile}" == "${LOCKfile}" ]
-	    then
-	    echo "PID ${LOCKpid} has been running for more than $MINold minutes"
-	    ispidvalid=`ps -e | grep ${LOCKpid} | grep -v grep | awk '{print $1}'`
-	    if [ "$ispidvalid" == "$LOCKpid" ] 
-		then
-		echo "Attempting to kill the previous process ${LOCKpid} and any children"
-		pidlist=`ps -ef | grep $LOCKpid | grep -v grep | awk '{print $2}' | sort -rn`
-		for pids in $pidlist
-		do
-		  echo "Killing PID $pids"
-		  kill $pids
-		  ispidvalid=`ps -ef | grep ${pids} | grep -v grep | awk '{print $2}'`
-		  if [ "$ispidvalid" == "$pids" ] 
-		      then
-		      echo "Could not kill process $pids for process ${LOCKpid}" 
-		      echo "${LOCKpid}  process is still running" 
-		      echo "Application may be running or has terminated before completion"
-		      echo "Exiting..."
-		      exit 1
-		  fi
-		done
-
-                # Check for PIDs that respawned after killing a child 
-            	pidlist=`ps -ef | grep $LOCKpid | grep -v grep | awk '{print $2}' | sort -rn`
-		for pids in $pidlist
-		do
-		  echo "Killing respawned PID $pids"
-		  ispidvalid=`ps -e | grep $pids | grep -v grep | awk '{print $1}'`
-		  # Make sure the PID is still active are killing child process
-		  if [ "$ispidvalid" == "$pids" ] 
-		      then
-		      kill $pids
-		  fi
-		  # Check to see if the PID is still running
-		  ispidvalid=`ps -ef | grep ${pids} | grep -v grep | awk '{print $2}'`
-		  if [ "$ispidvalid" == "$pids" ] 
-		      then
-		      echo "Could not kill process $pids for process ${LOCKpid}" 
-		      echo "${LOCKpid}  process is still running" 
-		      echo "Application may be running or has terminated before completion"
-		      echo "Exiting..."
-		      exit 1
-		  fi
-		done
-	    else
-		echo "PID ${LOCKpid} is not running"
-		echo "Removing the old lock file and continuing to run"
-		rm -f ${LOCKfile}
-		return
-	    fi
-	fi
-	
-	# Check to see if the process is still running
-	ispidvalid=`ps -e | grep ${LOCKpid} | grep -v grep | awk '{print $1}'`
-	echo "Checking to see if the previous process is still running"
-	if [ "$ispidvalid" == "$LOCKpid" ] 
+	if [ "${currlockfile}" != "${LOCKfile}" ]
 	    then
 	    echo "${LOCKpid}  process is still running" 
+	    echo "Application may be running or has terminated before completion"
+	    echo "Exiting..."
+	    exit 1
+	fi
+
+	echo "PID ${LOCKpid} has been running for more than $MINold minutes"
+	echo "Attempting to kill the previous process ${LOCKpid} and any children"
+	KillProcessTree ${LOCKpid}
+	sleep 2
+	if IsPidRunning ${LOCKpid}
+	    then
+	    kill -9 ${LOCKpid} &> /dev/null
+	    sleep 1
+	fi
+	if IsPidRunning ${LOCKpid}
+	    then
+	    echo "Could not kill process ${LOCKpid}" 
 	    echo "Application may be running or has terminated before completion"
 	    echo "Exiting..."
 	    exit 1

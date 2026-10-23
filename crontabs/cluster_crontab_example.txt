@@ -2,8 +2,8 @@
 # Cluster crontab example entries for DRSM monitor
 
 # Check for production system errors every 30 minutes
-30 * * * * sysadmin bash -c '/home/sysadmin/drsm/bin/system_check.sh &> /dev/null'
-45 * * * * sysadmin bash -c '/home/sysadmin/drsm/bin/system_report.sh &> /dev/null'
+*/30 * * * * sysadmin bash -c '/home/sysadmin/drsm/bin/system_check.sh &> /dev/null'
+15,45 * * * * sysadmin bash -c '/home/sysadmin/drsm/bin/system_report.sh &> /dev/null'
 
 # Send a status report every week day at 13:00 CDT
 00 13 * * mon,tue,wed,thu,fri sysadmin bash -c '/home/sysadmin/drsm/bin/system_check.sh YES &> /dev/null'

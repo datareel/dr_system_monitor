@@ -6,9 +6,9 @@
 # Shell: BASH shell
 # Original Author(s): DataReel Software Development
 # File Creation Date: 06/10/2013
-# Date Last Modified: 05/08/2017
+# Date Last Modified: 10/23/2026
 #
-# Version control: 1.15
+# Version control: 1.16
 #
 # Contributor(s):
 # ----------------------------------------------------------- 
@@ -52,14 +52,16 @@ source ${DRSMHOME}/bin/system_functions.sh
 HOST="$1"
 USER="$2"
 PW="$3"
+# A password of - is read from the DRSM_MYSQL_PW environment variable
+if [ "${PW}" == "-" ]; then PW="${DRSM_MYSQL_PW}"; fi
 
 function SaveMySQLAuth {
     if [ ! -d ${DRSMHOME}/.auth ]; then mkdir -p ${DRSMHOME}/.auth; chmod 700 ${DRSMHOME}/.auth; fi
     cat /dev/null > ${DRSMHOME}/.auth/${HOST}.mysql; chmod 600 ${DRSMHOME}/.auth/${HOST}.mysql
     echo "" >> ${DRSMHOME}/.auth/${HOST}.mysql
-    echo -n "export HOST='" >> ${DRSMHOME}/.auth/${HOST}.mysql; echo -n "${HOST}" >> ${DRSMHOME}/.auth/${HOST}.mysql; echo "'" >> ${DRSMHOME}/.auth/${HOST}.mysql
-    echo -n "export USER='" >> ${DRSMHOME}/.auth/${HOST}.mysql; echo -n "${USER}" >> ${DRSMHOME}/.auth/${HOST}.mysql; echo "'" >> ${DRSMHOME}/.auth/${HOST}.mysql
-    echo -n "export PW='" >> ${DRSMHOME}/.auth/${HOST}.mysql; echo -n "${PW}" >> ${DRSMHOME}/.auth/${HOST}.mysql; echo "'" >> ${DRSMHOME}/.auth/${HOST}.mysql
+    printf "export HOST=%q\n" "${HOST}" >> ${DRSMHOME}/.auth/${HOST}.mysql
+    printf "export USER=%q\n" "${USER}" >> ${DRSMHOME}/.auth/${HOST}.mysql
+    printf "export PW=%q\n" "${PW}" >> ${DRSMHOME}/.auth/${HOST}.mysql
     echo "" >> ${DRSMHOME}/.auth/${HOST}.mysql
 }
 
@@ -81,6 +83,7 @@ LOCKfile="${VARdir}/mysql_dbflush_${HOST}.lck"
 MINold="15"
 
 if [ ! -e ${VARdir} ]; then mkdir -p ${VARdir}; fi
+MySQLOptionFile "${USER}" "${PW}"
 source ${DRSMHOME}/bin/process_lock.sh
 
 LockFileCheck $MINold
@@ -90,29 +93,30 @@ if [ ! -e ${LOGdir} ]; then mkdir -p ${LOGdir}; fi
 if [ ! -e ${OUTPUTdir}/${HOST} ]; then mkdir -p ${OUTPUTdir}/${HOST}; fi
 if [ ! -e ${REPORTdir}/${HOST}/archive ]; then mkdir -p ${REPORTdir}/${HOST}/archive; fi
 
+# The query cache was removed in MySQL 8.0, MariaDB still has it
 echo "Flushing QUERY CACHE"
-mysql -h ${HOST} -u ${USER} -p"$PW" --execute='FLUSH QUERY CACHE'
+mysql --defaults-extra-file=${MYCNF} -h ${HOST} --execute='FLUSH QUERY CACHE' 2> /dev/null || echo "INFO - Query cache not supported on ${HOST}"
 
 echo "Flushing PRIVILEGES"
-mysql -h ${HOST} -u ${USER} -p"$PW" --execute='FLUSH PRIVILEGES'
+mysql --defaults-extra-file=${MYCNF} -h ${HOST} --execute='FLUSH PRIVILEGES'
 
 echo "Flushing TABLES"
-mysql -h ${HOST} -u ${USER} -p"$PW" --execute='FLUSH TABLES'
+mysql --defaults-extra-file=${MYCNF} -h ${HOST} --execute='FLUSH TABLES'
 
 echo "Flushing HOSTS"
-mysql -h ${HOST} -u ${USER} -p"$PW" --execute='FLUSH HOSTS'
+mysql --defaults-extra-file=${MYCNF} -h ${HOST} --execute='FLUSH HOSTS'
 
 echo "Flushing LOGS"
-mysql -h ${HOST} -u ${USER} -p"$PW" --execute='FLUSH LOGS'
+mysql --defaults-extra-file=${MYCNF} -h ${HOST} --execute='FLUSH LOGS'
 
 echo "Flushing STATUS"
-mysql -h ${HOST} -u ${USER} -p"$PW" --execute='FLUSH STATUS'
+mysql --defaults-extra-file=${MYCNF} -h ${HOST} --execute='FLUSH STATUS'
 
 echo "Flushing USER_RESOURCES"
-mysql -h ${HOST} -u ${USER} -p"$PW" --execute='FLUSH USER_RESOURCES'
+mysql --defaults-extra-file=${MYCNF} -h ${HOST} --execute='FLUSH USER_RESOURCES'
 
 ##echo "Reset binary logs"
-##mysql -h ${HOST} -u ${USER} -p"$PW" --execute='RESET MASTER'
+##mysql --defaults-extra-file=${MYCNF} -h ${HOST} --execute='RESET MASTER'
 
 unset HOST
 unset USER

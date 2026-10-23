@@ -6,9 +6,9 @@
 # Shell: BASH shell
 # Original Author(s): DataReel Software Development
 # File Creation Date: 06/10/2013
-# Date Last Modified: 05/09/2017
+# Date Last Modified: 10/23/2026
 #
-# Version control: 1.17
+# Version control: 1.18
 #
 # Contributor(s):
 # ----------------------------------------------------------- 
@@ -52,14 +52,16 @@ source ${DRSMHOME}/bin/system_functions.sh
 HOST="${1}"
 USER="${2}"
 PW="${3}"
+# A password of - is read from the DRSM_MYSQL_PW environment variable
+if [ "${PW}" == "-" ]; then PW="${DRSM_MYSQL_PW}"; fi
 
 function SaveMySQLAuth {
     if [ ! -d ${DRSMHOME}/.auth ]; then mkdir -p ${DRSMHOME}/.auth; chmod 700 ${DRSMHOME}/.auth; fi
     cat /dev/null > ${DRSMHOME}/.auth/${HOST}.mysql; chmod 600 ${DRSMHOME}/.auth/${HOST}.mysql
     echo "" >> ${DRSMHOME}/.auth/${HOST}.mysql
-    echo -n "export HOST='" >> ${DRSMHOME}/.auth/${HOST}.mysql; echo -n "${HOST}" >> ${DRSMHOME}/.auth/${HOST}.mysql; echo "'" >> ${DRSMHOME}/.auth/${HOST}.mysql
-    echo -n "export USER='" >> ${DRSMHOME}/.auth/${HOST}.mysql; echo -n "${USER}" >> ${DRSMHOME}/.auth/${HOST}.mysql; echo "'" >> ${DRSMHOME}/.auth/${HOST}.mysql
-    echo -n "export PW='" >> ${DRSMHOME}/.auth/${HOST}.mysql; echo -n "${PW}" >> ${DRSMHOME}/.auth/${HOST}.mysql; echo "'" >> ${DRSMHOME}/.auth/${HOST}.mysql
+    printf "export HOST=%q\n" "${HOST}" >> ${DRSMHOME}/.auth/${HOST}.mysql
+    printf "export USER=%q\n" "${USER}" >> ${DRSMHOME}/.auth/${HOST}.mysql
+    printf "export PW=%q\n" "${PW}" >> ${DRSMHOME}/.auth/${HOST}.mysql
     echo "" >> ${DRSMHOME}/.auth/${HOST}.mysql
 }
 
@@ -79,6 +81,7 @@ LOCKfile="${VARdir}/mysql_backup_${HOST}.lck"
 MINold="30"
 
 if [ ! -e ${VARdir} ]; then mkdir -p ${VARdir}; fi
+MySQLOptionFile "${USER}" "${PW}"
 source ${DRSMHOME}/bin/process_lock.sh
 
 LockFileCheck $MINold
@@ -92,7 +95,13 @@ DATEEXT=$(date +%Y%m%d)
 datetime=$(date)
 echo "${HOST} MySQL backup, $(date)" | tee -a ${logfile}
 
-DBLIST=$(mysql -h $HOST -u $USER -p"$PW" -NBe "SHOW DATABASES;" | grep -v 'lost+found')
+# Skip the MySQL system schemas, they cannot be dumped or restored
+DBLIST=$(mysql --defaults-extra-file=${MYCNF} -h ${HOST} -NBe "SHOW DATABASES;" | grep -vxE 'lost\+found|information_schema|performance_schema|sys')
+if [ "${DBLIST}" == "" ]; then
+    echo "ERROR - Cannot list databases on ${HOST}" | tee -a ${logfile}
+    RemoveLockFile
+    exit 1
+fi
 if [ ! -d ${BACKUPdir}/mysql/${HOST}/${DATEEXT} ]; then 
     mkdir -pv ${BACKUPdir}/mysql/${HOST}/${DATEEXT} | tee -a ${logfile} 
 fi 
@@ -108,15 +117,17 @@ fi
 
 echo "Purging ${BACKUPdir}/mysql/${HOST} files older than ${BACKUP_age}" | tee -a ${logfile} 
 touch ${BACKUPdir}/mysql/${HOST}
-find ${BACKUPdir}/mysql/${HOST} -type f -mtime +${BACKUP_age} -print | xargs rm -rfv | tee -a ${logfile}
+find ${BACKUPdir}/mysql/${HOST} -type f -mtime +${BACKUP_age} -print -delete | tee -a ${logfile}
+find ${BACKUPdir}/mysql/${HOST} -mindepth 1 -type d -empty -delete
 
-MYSQLDUMP_ARGS="--lock-tables=false --events --log-error=${logfile}"
+# --single-transaction gives a consistent InnoDB backup without locking
+MYSQLDUMP_ARGS="--single-transaction --lock-tables=false --routines --events --triggers --log-error=${logfile}"
 for DB in ${DBLIST} 
 do
     echo "Backing up schema and SQL for ${DB}" | tee -a ${logfile}
     echo "mysqldump ${MYSQLDUMP_ARGS} -h ${HOST} -u ${USER} --databases ${DB} > ${BACKUPdir}/mysql/${HOST}/${DATEEXT}/${DB}.sql" | tee -a ${logfile} 
-    mysqldump ${MYSQLDUMP_ARGS} --no-data -h ${HOST} -u ${USER} -p"${PW}" --databases ${DB} > ${BACKUPdir}/mysql/${HOST}/${DATEEXT}/${DB}.schema
-    mysqldump ${MYSQLDUMP_ARGS} -h ${HOST} -u ${USER} -p"${PW}" --databases ${DB} > ${BACKUPdir}/mysql/${HOST}/${DATEEXT}/${DB}.sql
+    mysqldump --defaults-extra-file=${MYCNF} ${MYSQLDUMP_ARGS} --no-data -h ${HOST} --databases ${DB} > ${BACKUPdir}/mysql/${HOST}/${DATEEXT}/${DB}.schema
+    mysqldump --defaults-extra-file=${MYCNF} ${MYSQLDUMP_ARGS} -h ${HOST} --databases ${DB} > ${BACKUPdir}/mysql/${HOST}/${DATEEXT}/${DB}.sql
 done
 
 echo "${HOST} MySQL backup complete, $(date)" | tee -a ${logfile}

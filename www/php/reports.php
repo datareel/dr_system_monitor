@@ -4,12 +4,12 @@
 // ------------------------------- //
 // ----------------------------------------------------------- //
 // PHP Source Code File
-// PHP Version: 5.1.6 or higher
+// PHP Version: 7.4 or higher, tested with PHP 8
 // Original Author(s): DataReel Software Development 
 // File Creation Date: 05/25/2013
-// Date Last Modified: 05/02/2017
+// Date Last Modified: 10/23/2026
 //
-// Version control: 1.09
+// Version control: 1.10
 //
 // Contributor(s):
 // ----------------------------------------------------------- //
@@ -40,115 +40,78 @@ System reports processing script.
 require_once("../config/drsm.php");
 
 // Our required includes
-require_once("${WWWdir}/php/query_post_validation.php");
+require_once("{$WWWdir}/php/query_post_validation.php");
 
-$dir = "${REPORTdir}/systems";
-$myDirectory = opendir($dir);
-while($entryName = readdir($myDirectory)) {
-  $dirArray[] = $entryName;
-}
-
-closedir($myDirectory);
-$indexCount = count($dirArray);
-
-if(file_exists("${SITEincludes}/page_header.php")) {
-  include_once("${SITEincludes}/page_header.php");
-}
-else {
-  include_once("${WWWdir}/php/default_header.php");
-}
-
-sort($dirArray);
-echo "<p><b>System Health Check Reports</b><br />\n";
-for($index=0; $index < $indexCount; $index++) {
-  $fname = "$dir/$dirArray[$index]/$dirArray[$index]_report.txt";
-  if (substr("$dirArray[$index]", 0, 1) != "."){ // don't list hidden files                                                 
-    if(!file_exists("$fname")) {
-      echo "<li>$dirArray[$index] - <font color=\"red\">No report posted</font></li><br />\n";
-      continue;
-    }
-    $fp = fopen("$fname", "r");
-    if(!$fp) {
-      echo "<li>$dirArray[$index] - <font color=\"red\">Cannot open system report</font></li><br />\n";
-      continue;
-    }
-
-    $REPORT_TIME = "";
-    $HOSTNAME = "";
-    $DESCRIPTION = "";
-    $IMPACT = "";
-    $IS_WEB_SERVER = "";
-    $WEBPROTOS = "";
-    $IS_LINUX = "";
-    $IS_CLUSTER_IP = "";
-    $CAN_PING = "";
-    $CAN_SSH = "";
-    $has_errors = "0";
-    $has_warnings = "0";
-
-    while (($buffer = fgets($fp, 1024)) !== false) {
-
-      if(strstr($buffer, "ERROR - ")) $has_errors = "1";
-      if(strstr($buffer, "WARNING - ")) $has_warnings = "1";
-
-      if(preg_match('/REPORT_TIME:/', $buffer)) {
-	$outarr = preg_split('/:/', $buffer);
-	$REPORT_TIME = $outarr[1];
-      } 
-      if(preg_match('/HOSTNAME:/', $buffer)) {
-	$outarr = preg_split('/:/', $buffer);
-	$HOSTNAME = $outarr[1];
-      } 
-      if(preg_match('/DESCRIPTION:/', $buffer)) {
-	$outarr = preg_split('/:/', $buffer);
-	$DESCRIPTION = $outarr[1];
-      } 
-      if(preg_match('/IMPACT:/', $buffer)) {
-	$outarr = preg_split('/:/', $buffer);
-	$IMPACT = $outarr[1];
-      } 
-      if(preg_match('/IS_WEB_SERVER:/', $buffer)) {
-	$outarr = preg_split('/:/', $buffer);
-	$IS_WEB_SERVER = $outarr[1];
-      } 
-      if(preg_match('/WEBPROTOS:/', $buffer)) {
-	$outarr = preg_split('/:/', $buffer);
-	$WEBPROTOS = $outarr[1];
-      } 
-      if(preg_match('/IS_LINUX:/', $buffer)) {
-	$outarr = preg_split('/:/', $buffer);
-	$IS_LINUX = $outarr[1];
-      } 
-      if(preg_match('/IS_CLUSTER_IP:/', $buffer)) {
-	$outarr = preg_split('/:/', $buffer);
-	$IS_CLUSTER_IP = $outarr[1];
-      } 
-      if(preg_match('/CAN_PING:/', $buffer)) {
-	$outarr = preg_split('/:/', $buffer);
-	$CAN_PING = $outarr[1];
-      } 
-      if(preg_match('/CAN_SSH:/', $buffer)) {
-	$outarr = preg_split('/:/', $buffer);
-	$CAN_SSH = $outarr[1];
-      } 
-    }
-    fclose($fp);
-    $status = "<img src=\"${WWWvpath}/images/circle2.jpg\" height=\"12\" width=\"12\">";
-    if($has_warnings == "1") $status = "<img src=\"${WWWvpath}/images/circle3.jpg\" height=\"12\" width=\"12\">";
-    if($has_errors == "1") $status = "<img src=\"${WWWvpath}/images/circle1.jpg\" height=\"12\" width=\"12\">";
-
-    putenv("TZ=GMT");
-    $lasttime = date("m/d/Y h:i A T", (int)$REPORT_TIME);
-
-    echo "<li><a href=\"${WWWvpath}/php/readreport.php?n=$dirArray[$index]\" title=\"${lasttime}\">$dirArray[$index]</a> - ${DESCRIPTION} ${status}</li><br />\n";
+$dir = "{$REPORTdir}/systems";
+$dirArray = array();
+if(is_dir($dir)) {
+  foreach(scandir($dir) as $entryName) {
+    // Skip hidden files and anything that is not a host directory
+    if(substr($entryName, 0, 1) == ".") continue;
+    if(!is_dir("{$dir}/{$entryName}")) continue;
+    $dirArray[] = $entryName;
   }
 }
 
-if(file_exists("${SITEincludes}/page_footer.php")) {
-  include_once("${SITEincludes}/page_footer.php");
+if(file_exists("{$SITEincludes}/page_header.php")) {
+  include_once("{$SITEincludes}/page_header.php");
 }
 else {
-  include_once("${WWWdir}/php/default_footer.php");   
+  include_once("{$WWWdir}/php/default_header.php");
+}
+
+// Report times are stored as UNIX epoch seconds in the ETIME field
+date_default_timezone_set("UTC");
+
+sort($dirArray);
+echo "<p><b>System Health Check Reports</b></p>\n";
+echo "<ul>\n";
+foreach($dirArray as $hostdir) {
+  $fname = "{$dir}/{$hostdir}/{$hostdir}_report.txt";
+  $host = htmlspecialchars($hostdir);
+  if(!file_exists("$fname")) {
+    echo "<li>{$host} - <font color=\"red\">No report posted</font></li>\n";
+    continue;
+  }
+  $fp = fopen("$fname", "r");
+  if(!$fp) {
+    echo "<li>{$host} - <font color=\"red\">Cannot open system report</font></li>\n";
+    continue;
+  }
+
+  $fields = array("ETIME" => "", "DESCRIPTION" => "");
+  $has_errors = "0";
+  $has_warnings = "0";
+
+  while (($buffer = fgets($fp, 4096)) !== false) {
+    if(strstr($buffer, "ERROR - ")) $has_errors = "1";
+    if(strstr($buffer, "WARNING - ")) $has_warnings = "1";
+
+    // Header fields are NAME:value, split on the first colon only
+    // since values such as descriptions can contain colons
+    $outarr = explode(":", rtrim($buffer, "\r\n"), 2);
+    if((count($outarr) == 2) && array_key_exists($outarr[0], $fields) && ($fields[$outarr[0]] == "")) {
+      $fields[$outarr[0]] = trim($outarr[1]);
+    }
+  }
+  fclose($fp);
+  $status = "<img src=\"{$WWWvpath}/images/circle2.jpg\" height=\"12\" width=\"12\" alt=\"OK\">";
+  if($has_warnings == "1") $status = "<img src=\"{$WWWvpath}/images/circle3.jpg\" height=\"12\" width=\"12\" alt=\"Warning\">";
+  if($has_errors == "1") $status = "<img src=\"{$WWWvpath}/images/circle1.jpg\" height=\"12\" width=\"12\" alt=\"Error\">";
+
+  $lasttime = "unknown";
+  if(ctype_digit($fields["ETIME"])) $lasttime = date("m/d/Y h:i A T", (int)$fields["ETIME"]);
+  $description = htmlspecialchars($fields["DESCRIPTION"]);
+
+  echo "<li><a href=\"{$WWWvpath}/php/readreport.php?n=" . urlencode($hostdir) . "\" title=\"Last report {$lasttime}\">{$host}</a> - {$description} {$status}</li>\n";
+}
+echo "</ul>\n";
+
+if(file_exists("{$SITEincludes}/page_footer.php")) {
+  include_once("{$SITEincludes}/page_footer.php");
+}
+else {
+  include_once("{$WWWdir}/php/default_footer.php");   
 }
 
 // SCRIPT CONTENT ENDS ABOVE.
