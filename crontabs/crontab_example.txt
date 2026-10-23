@@ -13,6 +13,13 @@
 35 09,10,11,12,13,14,15,16 * * mon,tue,wed,thu,fri /home/sysadmin/drsm/bin/system_check.sh NO DEV &> /dev/null
 55 09,10,11,12,13,14,15,16 * * mon,tue,wed,thu,fri /home/sysadmin/drsm/bin/system_report.sh NO DEV &> /dev/null
 
+# Plugin runner, replaces the system_check.sh and system_report.sh
+# lines above once your hosts are set up, see PLUGINS.md
+## */30 * * * * /home/sysadmin/drsm/bin/drsm_run.sh -m probes &> /dev/null
+## 15,45 * * * * /home/sysadmin/drsm/bin/drsm_run.sh &> /dev/null
+## 15 13 * * mon,tue,wed,thu,fri /home/sysadmin/drsm/bin/drsm_run.sh -e &> /dev/null
+## 55 09-16 * * mon,tue,wed,thu,fri /home/sysadmin/drsm/bin/drsm_run.sh -g dev &> /dev/null
+
 # System reports archive and purge
 59 23 * * * /home/sysadmin/drsm/bin/archive.sh
 00 * * * * /home/sysadmin/drsm/bin/purge.sh

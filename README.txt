@@ -15,6 +15,7 @@ Contents:
 * Setting custom alert thresholds
 * Email Text messaging setup
 * Monitoring cloud servers
+* Plugin monitoring with drsm_run.sh
 * Monitoring Crons
 * MySQL Utilities
 * Postgres Utilities
@@ -572,6 +573,40 @@ Monitoring cloud servers:
 
 * To monitor the workstation running DRSM, add it to systems.dat and
   set up keyed SSH from the DRSM account to itself.
+
+Plugin monitoring with drsm_run.sh:
+----------------------------------
+bin/drsm_run.sh is the plugin based replacement for system_check.sh
+and system_report.sh. Each check is a folder under plugins/ with a
+plugin.conf manifest and a BASH script, so new checks are added
+without changing any core script. It writes the same report files,
+so the Web pages and email/text alerts work unchanged. The old
+scripts keep working while you move over. See PLUGINS.md for the
+full guide and for writing your own plugins.
+
+Hosts are set up with one file each in ${DRSMHOME}/etc/hosts instead
+of a systems.dat row and a generated <host>_profile.sh script. To
+convert your current systems.dat, dev_systems.dat, and profiles:
+
+$ ~/drsm/utils/migrate_systems_dat.sh
+$ ~/drsm/bin/drsm_run.sh -l
+
+Until host files exist, drsm_run.sh reads systems.dat directly.
+
+To run all hosts, a single host, or the dev group with no alerts:
+
+$ ~/drsm/bin/drsm_run.sh -n
+$ ~/drsm/bin/drsm_run.sh -n -H cloud1
+$ ~/drsm/bin/drsm_run.sh -n -g dev
+
+To run only the connectivity probes, the system_check.sh job:
+
+$ ~/drsm/bin/drsm_run.sh -m probes
+
+To create a plugin for your own site, for example a custom
+application:
+
+$ ~/drsm/utils/new_plugin.sh local/myapp
 
 Monitoring Crons:
 ----------------
