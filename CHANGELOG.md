@@ -2,6 +2,56 @@
 
 All notable changes to the DataReel System Monitor (DRSM) are listed here.
 
+## Unreleased
+
+Plugin framework, phase 1 of the plugin module design. Written by
+[Claude Code](https://claude.com/claude-code) at the request of the
+project owner. Nothing existing is removed: `system_check.sh`,
+`system_report.sh` and the `bin/*_checks.sh` scripts work as before
+while sites move over.
+
+### Added
+
+- `bin/drsm_run.sh`, a plugin runner that replaces the per-host loops in
+  `system_check.sh` and `system_report.sh`. It writes the same report
+  files, so the Web pages and email/text alerts need no changes, plus a
+  per-host `status.json` with each plugin's state. `-m probes` runs the
+  connectivity checks only, `-g` picks a host group, `-H` one host, `-n`
+  turns alerts off, `-l` lists what would run.
+- Plugin contract: each check is `plugins/<category>/<name>/` with a
+  `plugin.conf` manifest and a `check.sh` (runs on the host) or
+  `probe.sh` (runs on the monitor host). Settings reach the script as
+  `DRSM_<KEY>` environment variables instead of positional arguments.
+  Exit codes follow the Nagios convention (0 OK, 1 WARNING, 2 ERROR,
+  3 UNKNOWN). Output keeps the `INFO - / WARNING - / ERROR -` lines and
+  adds optional `METRIC` lines. See PLUGINS.md.
+- Plugins ported from the existing checks with the same messages and
+  thresholds: `core/cpu`, `core/load`, `core/memory`, `core/users`,
+  `storage/disk`, `storage/raid`, `network/nics`, and the probes
+  `network/ping`, `network/http`, `network/https`, `network/ftp`.
+- Collectors: `local` for the monitor host and `ssh-linux`, which copies
+  only the plugins a host uses to `~/drsm_agent` (skipped when unchanged)
+  and runs them all in one SSH session.
+- The runner enforces each plugin's `TIMEOUT`, reports a plugin with a
+  missing required command as UNKNOWN instead of failing, and reports a
+  plugin that returns nothing as an ERROR.
+- Host files in `etc/hosts/<host>.conf` replace `systems.dat` rows and
+  generated `<host>_profile.sh` scripts. They are parsed, never sourced.
+  `etc/hosts/_defaults.conf` holds shared settings. Until host files
+  exist the runner reads `systems.dat` directly.
+- `utils/migrate_systems_dat.sh` converts `systems.dat`,
+  `dev_systems.dat` and the custom arguments in profile scripts into
+  host files.
+- `utils/new_plugin.sh` creates a plugin from a template. Site plugins
+  go in `plugins/local/`, which updates never overwrite.
+- `tests/drsm_run_test.sh`, run in CI, tests the runner, settings,
+  timeouts, probes, groups and migration without SSH or root.
+
+### Changed
+
+- `utils/install.sh` installs `lib`, `collectors`, `plugins` and
+  PLUGINS.md, and creates `etc/hosts/_defaults.conf` once.
+
 ## 1.30 - 2026-10-23
 
 This release is a full code review and modernization pass. The code was

@@ -70,7 +70,7 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-dirs="bin etc mysql postgres utils www"
+dirs="bin etc lib collectors plugins mysql postgres utils www"
 for d in ${dirs}
 do
     cp -rfv ${BASEdir}/${d} ${DRSMHOME}/.
@@ -87,7 +87,14 @@ done
 
 find ${DRSMHOME} -name "*.sh" -exec chmod 755 {} +
 
-files="README.txt CHANGELOG.md version.txt license.txt"
+# Plugin host files, the shared defaults file is only created once so
+# local changes survive a reinstall
+mkdir -p ${DRSMHOME}/etc/hosts ${DRSMHOME}/plugins/local
+if [ ! -f ${DRSMHOME}/etc/hosts/_defaults.conf ]; then
+    cp -fv ${BASEdir}/etc/hosts/_defaults.conf_example ${DRSMHOME}/etc/hosts/_defaults.conf
+fi
+
+files="README.txt PLUGINS.md CHANGELOG.md version.txt license.txt"
 for f in ${files}
 do
     cp -fv ${BASEdir}/${f} ${DRSMHOME}/${f}

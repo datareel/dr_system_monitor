@@ -1,0 +1,15 @@
+# DRSM host defaults, read before every host file in this directory.
+# utils/install.sh copies this file to _defaults.conf once. Keys set
+# here apply to every host unless the host file sets them again.
+# Files starting with _ are never treated as hosts.
+
+# Remote plugins run on every Linux host that does not set PLUGINS
+PLUGINS="storage/disk storage/raid core/cpu core/load core/memory network/nics core/users"
+
+# Probes run from the monitor host against every host that does not
+# set PROBES
+PROBES="network/ping"
+
+# Site wide plugin settings, <category>_<name>_<SETTING>=value
+# storage_disk_WARN=85
+# core_cpu_TEMPS=no

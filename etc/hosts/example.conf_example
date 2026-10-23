@@ -1,0 +1,31 @@
+# DRSM host file, copy to <host>.conf in this directory.
+# Plain KEY=value lines, values with spaces in double quotes. The
+# file is parsed, not run, so shell code here does nothing.
+
+# Name or address used for SSH and probes, default is the file name
+HOST=cloud1
+DESCRIPTION="Primary cloud web server"
+# Shown in alerts when the host is down
+IMPACT="Public website is down"
+# Host group, run with: drsm_run.sh -g <group>, default production
+GROUP=production
+# linux, or windows when its collector is available
+PLATFORM=linux
+# ssh, local for the monitor host itself, or none for probes only
+COLLECTOR=ssh
+# no skips the host without removing the file
+ENABLED=yes
+
+# Probes run on the monitor host against this host
+PROBES="network/ping network/https"
+# Plugins run on the host, replaces PLUGINS from _defaults.conf
+PLUGINS="storage/disk storage/raid core/cpu core/load core/memory network/nics core/users"
+
+# Plugin settings: <category>_<name>_<SETTING>=value, the settings
+# each plugin takes are listed in its plugin.conf
+storage_disk_WARN=85
+storage_disk_SKIP="/mnt/scratch"
+core_memory_MIN_AVAIL_MB=512
+network_https_URL=https://www.example.com/
+# Per host timeout for one plugin, in seconds
+core_cpu_TIMEOUT=60

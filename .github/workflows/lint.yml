@@ -12,15 +12,18 @@ jobs:
 
       - name: Bash syntax check
         run: |
-          for f in bin/*.sh etc/*.sh utils/*.sh mysql/*.sh postgres/*.sh; do
+          for f in bin/*.sh etc/*.sh utils/*.sh lib/*.sh collectors/*.sh plugins/*/*/*.sh tests/*.sh mysql/*.sh postgres/*.sh; do
             bash -n "$f" || exit 1
           done
 
       - name: ShellCheck (errors only)
-        run: shellcheck -S error -s bash bin/*.sh etc/*.sh utils/*.sh mysql/*.sh postgres/*.sh
+        run: shellcheck -S error -s bash bin/*.sh etc/*.sh utils/*.sh lib/*.sh collectors/*.sh plugins/*/*/*.sh tests/*.sh mysql/*.sh postgres/*.sh
 
       - name: PHP syntax check
         run: |
           for f in www/php/*.php mysql/*.php; do
             php -l "$f" || exit 1
           done
+
+      - name: Plugin runner tests
+        run: bash tests/drsm_run_test.sh
