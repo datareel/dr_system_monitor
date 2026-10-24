@@ -483,6 +483,21 @@ function drsm_icon($name)
   return "<svg class=\"icon\" viewBox=\"0 0 24 24\" aria-hidden=\"true\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">{$p}</svg>";
 }
 
+// Filled status icon for the heat map: check, triangle, X, ? or clock
+function drsm_state_icon($state, $extra = "")
+{
+  $shapes = array(
+    "ok" => '<circle cx="12" cy="12" r="10.5" fill="currentColor"/><path d="M7.2 12.4l3.2 3.2 6.4-6.8" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>',
+    "warn" => '<path d="M10.3 3.6a2 2 0 0 1 3.4 0l8.4 14.6a2 2 0 0 1-1.7 3H3.6a2 2 0 0 1-1.7-3z" fill="currentColor"/><path d="M12 9v4.6" stroke="#2a1700" stroke-width="2.6" stroke-linecap="round"/><circle cx="12" cy="17.3" r="1.5" fill="#2a1700"/>',
+    "err" => '<circle cx="12" cy="12" r="10.5" fill="currentColor"/><path d="M8.3 8.3l7.4 7.4M15.7 8.3l-7.4 7.4" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/>',
+    "stale" => '<circle cx="12" cy="12" r="10.5" fill="currentColor"/><path d="M12 6.8V12l3.6 2.2" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>',
+    "unk" => '<circle cx="12" cy="12" r="10.5" fill="currentColor"/><path d="M9.3 9.4a2.8 2.8 0 1 1 3.8 2.6c-.7.3-1.1.9-1.1 1.6v.4" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.2" r="1.4" fill="#fff"/>'
+  );
+  $cls = drsm_state_class($state);
+  $shape = isset($shapes[$cls]) ? $shapes[$cls] : $shapes["unk"];
+  return "<svg class=\"sicon {$cls}{$extra}\" viewBox=\"0 0 24 24\" aria-hidden=\"true\">{$shape}</svg>";
+}
+
 // <link> and <script> tags for a custom site page_header.php
 function drsm_head_assets()
 {
