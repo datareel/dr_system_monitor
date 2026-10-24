@@ -123,7 +123,7 @@ drsm_page_start("Heat map", "heatmap", $overall);
               }
               $p = $hst["plugins"][$id];
               $tip = "{$hst["name"]} - {$id}: " . drsm_state_label($p["state"]) . (count($p["msgs"]) ? "\n" . implode("\n", $p["msgs"]) : ""); ?>
-          <td><a class="hcell <?php echo h(drsm_state_class($p["state"])); ?>" href="<?php echo h($hurl . "#" . drsm_plugin_anchor($id)); ?>" title="<?php echo h($tip); ?>" aria-label="<?php echo h($tip); ?>"></a></td>
+          <td><a class="hcell <?php echo h(drsm_state_class($p["state"])); ?>" href="<?php echo h($hurl . "#" . drsm_plugin_anchor($id)); ?>" title="<?php echo h($tip); ?>" aria-label="<?php echo h($tip); ?>"><?php echo drsm_state_icon($p["state"]); ?></a></td>
 <?php       } ?>
         </tr>
 <?php     } ?>
@@ -132,14 +132,14 @@ drsm_page_start("Heat map", "heatmap", $overall);
         <tr>
           <th scope="row">Worst</th>
 <?php     foreach($plugins as $id) { ?>
-          <td><span class="hcell small <?php echo h(drsm_state_class($coltotals[$id])); ?>" title="<?php echo h($id . ": worst state " . drsm_state_label($coltotals[$id])); ?>"></span></td>
+          <td><span class="hcell small <?php echo h(drsm_state_class($coltotals[$id])); ?>" title="<?php echo h($id . ": worst state " . drsm_state_label($coltotals[$id])); ?>"><?php echo drsm_state_icon($coltotals[$id]); ?></span></td>
 <?php     } ?>
         </tr>
       </tfoot>
     </table>
   </div>
   <div class="legend pad">
-    <span><i class="ok"></i>OK</span><span><i class="warn"></i>Warning</span><span><i class="err"></i>Error</span><span><i class="unk"></i>Unknown</span><span><i class="none"></i>Not run</span>
+    <span><?php echo drsm_state_icon("OK"); ?>OK</span><span><?php echo drsm_state_icon("WARNING"); ?>Warning</span><span><?php echo drsm_state_icon("ERROR"); ?>Error</span><span><?php echo drsm_state_icon("UNKNOWN"); ?>Unknown</span><span><i class="none"></i>Not run</span>
   </div>
 <?php   } ?>
 <?php } else { ?>

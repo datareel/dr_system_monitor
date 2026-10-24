@@ -386,7 +386,8 @@ a.kpi:hover { text-decoration: none; transform: translateY(-1px); border-color: 
 .legend.pad { margin: 0; border-top: 1px solid var(--border); }
 .legend span { display: inline-flex; align-items: center; gap: 6px; }
 .legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; background: var(--tone); }
-.legend i.none { background: var(--none); box-shadow: inset 0 0 0 1px var(--border); }
+.legend i.none { width: auto; height: auto; background: none; color: var(--muted); font-style: normal; }
+.legend i.none::before { content: "\2013"; }
 .legend.scale { gap: 4px; }
 .legend.scale i { width: 26px; }
 .legend.scale .muted { margin-left: 12px; }
@@ -472,11 +473,25 @@ a.kpi:hover { text-decoration: none; transform: translateY(-1px); border-color: 
 .heat .corner { z-index: 3; vertical-align: bottom; padding-bottom: 6px; }
 .heat tbody th a { display: flex; align-items: center; gap: 8px; color: var(--text); }
 .heat td { position: relative; padding: 0; text-align: center; }
-.hcell { display: block; width: 100%; min-width: 42px; height: 34px; border-radius: 7px; background: var(--tone); transition: transform .1s ease, box-shadow .1s ease; }
-.hcell.ok { opacity: .75; }
-a.hcell:hover { transform: scale(1.08); box-shadow: 0 0 0 2px var(--text); opacity: 1; }
-.hcell.small { height: 10px; border-radius: 4px; }
-.heat td.none::before { content: ""; display: block; min-width: 42px; height: 34px; border-radius: 7px; background: var(--none); box-shadow: inset 0 0 0 1px var(--border); }
+.hcell {
+  display: flex; align-items: center; justify-content: center;
+  width: 100%; min-width: 42px; height: 36px; border-radius: 9px;
+  background: var(--tone-bg); color: var(--tone);
+  transition: transform .1s ease, box-shadow .1s ease, background .1s ease;
+}
+.hcell.ok { background: transparent; }
+a.hcell:hover { text-decoration: none; transform: scale(1.06); background: var(--surface-3); box-shadow: inset 0 0 0 1px var(--border-strong); }
+.hcell.small { height: 26px; background: transparent; }
+.hcell.small .sicon { width: 16px; height: 16px; }
+.sicon { width: 22px; height: 22px; flex: none; color: var(--tone); }
+.sicon.ok { color: var(--ok); }
+.sicon.warn { color: var(--warn); }
+.sicon.err { color: var(--err); }
+.sicon.stale { color: var(--stale); }
+.sicon.unk { color: var(--unk); }
+.hcell.err .sicon, .hcell.warn .sicon { filter: drop-shadow(0 0 6px var(--tone-bg)); }
+.heat td.none::before { content: "\2013"; display: flex; align-items: center; justify-content: center; min-width: 42px; height: 36px; color: var(--muted); opacity: .6; }
+.legend .sicon { width: 15px; height: 15px; }
 .heat tfoot th { color: var(--muted); font-size: .75rem; text-transform: uppercase; }
 .heat.metrics thead th { min-width: 80px; }
 .heat.metrics td.none::before { display: none; }
@@ -601,7 +616,8 @@ pre.report span { display: inline-block; min-width: 100%; padding: 0 6px; margin
   .table th, .table td { padding: 10px; }
   .heat-wrap { max-height: none; }
   .heat tbody th, .heat tfoot th, .heat .corner { min-width: 96px; max-width: 130px; padding-left: 10px; }
-  .hcell, .heat td.none::before { min-width: 34px; height: 30px; }
+  .hcell, .heat td.none::before { min-width: 34px; height: 32px; }
+  .sicon { width: 20px; height: 20px; }
   .heat thead th { min-width: 38px; }
   .mcell { min-width: 58px; }
   .heat.metrics thead th { min-width: 60px; }
