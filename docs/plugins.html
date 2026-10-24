@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plugins | DRSM Documentation</title>
+<meta name="description" content="The DRSM plugin system: included plugins, drsm_run.sh, host files, and how to write your own plugin.">
+<link rel="icon" href="images/logo.svg" type="image/svg+xml">
+<link rel="stylesheet" href="docs.css">
+<script src="docs.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="topbar">
+  <div class="topbar-inner">
+    <button class="tool icon-only menu-btn" type="button" data-action="menu" aria-label="Menu" aria-expanded="false"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+    <a class="brand" href="index.html"><img src="images/logo.svg" alt="">DRSM <small>Documentation</small></a>
+    <span class="spacer"></span>
+    <a class="tool primary" href="https://datareel.com/drsm/dashboard/"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg><span>Live demo</span></a>
+    <a class="tool hide-sm" href="https://github.com/datareel/dr_system_monitor"><svg class="icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.53-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.68 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.83 1.19 3.09 0 4.41-2.69 5.38-5.25 5.67.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5z"/></svg><span>GitHub</span></a>
+    <button class="tool icon-only" type="button" data-action="theme" aria-label="Switch light or dark theme"><svg class="icon sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg><svg class="icon moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+  </div>
+</header>
+<div class="layout">
+  <nav class="sidebar" aria-label="Documentation">
+    <h4>Get started</h4><a href="index.html">Overview</a><a href="install.html">Install and set up</a><a href="deployment.html">Deployment setups</a><h4>Using DRSM</h4><a href="dashboard.html">Web dashboard</a><a href="plugins.html" class="active" aria-current="page">Plugins</a><div class="toc"><a href="#included">Plugins included</a><a href="#runner">drsm_run.sh</a><a href="#hosts">Host files</a><a href="#writing">Writing a plugin</a><a href="#how">How a run works</a><a href="#layout">Files</a><a href="#roadmap">Roadmap</a></div><a href="alerts.html">Thresholds and alerts</a><a href="databases.html">MySQL and Postgres</a><h4>Reference</h4><a href="changelog.html">What's new</a><h4>Links</h4><a href="https://datareel.com/drsm/dashboard/">Live demo</a><a href="https://github.com/datareel/dr_system_monitor">GitHub repository</a><a href="https://github.com/datareel/dr_system_monitor/issues">Report an issue</a>
+  </nav>
+  <main class="content" id="main">
+<h1>Plugins</h1>
+<p class="lead">Every DRSM check is a plugin: a folder with a small manifest and one BASH script. <code>bin/drsm_run.sh</code> finds the plugins each host needs, runs them, and writes the reports the dashboard and alerts use. Adding a check means adding a folder, not editing a core script.</p>
+
+<h2 id="included">Plugins included</h2>
+<div class="table-wrap"><table><thead><tr><th>Plugin</th><th>Runs on</th><th>Checks</th></tr></thead><tbody><tr><td><code>core/cpu</code></td><td>host</td><td>CPU usage, steal time, top processes, CPU temperatures</td></tr><tr><td><code>core/load</code></td><td>host</td><td>15 minute load average against the CPU count</td></tr><tr><td><code>core/memory</code></td><td>host</td><td>Available memory, swap use, top processes</td></tr><tr><td><code>core/users</code></td><td>host</td><td>Logged in users, alerts for listed user names</td></tr><tr><td><code>storage/disk</code></td><td>host</td><td>Space and inodes on every local file system</td></tr><tr><td><code>storage/raid</code></td><td>host</td><td>mdadm software RAID, LSI MegaRAID drives</td></tr><tr><td><code>network/nics</code></td><td>host</td><td>Interface errors, drops and collisions</td></tr><tr><td><code>network/ping</code></td><td>monitor</td><td>Host answers ping</td></tr><tr><td><code>network/http</code></td><td>monitor</td><td>HTTP service answers</td></tr><tr><td><code>network/https</code></td><td>monitor</td><td>HTTPS service answers with a valid certificate</td></tr><tr><td><code>network/ftp</code></td><td>monitor</td><td>FTP service answers</td></tr></tbody></table></div>
+<p>These are the checks from <code>bin/*_checks.sh</code> and <code>system_check.sh</code> with the same messages and default levels. Their settings are listed in <a href="alerts.html#plugin-settings">Thresholds and alerts</a>.</p>
+
+<h2 id="runner">Running checks with drsm_run.sh</h2>
+<pre><code><span class="p">$ </span>~/drsm/bin/drsm_run.sh -l             # list hosts and the plugins that would run
+<span class="p">$ </span>~/drsm/bin/drsm_run.sh -n             # all hosts, no alerts
+<span class="p">$ </span>~/drsm/bin/drsm_run.sh -n -H cloud1   # one host
+<span class="p">$ </span>~/drsm/bin/drsm_run.sh -n -g dev      # the dev group
+<span class="p">$ </span>~/drsm/bin/drsm_run.sh -m probes      # connectivity probes only</code></pre>
+<div class="table-wrap"><table><thead><tr><th>Option</th><th>Meaning</th></tr></thead><tbody><tr><td><code>-g group</code></td><td>Host group, default <code>production</code>. Before migration <code>-g dev</code> reads <code>dev_systems.dat</code></td></tr><tr><td><code>-H host</code></td><td>One host only, for testing</td></tr><tr><td><code>-m probes</code></td><td>Connectivity probes only, the old <code>system_check.sh</code> job. Default <code>all</code></td></tr><tr><td><code>-e</code></td><td>Email a status report even when everything passes</td></tr><tr><td><code>-n</code></td><td>Do not send alerts</td></tr><tr><td><code>-l</code></td><td>List hosts and plugins, then exit</td></tr><tr><td><code>-v</code></td><td>Verbose</td></tr></tbody></table></div>
+<p>Exit code: 0 all good, 1 warnings, 2 errors.</p>
+
+<h2 id="hosts">Host files</h2>
+<p>One file per host in <code>etc/hosts</code>, named <code>&lt;host&gt;.conf</code>. The files are plain <code>KEY=value</code> lines, read but never run, so a typo cannot execute anything. Values with spaces go in double quotes.</p>
+<pre><code>HOST=cloud1
+DESCRIPTION="AWS web server"
+IMPACT="Public website is down"
+GROUP=production
+PLATFORM=linux
+COLLECTOR=ssh
+PROBES="network/ping network/https"
+PLUGINS="storage/disk storage/raid core/cpu core/load core/memory network/nics core/users"
+
+<span class="c"># Plugin settings: &lt;category&gt;_&lt;name&gt;_&lt;SETTING&gt;=value</span>
+storage_disk_WARN=85
+storage_disk_SKIP="/mnt/scratch"
+network_https_URL=https://www.example.com/
+core_cpu_TIMEOUT=60</code></pre>
+<div class="table-wrap"><table><thead><tr><th>Key</th><th>Meaning</th></tr></thead><tbody><tr><td><code>HOST</code></td><td>Name or address for SSH and probes, default is the file name</td></tr><tr><td><code>DESCRIPTION</code>, <code>IMPACT</code></td><td>Shown in reports and alerts</td></tr><tr><td><code>GROUP</code></td><td>Host group, picked with <code>drsm_run.sh -g</code></td></tr><tr><td><code>PLATFORM</code></td><td><code>linux</code> today; <code>windows</code> when its collector is added</td></tr><tr><td><code>COLLECTOR</code></td><td><code>ssh</code>, <code>local</code> for the monitor host itself, <code>none</code> for probes only</td></tr><tr><td><code>ENABLED</code></td><td><code>no</code> skips the host</td></tr><tr><td><code>PROBES</code></td><td>Plugins run from the monitor host against this host</td></tr><tr><td><code>PLUGINS</code></td><td>Plugins run on the host</td></tr></tbody></table></div>
+<p><code>_defaults.conf</code> is read before every host file, so put the common <code>PLUGINS</code> list and site wide settings there. Files starting with <code>_</code> are not hosts. If <code>network/ping</code> fails the host is reported down and its remote plugins are skipped.</p>
+<p>To convert <code>systems.dat</code>, <code>dev_systems.dat</code> and the custom levels in <code>&lt;host&gt;_profile.sh</code> scripts, run <code>utils/migrate_systems_dat.sh</code>.</p>
+
+<h2 id="writing">Writing a plugin</h2>
+<pre><code><span class="p">$ </span>~/drsm/utils/new_plugin.sh local/myapp            # runs on the host
+<span class="p">$ </span>~/drsm/utils/new_plugin.sh local/myapp_url probe  # runs from the monitor against the host</code></pre>
+<p>This creates the folder, a commented <code>plugin.conf</code>, and a script you can run by hand right away:</p>
+<pre><code><span class="p">$ </span>DRSM_WARN=50 bash ~/drsm/plugins/local/myapp/check.sh
+<span class="p">$ </span>DRSM_TARGET=cloud1 bash ~/drsm/plugins/local/myapp_url/probe.sh</code></pre>
+<p>Then add <code>local/myapp</code> to <code>PLUGINS</code> (or <code>PROBES</code>) in a host file. Site plugins live in <code>plugins/local</code>, which updates never overwrite.</p>
+
+<h3 id="manifest">Manifest</h3>
+<pre><code>NAME=myapp
+CATEGORY=local
+DESCRIPTION="Order queue is draining"
+PLATFORMS="linux"      # linux, windows, or any
+MODE=remote            # remote runs check.sh on the host, probe runs probe.sh on the monitor
+TIMEOUT=30             # seconds, enforced by the runner
+REQUIRES="curl jq"     # commands that must exist, otherwise the plugin is UNKNOWN
+NEEDS_SUDO=no          # informational: no, yes, or optional
+
+<span class="c"># Every other key is a setting with its default</span>
+WARN=100
+CRIT=500
+QUEUE_DIR=/var/spool/myapp</code></pre>
+<p>Each setting reaches the script as <code>DRSM_&lt;KEY&gt;</code>. A host overrides it with <code>&lt;category&gt;_&lt;name&gt;_&lt;KEY&gt;</code>, for example <code>local_myapp_WARN=200</code>, and can set <code>&lt;category&gt;_&lt;name&gt;_TIMEOUT</code>.</p>
+
+<h3 id="script">Script</h3>
+<pre><code><span class="c">#!/bin/bash</span>
+source "${DRSM_LIB:-$(dirname "$0")/../../../lib}/drsm_plugin.sh"
+
+WARN=$(drsm_setting WARN 100)
+CRIT=$(drsm_setting CRIT 500)
+QUEUE_DIR=$(drsm_setting QUEUE_DIR /var/spool/myapp)
+
+count=$(find "${QUEUE_DIR}" -type f | wc -l)
+if [ "${count}" -ge "${CRIT}" ]; then
+    drsm_crit "${HOST} myapp queue has ${count} files"
+elif [ "${count}" -ge "${WARN}" ]; then
+    drsm_warn "${HOST} myapp queue has ${count} files"
+else
+    drsm_ok "${HOST} myapp queue checks good at ${count} files"
+fi
+drsm_metric myapp_queue_files "${count}"
+
+drsm_exit</code></pre>
+<div class="table-wrap"><table><thead><tr><th>Helper</th><th>Prints</th><th>Effect</th></tr></thead><tbody><tr><td><code>drsm_ok</code>, <code>drsm_info</code></td><td><code>INFO - ...</code></td><td>none</td></tr><tr><td><code>drsm_warn</code></td><td><code>WARNING - ...</code></td><td>state at least WARNING</td></tr><tr><td><code>drsm_crit</code></td><td><code>ERROR - ...</code></td><td>state ERROR, alerts are sent</td></tr><tr><td><code>drsm_unknown</code></td><td><code>UNKNOWN - ...</code></td><td>state UNKNOWN when nothing is worse</td></tr><tr><td><code>drsm_metric name value [labels]</code></td><td><code>METRIC name{labels}=value</code></td><td>feeds the gauges and heat map</td></tr><tr><td><code>drsm_setting NAME default</code></td><td></td><td>value of <code>DRSM_NAME</code> or the default</td></tr><tr><td><code>drsm_target</code></td><td></td><td>the host a probe checks, <code>DRSM_TARGET</code></td></tr><tr><td><code>drsm_gt a b</code></td><td></td><td>floating point a &gt; b without <code>bc</code></td></tr><tr><td><code>drsm_exit</code></td><td></td><td>exits with the state</td></tr></tbody></table></div>
+
+<h3 id="states">States and exit codes</h3>
+<p>Exit codes follow the Nagios plugin convention:</p>
+<p><span class="badge ok">0 OK</span> <span class="badge warn">1 WARNING</span> <span class="badge err">2 ERROR</span> <span class="badge">3 UNKNOWN</span></p>
+<ul>
+<li>An <code>ERROR - </code> or <code>WARNING - </code> line counts even if the script exits 0.</li>
+<li>A plugin that runs past its <code>TIMEOUT</code> is stopped and reported as a WARNING.</li>
+<li>A missing <code>REQUIRES</code> command makes the plugin UNKNOWN, which shows in the report but does not alert.</li>
+<li>A plugin that prints nothing is reported as an ERROR.</li>
+</ul>
+
+<h2 id="how">How a run works</h2>
+<p>For each host the runner builds one job script with a line per plugin, its settings and its timeout. Probe jobs run on the monitor host. Remote jobs go through the host's collector:</p>
+<ul>
+<li><code>local</code> runs the job in place from <code>$DRSMHOME</code>.</li>
+<li><code>ssh-linux</code> copies <code>lib/drsm_plugin.sh</code> and the host's plugins to <code>~/drsm_agent</code> as one tar stream, skipped when the checksum has not changed, then runs the whole job in one SSH session. Set <code>DRSM_REMOTE_BASE</code> for another directory.</li>
+</ul>
+<p>Each plugin's output is a section of the host report:</p>
+<pre><code>=== storage/disk [WARNING] 0s ===
+Disk usage checks for cloud1
+WARNING - cloud1:/var is at 92% capacity.
+METRIC disk_used_pct{mount="/var"}=92</code></pre>
+<div class="table-wrap"><table><thead><tr><th>File</th><th>Written by</th></tr></thead><tbody><tr><td><code>$REPORTdir/systems/&lt;host&gt;/&lt;host&gt;_report.txt</code> and archive</td><td>same as <code>system_report.sh</code></td></tr><tr><td><code>$REPORTdir/systems/&lt;host&gt;/status.json</code></td><td>new, plugin states for the dashboard</td></tr><tr><td><code>$REPORTdir/system_health_report.txt</code>, <code>_errors.txt</code></td><td>same as <code>system_report.sh</code></td></tr><tr><td><code>$REPORTdir/system_check_report.txt</code>, <code>_report_errors.txt</code></td><td>same as <code>system_check.sh</code></td></tr></tbody></table></div>
+<p>Groups other than production add <code>_&lt;group&gt;</code> to the group report names. Alerts use <code>bin/text_email_alert.sh</code> with the same subjects and 4 hour throttle as before.</p>
+
+<h2 id="layout">Files</h2>
+<pre><code>bin/drsm_run.sh               plugin runner
+lib/drsm_plugin.sh            helpers every plugin sources
+lib/drsm_conf.sh              KEY=value reader for manifests and host files
+lib/drsm_job.sh               runs plugins on the target, with timeouts
+collectors/local.sh           runs plugins on the monitor host itself
+collectors/ssh-linux.sh       copies and runs plugins on Linux hosts over SSH
+plugins/&lt;category&gt;/&lt;name&gt;/    plugin.conf plus check.sh or probe.sh
+plugins/local/                your own plugins, never overwritten by updates
+etc/hosts/_defaults.conf      settings shared by all hosts
+etc/hosts/&lt;host&gt;.conf         one file per host
+utils/new_plugin.sh           creates a plugin from a template
+utils/migrate_systems_dat.sh  converts systems.dat and profiles to host files</code></pre>
+
+<h2 id="roadmap">Roadmap</h2>
+<p>Later phases of the plugin design add more checks (SMART, mounts, backup age, TCP ports, TLS expiry, DNS, time sync, failed services), generic database, container, service and process plugins with a <code>custom/command</code> catch all, a Windows collector over OpenSSH and PowerShell, and configurable notifiers (email, SMS, Slack, ntfy, webhook) with alert on change.</p>
+<nav class="pager" aria-label="Previous and next page"><a class="card prev" href="dashboard.html"><small>Previous</small>Web dashboard</a><a class="card next" href="alerts.html"><small>Next</small>Thresholds and alerts</a></nav>
+  </main>
+</div>
+<footer class="foot">DataReel System Monitor (DRSM) 1.30 and later &middot; GNU General Public License v3 &middot; <a href="https://github.com/datareel/dr_system_monitor">github.com/datareel/dr_system_monitor</a></footer>
+</body>
+</html>

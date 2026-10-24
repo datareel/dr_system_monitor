@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>What's new | DRSM Documentation</title>
+<meta name="description" content="Recent DRSM changes: code review, plugin system, dashboard redesign, Web only package and live demo.">
+<link rel="icon" href="images/logo.svg" type="image/svg+xml">
+<link rel="stylesheet" href="docs.css">
+<script src="docs.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="topbar">
+  <div class="topbar-inner">
+    <button class="tool icon-only menu-btn" type="button" data-action="menu" aria-label="Menu" aria-expanded="false"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+    <a class="brand" href="index.html"><img src="images/logo.svg" alt="">DRSM <small>Documentation</small></a>
+    <span class="spacer"></span>
+    <a class="tool primary" href="https://datareel.com/drsm/dashboard/"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg><span>Live demo</span></a>
+    <a class="tool hide-sm" href="https://github.com/datareel/dr_system_monitor"><svg class="icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.53-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.68 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.83 1.19 3.09 0 4.41-2.69 5.38-5.25 5.67.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5z"/></svg><span>GitHub</span></a>
+    <button class="tool icon-only" type="button" data-action="theme" aria-label="Switch light or dark theme"><svg class="icon sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg><svg class="icon moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+  </div>
+</header>
+<div class="layout">
+  <nav class="sidebar" aria-label="Documentation">
+    <h4>Get started</h4><a href="index.html">Overview</a><a href="install.html">Install and set up</a><a href="deployment.html">Deployment setups</a><h4>Using DRSM</h4><a href="dashboard.html">Web dashboard</a><a href="plugins.html">Plugins</a><a href="alerts.html">Thresholds and alerts</a><a href="databases.html">MySQL and Postgres</a><h4>Reference</h4><a href="changelog.html" class="active" aria-current="page">What's new</a><h4>Links</h4><a href="https://datareel.com/drsm/dashboard/">Live demo</a><a href="https://github.com/datareel/dr_system_monitor">GitHub repository</a><a href="https://github.com/datareel/dr_system_monitor/issues">Report an issue</a>
+  </nav>
+  <main class="content" id="main">
+<h1>What's new</h1>
+<p class="lead">DRSM had a full code review and three feature updates in October 2026. All of it was written by <a href="https://claude.com/claude-code">Claude Code</a> at the request of the project owner. The complete list of changes is in <code>CHANGELOG.md</code>.</p>
+
+<ul class="timeline">
+<li>
+  <h3>Dashboard login <span class="badge new">New</span></h3>
+  <p class="meta">October 24, 2026 &middot; <a href="https://github.com/datareel/dr_system_monitor/pull/7">PR #7</a></p>
+  <p>An optional <a href="dashboard.html#login">login</a> for access from outside your internal networks, while the internal network gets straight in. Off by default.</p>
+</li>
+<li>
+  <h3>HTML documentation</h3>
+  <p class="meta">October 24, 2026</p>
+  <p>These pages: a browsable version of README.txt, PLUGINS.md and CHANGELOG.md, with screenshots and the deployment setups. Installed to <code>~/drsm/docs</code>.</p>
+</li>
+<li>
+  <h3>Heat map status icons</h3>
+  <p class="meta">October 24, 2026 &middot; <a href="https://github.com/datareel/dr_system_monitor/pull/5">PR #5</a></p>
+  <p>The heat map shows a status icon in each cell (check, triangle, cross, question mark) instead of a solid colored box, so states read without relying on color alone, and problem cells are shaded.</p>
+</li>
+<li>
+  <h3>Web only package and live demo</h3>
+  <p class="meta">October 23, 2026 &middot; <a href="https://github.com/datareel/dr_system_monitor/pull/4">PR #4</a></p>
+  <p><code>utils/make_web_demo.sh</code> builds the dashboard for a PHP only host such as HostGator, unpacked into any folder. With <code>-s</code> it adds sample reports for a public demo, now live at <a href="https://datareel.com/drsm/dashboard/">datareel.com/drsm/dashboard</a>.</p>
+</li>
+<li>
+  <h3>Dashboard redesign</h3>
+  <p class="meta">October 23, 2026 &middot; <a href="https://github.com/datareel/dr_system_monitor/pull/3">PR #3</a></p>
+  <ul>
+    <li>Overview page for situational awareness: status banner, counters, Needs attention list, group checks, host matrix and host cards with search and filters.</li>
+    <li>Heat map of hosts against plugin checks, or against CPU, memory, disk, load and swap use.</li>
+    <li>Host reports with resource gauges and a collapsible panel per plugin, problems first.</li>
+    <li>Sortable Hosts table and a Connectivity page for every host group.</li>
+    <li>Light and dark themes, auto refresh with pause, wall display mode, stale host detection, and layouts for phones, tablets and desktops.</li>
+    <li>Branding through <code>$SITEtitle</code> and <code>site/custom.css</code>. Pages tested with PHP 7.2 and 8.3 in CI.</li>
+  </ul>
+  <p>See <a href="dashboard.html">Web dashboard</a>. The pages now need PHP 7.2 or higher, and a custom <code>page_header.php</code> must print <code>drsm_head_assets()</code>.</p>
+</li>
+<li>
+  <h3>Plugin module system, phase 1</h3>
+  <p class="meta">October 23, 2026 &middot; <a href="https://github.com/datareel/dr_system_monitor/pull/2">PR #2</a></p>
+  <ul>
+    <li><code>bin/drsm_run.sh</code> replaces the per host loops in <code>system_check.sh</code> and <code>system_report.sh</code>, writes the same reports, and adds a <code>status.json</code> per host.</li>
+    <li>The plugin contract: a folder with <code>plugin.conf</code> and <code>check.sh</code> or <code>probe.sh</code>, settings as <code>DRSM_&lt;KEY&gt;</code>, Nagios exit codes, and <code>METRIC</code> lines.</li>
+    <li>All eleven existing checks ported as plugins with the same messages and levels.</li>
+    <li>Collectors for the monitor host and for Linux over SSH, one session per host.</li>
+    <li>Host files in <code>etc/hosts</code>, a migration tool from <code>systems.dat</code>, and <code>utils/new_plugin.sh</code>.</li>
+  </ul>
+  <p>Nothing was removed; the old scripts keep working. See <a href="plugins.html">Plugins</a>.</p>
+</li>
+<li id="v130">
+  <h3>Release 1.30: code review and modernization</h3>
+  <p class="meta">October 23, 2026 &middot; <a href="https://github.com/datareel/dr_system_monitor/pull/1">PR #1</a></p>
+  <p>A full review to run DRSM on RHEL, Rocky and Alma 8 to 10, Fedora, Debian 11+, Ubuntu 20.04+, PHP 7.2 to 8, and cloud servers. The fixes that mattered most:</p>
+  <ul>
+    <li><strong>Checks that never fired.</strong> The HTTP check always passed, even with the server down. <code>system_report.sh</code> never noticed a failed SSH login and reused the last run's results when a check failed. The network retry compared a value with itself. Load warnings were reported as errors and the fixed 35/50 levels never fired on small VMs.</li>
+    <li><strong>Wrong numbers.</strong> CPU use was the average since boot, not current use, and broke on hosts with 10 or more CPUs. Free memory ignored the kernel's <code>MemAvailable</code>. Disk checks missed btrfs and anything not in <code>/etc/fstab</code>.</li>
+    <li><strong>Security.</strong> Report text was run through PHP <code>include()</code>, so remote output could run code on the Web server. Host names accepted <code>../</code>. A stale lock could kill unrelated processes. MySQL passwords showed in <code>ps</code>. SSH now refuses changed host keys.</li>
+    <li><strong>Modern platforms.</strong> Runs under <code>dash</code> on Debian cron, no <code>bc</code> needed, <code>curl</code> instead of <code>wget</code> (RHEL 10), PHP 8 fixes, MySQL 8 support, mdadm RAID checks, Intel and AMD CPU temperatures, and cloud hosts that block ping.</li>
+  </ul>
+</li>
+</ul>
+<nav class="pager" aria-label="Previous and next page"><a class="card prev" href="databases.html"><small>Previous</small>MySQL and Postgres</a></nav>
+  </main>
+</div>
+<footer class="foot">DataReel System Monitor (DRSM) 1.30 and later &middot; GNU General Public License v3 &middot; <a href="https://github.com/datareel/dr_system_monitor">github.com/datareel/dr_system_monitor</a></footer>
+</body>
+</html>

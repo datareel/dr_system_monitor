@@ -27,6 +27,23 @@ are unchanged.
   login covers them. `make_web_demo.sh -a` builds a package with
   login on and the report folder blocked.
 
+## Unreleased: HTML documentation
+
+### Added
+
+- `docs/`, an HTML documentation set styled like the dashboard, with
+  light and dark themes and no external fonts or scripts: overview,
+  install, deployment setups (3 node production cluster, workstation
+  with a dashboard on a PHP hosting account, the public live demo,
+  cloud servers), Web dashboard, plugins, thresholds and alerts, MySQL
+  and Postgres, and what's new. Screenshots are of the live demo.
+- `tests/docs_test.sh`, run in CI, checks every local link, image and
+  anchor in the docs.
+
+### Changed
+
+- `utils/install.sh` installs the docs to `${DRSMHOME}/docs`.
+
 ## Unreleased: Web interface redesign
 
 A new look for the Web interface. Written by

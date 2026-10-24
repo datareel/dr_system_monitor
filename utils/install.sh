@@ -70,7 +70,7 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-dirs="bin etc lib collectors plugins mysql postgres utils www"
+dirs="bin etc lib collectors plugins mysql postgres utils www docs"
 for d in ${dirs}
 do
     cp -rfv ${BASEdir}/${d} ${DRSMHOME}/.

@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Web dashboard | DRSM Documentation</title>
+<meta name="description" content="The DRSM Web dashboard: Overview, heat map, host reports, connectivity, customizing and the Web only package.">
+<link rel="icon" href="images/logo.svg" type="image/svg+xml">
+<link rel="stylesheet" href="docs.css">
+<script src="docs.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="topbar">
+  <div class="topbar-inner">
+    <button class="tool icon-only menu-btn" type="button" data-action="menu" aria-label="Menu" aria-expanded="false"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+    <a class="brand" href="index.html"><img src="images/logo.svg" alt="">DRSM <small>Documentation</small></a>
+    <span class="spacer"></span>
+    <a class="tool primary" href="https://datareel.com/drsm/dashboard/"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg><span>Live demo</span></a>
+    <a class="tool hide-sm" href="https://github.com/datareel/dr_system_monitor"><svg class="icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.53-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.68 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.83 1.19 3.09 0 4.41-2.69 5.38-5.25 5.67.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5z"/></svg><span>GitHub</span></a>
+    <button class="tool icon-only" type="button" data-action="theme" aria-label="Switch light or dark theme"><svg class="icon sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg><svg class="icon moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+  </div>
+</header>
+<div class="layout">
+  <nav class="sidebar" aria-label="Documentation">
+    <h4>Get started</h4><a href="index.html">Overview</a><a href="install.html">Install and set up</a><a href="deployment.html">Deployment setups</a><h4>Using DRSM</h4><a href="dashboard.html" class="active" aria-current="page">Web dashboard</a><div class="toc"><a href="#overview">Overview</a><a href="#heatmap">Heat map</a><a href="#hosts">Hosts and reports</a><a href="#connectivity">Connectivity</a><a href="#anywhere">Phones and wall screens</a><a href="#customize">Customizing</a><a href="#webonly">Web only package</a><a href="#login">Login from outside</a><a href="#security">Security</a></div><a href="plugins.html">Plugins</a><a href="alerts.html">Thresholds and alerts</a><a href="databases.html">MySQL and Postgres</a><h4>Reference</h4><a href="changelog.html">What's new</a><h4>Links</h4><a href="https://datareel.com/drsm/dashboard/">Live demo</a><a href="https://github.com/datareel/dr_system_monitor">GitHub repository</a><a href="https://github.com/datareel/dr_system_monitor/issues">Report an issue</a>
+  </nav>
+  <main class="content" id="main">
+<h1>Web dashboard</h1>
+<p class="lead">The dashboard answers one question first: does anything need attention right now? Then it lets you drill from the whole estate down to one check on one host in two clicks.</p>
+<p>It reads the report files that <code>drsm_run.sh</code>, <code>system_report.sh</code> and <code>system_check.sh</code> write, so it works with old and new setups. It needs PHP 7.2 or higher and loads no fonts or scripts from the internet. Try it in the <a href="https://datareel.com/drsm/dashboard/">live demo</a>.</p>
+
+<h2 id="overview">Overview</h2>
+<p>The Overview is the situational awareness page, built to read from across a room.</p>
+<ul>
+<li><strong>Status banner</strong>: the overall state in one line, such as <em>8 hosts need attention</em>, with the time of the latest report.</li>
+<li><strong>Counters</strong>: hosts, healthy, warning, error, not reporting, and failing plugin checks.</li>
+<li><strong>Needs attention</strong>: every current error and warning, worst first, each linked to the plugin that raised it.</li>
+<li><strong>Group checks</strong>: the connectivity and health result for each host group.</li>
+<li><strong>Host matrix</strong>: one colored square per host, for a quick scan.</li>
+<li><strong>Host cards</strong>: CPU, memory and disk bars and the plugin states for every host, with search and filters by state and host group.</li>
+</ul>
+<div class="shots">
+<figure><img src="images/overview.png" width="1400" height="900" loading="lazy" alt="Overview page in the dark theme"><figcaption>Dark theme</figcaption></figure>
+<figure><img src="images/overview_light.png" width="1400" height="900" loading="lazy" alt="Overview page in the light theme"><figcaption>Light theme</figcaption></figure>
+</div>
+
+<h2 id="heatmap">Heat map</h2>
+<p>The heat map puts every host against every check. <strong>Check status</strong> shows a status icon per plugin: a green check for OK, an amber triangle for a warning, a red cross for an error, and a gray question mark for unknown. Problem cells are shaded so they stand out. Select a cell to open that check in the host report. The bottom row shows the worst state in each column.</p>
+<figure><img src="images/heatmap.png" width="1400" height="900" loading="lazy" alt="Heat map in check status mode, with green, amber and red status icons per host and plugin"><figcaption>Check status: hosts against plugins, worst first</figcaption></figure>
+<p><strong>Resource use</strong> shows CPU, memory, disk, load per CPU and swap as a percentage, colored from teal through green, amber and orange to red, so the busiest hosts stand out before they alert. Sort <strong>Worst first</strong> or <strong>A to Z</strong>.</p>
+<figure><img src="images/heatmap_metrics.png" width="1400" height="900" loading="lazy" alt="Heat map in resource use mode, with CPU, memory, disk, load and swap percentages colored by level"><figcaption>Resource use from the latest plugin metrics</figcaption></figure>
+
+<h2 id="hosts">Hosts and host reports</h2>
+<p>The <strong>Hosts</strong> page is a table of every host, sortable by any column. Select a host for its report: details, gauges for CPU, memory, disk, load and swap, and a panel per plugin with the problems open first. Error and warning lines are highlighted, and <strong>Archived reports</strong> lists earlier runs.</p>
+<figure><img src="images/host_report.png" width="1400" height="900" loading="lazy" alt="Host report for db1 with resource gauges and an open core/memory panel showing a warning line"><figcaption>A host report, with the memory warning open</figcaption></figure>
+
+<h2 id="connectivity">Connectivity</h2>
+<p>The <strong>Connectivity</strong> page has the connectivity (probe) and health reports for each host group, the same reports that go out in the alert emails.</p>
+<figure><img src="images/connectivity.png" width="1400" height="900" loading="lazy" alt="Connectivity page with the group reports"><figcaption>Group connectivity and health reports</figcaption></figure>
+
+<h2 id="anywhere">Phones, tablets and wall screens</h2>
+<div class="shots phone">
+<div>
+<ul>
+<li><strong>Responsive</strong>: every page works on a phone, a tablet and a desktop.</li>
+<li><strong>Light and dark</strong>: follows the device setting; the sun and moon button switches it.</li>
+<li><strong>Live refresh</strong>: pages reload every <code>$REFRESHseconds</code> (60 by default). The ring button shows the countdown and pauses it. A reload waits while you are typing in a search box, and keeps your scroll position.</li>
+<li><strong>Wall display</strong>: the expand button hides the controls for a NOC screen. <kbd>Esc</kbd> leaves it.</li>
+<li><strong>Not reporting</strong>: a host whose report is older than <code>$STALEminutes</code> (60 by default) is shown in purple, so a stopped cron or a dead monitor does not look like a healthy estate.</li>
+<li><strong>Any URL path</strong>: serve it from <code>/sysadmin</code>, <code>/drsm/dashboard</code> or anywhere else.</li>
+</ul>
+</div>
+<figure><img src="images/mobile.png" width="390" height="844" loading="lazy" alt="Overview page on a phone"><figcaption>On a phone</figcaption></figure>
+</div>
+
+<h2 id="customize">Customizing the dashboard</h2>
+<p>Add settings to <code>$CONFIGdir/drsm.php</code>:</p>
+<pre><code>$SITEtitle = 'MY System Monitor';  // Name in the top bar
+$REFRESHseconds = 60;              // Auto refresh, 0 turns it off
+$STALEminutes = 60;                // Report age that counts as not reporting, 0 turns it off</code></pre>
+<p>For colors and styles, edit <code>$WWWdir/site/custom.css</code>, which loads after the DRSM styles. Colors are CSS variables:</p>
+<pre><code>:root { --accent: #e11d48; }</code></pre>
+<p>To replace the header and footer, add <code>page_header.php</code> and <code>page_footer.php</code> to <code>$WWWdir/site</code>. The header must print <code>drsm_head_assets()</code> to keep the styles and scripts, and leave <code>&lt;main&gt;</code> open:</p>
+<pre><code>&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+&lt;meta charset="utf-8"&gt;
+&lt;meta name="viewport" content="width=device-width, initial-scale=1"&gt;
+&lt;title&gt;MY System Monitor&lt;/title&gt;
+&lt;?php echo drsm_head_assets(); ?&gt;
+&lt;/head&gt;
+&lt;body data-refresh="&lt;?php echo (int)$REFRESHseconds; ?&gt;"&gt;
+&lt;main class="page"&gt;</code></pre>
+<div class="callout warn"><p>A <code>page_header.php</code> from a release before the redesign still works, but the pages are unstyled until it prints <code>drsm_head_assets()</code>.</p></div>
+<p>Updates and reinstalls never overwrite <code>$WWWdir/index.php</code> or anything in <code>$WWWdir/site</code>.</p>
+
+<h2 id="webonly">Web only package</h2>
+<p><code>utils/make_web_demo.sh</code> builds a copy of the dashboard for a host with nothing but Apache and PHP, such as a HostGator or other cPanel account. It finds its own files, so no server paths need to be set.</p>
+<div class="table-wrap"><table><thead><tr><th>Option</th><th>Meaning</th></tr></thead><tbody><tr><td><code>-p /url/path</code></td><td>URL path it is served from, default <code>/drsm/dashboard</code></td></tr><tr><td><code>-o outdir</code></td><td>Output directory, default <code>./drsm_web</code></td></tr><tr><td><code>-t title</code></td><td>Name in the top bar</td></tr><tr><td><code>-s</code></td><td>Add sample reports for made up hosts, for a public demo</td></tr><tr><td><code>-a</code></td><td>Turn on the <a href="#login">login</a> and block direct access to the report folder</td></tr></tbody></table></div>
+<p>It writes <code>&lt;outdir&gt;/dashboard/</code> and <code>&lt;outdir&gt;/drsm_dashboard.zip</code>. How to upload it and keep its reports up to date is in <a href="deployment.html#workstation">Workstation with a hosted dashboard</a>.</p>
+
+<h2 id="login">Login from outside your network</h2>
+<p>The dashboard can ask for a user name and password from anyone outside your own networks, while people on the internal network get straight in. It is off by default, so a public demo stays open, and it is plain PHP, so it works on shared hosting.</p>
+<ol>
+<li>Make a password hash for each account. Run this on any machine with PHP; it asks for the password without showing it:
+<pre><code><span class="p">$ </span>php ~/drsm/utils/drsm_password.php admin</code></pre></li>
+<li>Add the settings to <code>config/drsm.php</code>, with the printed line in <code>$AUTHusers</code>:
+<pre><code>$AUTHenable = 1;
+$AUTHnetworks = array('127.0.0.1/32', '::1/128', '10.0.0.0/8',
+                      '172.16.0.0/12', '192.168.0.0/16');
+$AUTHusers = array(
+  'admin' =&gt; '$2y$10$...',
+);</code></pre></li>
+<li>Block direct access to the <code>reports</code> folder, which the login can not cover because it is served as plain files. <code>make_web_demo.sh -a</code> does this; otherwise put <code>Require all denied</code> in <code>reports/.htaccess</code>. With login on, the Archived reports buttons read reports through the pages.</li>
+</ol>
+<div class="table-wrap"><table><thead><tr><th>Setting</th><th>Meaning</th></tr></thead><tbody>
+<tr><td><code>$AUTHnetworks</code></td><td>Internal networks as CIDRs, IPv4 or IPv6, that need no login</td></tr>
+<tr><td><code>$AUTHproxies</code></td><td>Reverse proxies or CDNs in front of the site, such as Cloudflare. <code>X-Forwarded-For</code> is only read from these. Leave empty on a plain cPanel account</td></tr>
+<tr><td><code>$AUTHhttps</code></td><td>1 (default) refuses logins over plain HTTP</td></tr>
+<tr><td><code>$AUTHidleminutes</code>, <code>$AUTHmaxhours</code></td><td>Sign out after 60 minutes idle, or 12 hours after login</td></tr>
+<tr><td><code>$AUTHmaxfails</code>, <code>$AUTHlockminutes</code></td><td>Lock an address out for 15 minutes after 5 failed logins</td></tr>
+<tr><td><code>$AUTHstatedir</code></td><td>Failed login counts, default <code>config/auth</code>, must be writable by the Web server</td></tr>
+</tbody></table></div>
+<p>Passwords are stored as bcrypt hashes. Sessions use HttpOnly, SameSite cookies, Secure on HTTPS, with a new session id at login, and the login and sign out forms carry a CSRF token.</p>
+
+<h2 id="security">Security</h2>
+<ul>
+<li>Report text is escaped and printed as text, never run or rendered as HTML, so output from a monitored host cannot inject code into the page.</li>
+<li>Host names in URLs are checked, so <code>../</code> paths are refused.</li>
+<li>The Web only package blocks direct downloads of <code>status.json</code>.</li>
+<li>Reports still contain process lists and user names: turn on the <a href="#login">login</a> or put the dashboard behind a firewall, as in <a href="install.html#web">Web server</a>.</li>
+</ul>
+<nav class="pager" aria-label="Previous and next page"><a class="card prev" href="deployment.html"><small>Previous</small>Deployment setups</a><a class="card next" href="plugins.html"><small>Next</small>Plugins</a></nav>
+  </main>
+</div>
+<footer class="foot">DataReel System Monitor (DRSM) 1.30 and later &middot; GNU General Public License v3 &middot; <a href="https://github.com/datareel/dr_system_monitor">github.com/datareel/dr_system_monitor</a></footer>
+</body>
+</html>

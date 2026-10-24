@@ -1,5 +1,5 @@
 DataReel System Admin Monitor README file
-Last Modified: 10/23/2026
+Last Modified: 10/24/2026
 
 Contents:
 --------
@@ -32,6 +32,12 @@ HTTPS, and FTP as required. System health check reporting connects to
 systems via keyed SSH sessions and monitors CPU, memory, disk, load,
 and user statistics. Email and text message alerts can be sent based
 on per-defined or user-defined thresholds.
+
+HTML documentation with screenshots is in the docs directory, open
+docs/index.html in a browser. After an install it is in
+${DRSMHOME}/docs. A live demo of the dashboard is at:
+
+https://datareel.com/drsm/dashboard/
 
 Documented Usage:
 ----------------

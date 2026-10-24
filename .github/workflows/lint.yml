@@ -28,6 +28,9 @@ jobs:
       - name: Plugin runner tests
         run: bash tests/drsm_run_test.sh
 
+      - name: HTML docs tests
+        run: bash tests/docs_test.sh
+
   php:
     runs-on: ubuntu-latest
     strategy:
