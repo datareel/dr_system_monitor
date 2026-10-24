@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Install and set up | DRSM Documentation</title>
+<meta name="description" content="Install DataReel System Monitor, add hosts, set up the Web server and schedule the monitoring runs.">
+<link rel="icon" href="images/logo.svg" type="image/svg+xml">
+<link rel="stylesheet" href="docs.css">
+<script src="docs.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="topbar">
+  <div class="topbar-inner">
+    <button class="tool icon-only menu-btn" type="button" data-action="menu" aria-label="Menu" aria-expanded="false"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+    <a class="brand" href="index.html"><img src="images/logo.svg" alt="">DRSM <small>Documentation</small></a>
+    <span class="spacer"></span>
+    <a class="tool primary" href="https://datareel.com/drsm/dashboard/"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg><span>Live demo</span></a>
+    <a class="tool hide-sm" href="https://github.com/datareel/dr_system_monitor"><svg class="icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.53-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.68 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.83 1.19 3.09 0 4.41-2.69 5.38-5.25 5.67.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5z"/></svg><span>GitHub</span></a>
+    <button class="tool icon-only" type="button" data-action="theme" aria-label="Switch light or dark theme"><svg class="icon sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg><svg class="icon moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+  </div>
+</header>
+<div class="layout">
+  <nav class="sidebar" aria-label="Documentation">
+    <h4>Get started</h4><a href="index.html">Overview</a><a href="install.html" class="active" aria-current="page">Install and set up</a><div class="toc"><a href="#requirements">Requirements</a><a href="#user">Create the DRSM user</a><a href="#install">Install</a><a href="#hosts">Add hosts</a><a href="#test">Test a run</a><a href="#web">Web server</a><a href="#cron">Schedule the runs</a></div><a href="deployment.html">Deployment setups</a><h4>Using DRSM</h4><a href="dashboard.html">Web dashboard</a><a href="plugins.html">Plugins</a><a href="alerts.html">Thresholds and alerts</a><a href="databases.html">MySQL and Postgres</a><h4>Reference</h4><a href="changelog.html">What's new</a><h4>Links</h4><a href="https://datareel.com/drsm/dashboard/">Live demo</a><a href="https://github.com/datareel/dr_system_monitor">GitHub repository</a><a href="https://github.com/datareel/dr_system_monitor/issues">Report an issue</a>
+  </nav>
+  <main class="content" id="main">
+<h1>Install and set up</h1>
+<p class="lead">Install DRSM on a monitor host, give it keyed SSH access to the hosts it watches, add the hosts, and schedule the runs. Plan on about 30 minutes.</p>
+
+<div class="callout">
+<p>In the examples, <code>$</code> commands run as the DRSM user (for example <code>sysadmin</code>) and <code>#</code> commands run as root.</p>
+</div>
+
+<h2 id="requirements">Requirements</h2>
+<div class="table-wrap"><table><thead><tr><th>Where</th><th>Needs</th></tr></thead><tbody><tr><td>Monitor host</td><td>Linux: RHEL, Rocky or Alma 8, 9 or 10, Fedora, Debian 11+ or Ubuntu 20.04+. Bash 4+, OpenSSH 7.6+, <code>curl</code>, <code>ping</code>, <code>procps</code>, and a mail command (<code>s-nail</code>, <code>mailx</code> or <code>bsd-mailx</code>).</td></tr><tr><td>Web dashboard</td><td>Apache with PHP 7.2 or higher, PHP 8 supported. Can be the monitor host or a separate Web host, see <a href="deployment.html">Deployment setups</a>.</td></tr><tr><td>Monitored hosts</td><td>A user account with keyed SSH access from the monitor host, and <code>procps</code>. <code>lm_sensors</code> (<code>lm-sensors</code> on Debian) is optional, for CPU temperatures.</td></tr></tbody></table></div>
+<pre><code><span class="c"># RHEL, Rocky, Alma and Fedora</span>
+<span class="r"># </span>dnf install curl iputils procps-ng s-nail
+
+<span class="c"># Debian and Ubuntu</span>
+<span class="r"># </span>apt install curl iputils-ping procps bsd-mailx</code></pre>
+
+<h2 id="user">Create the DRSM user</h2>
+<p>DRSM can run from your own account or from a system admin account. The default is <code>sysadmin</code>; the name is set in <code>~/.drsm.sh</code>.</p>
+<pre><code><span class="r"># </span>groupadd -g 3500 sysadmin
+<span class="r"># </span>useradd -u 3500 -g 3500 sysadmin
+<span class="r"># </span>passwd sysadmin
+<span class="r"># </span>su - sysadmin
+<span class="p">$ </span>ssh-keygen -t ed25519</code></pre>
+<div class="callout warn"><p>Use ed25519 or RSA keys. DSA keys are no longer supported by current OpenSSH releases.</p></div>
+<p>Create the same account on each host DRSM checks, then copy the public key to it:</p>
+<pre><code><span class="p">$ </span>for s in server1 server2 server3; do
+&gt;   ssh -tq $s "sudo groupadd -g 3500 sysadmin; sudo useradd -u 3500 -g 3500 sysadmin; sudo passwd sysadmin"
+&gt;   ssh-copy-id -i ~/.ssh/id_ed25519.pub sysadmin@$s
+&gt; done</code></pre>
+<p>If a host needs a different user, port or key, as most cloud images do, set it in <code>~/.ssh/config</code>. See <a href="deployment.html#cloud">Cloud servers</a>.</p>
+
+<h2 id="install">Install</h2>
+<ol class="steps">
+<li><strong>Clone the repository</strong>
+<pre><code><span class="p">$ </span>mkdir -p ~/git &amp;&amp; cd ~/git
+<span class="p">$ </span>git clone https://github.com/datareel/dr_system_monitor
+<span class="p">$ </span>cd dr_system_monitor</code></pre></li>
+<li><strong>Create your configuration</strong>
+<p>Copy the config and set the Web directory, user and group. <code>etc/drsm_dev.sh</code> is a version that runs from your own account and serves from <code>~/public_html/sysadmin</code>.</p>
+<pre><code><span class="p">$ </span>cp etc/drsm.sh ~/.drsm.sh
+<span class="p">$ </span>vi ~/.drsm.sh
+
+export WWWdir=/var/www/html/sysadmin
+export SYSADMIN_USERNAME=sysadmin
+export SYSADMIN_GROUPNAME=sysadmin
+export TEMPdir="/tmp/${SYSADMIN_USERNAME}/drsm"</code></pre></li>
+<li><strong>Create the Web directory</strong>
+<pre><code><span class="r"># </span>mkdir -p /var/www/html/sysadmin
+<span class="r"># </span>chmod 775 /var/www/html/sysadmin
+<span class="r"># </span>chown sysadmin:sysadmin /var/www/html/sysadmin</code></pre></li>
+<li><strong>Run the installer</strong>
+<p>DRSM installs to <code>~/drsm</code>. Set <code>DRSM_ACCEPT_EULA=yes</code> to skip the license prompt in a provisioning script.</p>
+<pre><code><span class="p">$ </span>cd ~/git/dr_system_monitor/utils
+<span class="p">$ </span>./install.sh
+Accept EULA (Yes/no)&gt; Yes
+...
+Install complete</code></pre>
+<p>Reinstalling updates the code and keeps your <code>etc/hosts</code> files, <code>plugins/local</code>, <code>$WWWdir/index.php</code> and <code>$WWWdir/site</code>.</p></li>
+</ol>
+
+<h2 id="hosts">Add the hosts to monitor</h2>
+<p>Each host gets one file in <code>~/drsm/etc/hosts</code>, named <code>&lt;host&gt;.conf</code>. Settings shared by every host go in <code>_defaults.conf</code>, so a host file only lists what is different.</p>
+<pre><code><span class="p">$ </span>vi ~/drsm/etc/hosts/web1.conf
+
+DESCRIPTION="Public Web server"
+IMPACT="Company website is down"
+GROUP=production
+PROBES="network/ping network/https"
+network_https_URL=https://www.example.com/
+storage_disk_WARN=85</code></pre>
+<p>The files are plain <code>KEY=value</code> lines that DRSM reads but never runs. All the keys are in <a href="plugins.html#hosts">Host files</a>.</p>
+
+<h3 id="systems-dat">Coming from systems.dat</h3>
+<p>Releases before the plugin system kept hosts in <code>$CONFIGdir/systems.dat</code> and <code>dev_systems.dat</code>, with alert levels in generated <code>&lt;host&gt;_profile.sh</code> scripts. Convert them all in one step:</p>
+<pre><code><span class="p">$ </span>~/drsm/utils/migrate_systems_dat.sh
+<span class="p">$ </span>~/drsm/bin/drsm_run.sh -l</code></pre>
+<p>Until any host file exists, <code>drsm_run.sh</code> reads <code>systems.dat</code> directly, and <code>system_check.sh</code> and <code>system_report.sh</code> still work. The <code>systems.dat</code> format is:</p>
+<pre><code><span class="c"># hostname,description,impact,is_web_server,is_linux,is_cluster_ip,can_ping,can_ssh</span>
+cms,CMS server,Web CMS is affected,yes:HTTP HTTPS,yes,yes,yes,yes
+cms1,Primary CMS server,Web CMS is affected,no,yes,no,yes,yes</code></pre>
+
+<h2 id="test">Test a run</h2>
+<pre><code><span class="p">$ </span>source ~/.drsm.sh
+<span class="p">$ </span>~/drsm/bin/drsm_run.sh -l           # list hosts and plugins
+<span class="p">$ </span>~/drsm/bin/drsm_run.sh -n           # run everything, no alerts
+<span class="p">$ </span>~/drsm/bin/drsm_run.sh -n -H web1   # one host</code></pre>
+<p>Then open <code>http://&lt;monitor host&gt;/sysadmin</code> in a browser.</p>
+
+<h2 id="web">Web server</h2>
+<pre><code><span class="c"># RHEL, Rocky, Alma and Fedora</span>
+<span class="r"># </span>dnf install httpd php
+<span class="r"># </span>systemctl enable --now httpd
+
+<span class="c"># Debian and Ubuntu</span>
+<span class="r"># </span>apt install apache2 libapache2-mod-php
+<span class="r"># </span>systemctl enable --now apache2</code></pre>
+<p>The archived report links use Apache directory listings, so allow <code>Options Indexes</code> on <code>$WWWdir/reports</code>.</p>
+<div class="callout err">
+<p><strong>Do not expose the reports to the internet.</strong> They contain process lists and logged in user names. Limit access with the firewall, with Apache basic authentication, or both.</p>
+<pre><code><span class="c"># /etc/httpd/conf.d/sysadmin.conf, or /etc/apache2/conf-available/sysadmin.conf</span>
+&lt;Directory /var/www/html/sysadmin&gt;
+    AuthType Basic
+    AuthName "DRSM"
+    AuthUserFile /etc/httpd/drsm.htpasswd
+    Require valid-user
+&lt;/Directory&gt;</code></pre>
+<pre><code><span class="r"># </span>htpasswd -c /etc/httpd/drsm.htpasswd sysadmin
+<span class="r"># </span>firewall-cmd --permanent --add-rich-rule='rule family="ipv4" source address="192.168.122.0/24" service name="https" accept'
+<span class="r"># </span>firewall-cmd --reload
+<span class="c"># Debian and Ubuntu</span>
+<span class="r"># </span>ufw allow from 192.168.122.0/24 to any port 80,443 proto tcp</code></pre>
+</div>
+
+<h2 id="cron">Schedule the runs</h2>
+<p>Add the runs to the DRSM user's crontab. Probes run every 30 minutes, the full health run at quarter past and quarter to the hour, and a status report goes out each weekday at 13:15 even when everything passes.</p>
+<pre><code><span class="p">$ </span>crontab -e
+
+*/30 * * * * /home/sysadmin/drsm/bin/drsm_run.sh -m probes &amp;&gt; /dev/null
+15,45 * * * * /home/sysadmin/drsm/bin/drsm_run.sh &amp;&gt; /dev/null
+15 13 * * mon-fri /home/sysadmin/drsm/bin/drsm_run.sh -e &amp;&gt; /dev/null
+55 09-16 * * mon-fri /home/sysadmin/drsm/bin/drsm_run.sh -g dev &amp;&gt; /dev/null
+
+<span class="c"># Archive reports nightly, purge old ones hourly</span>
+59 23 * * * /home/sysadmin/drsm/bin/archive.sh &amp;&gt; /dev/null
+00 * * * * /home/sysadmin/drsm/bin/purge.sh &amp;&gt; /dev/null</code></pre>
+<p>Sites still on the older scripts use <code>system_check.sh</code> and <code>system_report.sh</code> in the same slots; both versions are in <code>crontabs/crontab_example.txt</code>. For a cluster, see <a href="deployment.html#cluster">Production cluster</a>.</p>
+
+<h2 id="next">Next steps</h2>
+<ul>
+  <li>Set up email and text alerts: <a href="alerts.html#email">Email and text alerts</a></li>
+  <li>Tune alert levels per host: <a href="alerts.html">Thresholds and alerts</a></li>
+  <li>Brand the dashboard: <a href="dashboard.html#customize">Customizing the dashboard</a></li>
+  <li>Write a check for your own application: <a href="plugins.html#writing">Writing a plugin</a></li>
+</ul>
+<nav class="pager" aria-label="Previous and next page"><a class="card prev" href="index.html"><small>Previous</small>Overview</a><a class="card next" href="deployment.html"><small>Next</small>Deployment setups</a></nav>
+  </main>
+</div>
+<footer class="foot">DataReel System Monitor (DRSM) 1.30 and later &middot; GNU General Public License v3 &middot; <a href="https://github.com/datareel/dr_system_monitor">github.com/datareel/dr_system_monitor</a></footer>
+</body>
+</html>

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Thresholds and alerts | DRSM Documentation</title>
+<meta name="description" content="DRSM alert levels for every plugin, legacy profile arguments, and email and text alert setup.">
+<link rel="icon" href="images/logo.svg" type="image/svg+xml">
+<link rel="stylesheet" href="docs.css">
+<script src="docs.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="topbar">
+  <div class="topbar-inner">
+    <button class="tool icon-only menu-btn" type="button" data-action="menu" aria-label="Menu" aria-expanded="false"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+    <a class="brand" href="index.html"><img src="images/logo.svg" alt="">DRSM <small>Documentation</small></a>
+    <span class="spacer"></span>
+    <a class="tool primary" href="https://datareel.com/drsm/dashboard/"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg><span>Live demo</span></a>
+    <a class="tool hide-sm" href="https://github.com/datareel/dr_system_monitor"><svg class="icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.53-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.68 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.83 1.19 3.09 0 4.41-2.69 5.38-5.25 5.67.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5z"/></svg><span>GitHub</span></a>
+    <button class="tool icon-only" type="button" data-action="theme" aria-label="Switch light or dark theme"><svg class="icon sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg><svg class="icon moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+  </div>
+</header>
+<div class="layout">
+  <nav class="sidebar" aria-label="Documentation">
+    <h4>Get started</h4><a href="index.html">Overview</a><a href="install.html">Install and set up</a><a href="deployment.html">Deployment setups</a><h4>Using DRSM</h4><a href="dashboard.html">Web dashboard</a><a href="plugins.html">Plugins</a><a href="alerts.html" class="active" aria-current="page">Thresholds and alerts</a><div class="toc"><a href="#plugin-settings">Plugin settings</a><a href="#profiles">Profiles</a><a href="#email">Email and text</a><a href="#relay">Relay host</a><a href="#smarthost">Smart host</a></div><a href="databases.html">MySQL and Postgres</a><h4>Reference</h4><a href="changelog.html">What's new</a><h4>Links</h4><a href="https://datareel.com/drsm/dashboard/">Live demo</a><a href="https://github.com/datareel/dr_system_monitor">GitHub repository</a><a href="https://github.com/datareel/dr_system_monitor/issues">Report an issue</a>
+  </nav>
+  <main class="content" id="main">
+<h1>Thresholds and alerts</h1>
+<p class="lead">Every check has default warning and error levels that suit most hosts. Change them for all hosts in <code>_defaults.conf</code> or for one host in its host file, then decide who gets the email and text alerts.</p>
+
+<h2 id="plugin-settings">Plugin settings</h2>
+<p>Set a plugin's setting as <code>&lt;category&gt;_&lt;name&gt;_&lt;SETTING&gt;=value</code> in <code>etc/hosts/_defaults.conf</code> for every host, or in <code>etc/hosts/&lt;host&gt;.conf</code> for one host. Every plugin also takes <code>TIMEOUT</code>.</p>
+<pre><code><span class="p">$ </span>vi ~/drsm/etc/hosts/db1.conf
+
+storage_disk_WARN=80
+storage_disk_CRIT=90
+storage_disk_SKIP="/tmp /usr1"
+core_memory_MIN_AVAIL_MB=1024
+core_load_WARN=16
+core_users_ERROR_USERS="root"</code></pre>
+<div class="table-wrap"><table><thead><tr><th>Plugin</th><th>Setting</th><th>Default</th><th>Meaning</th></tr></thead><tbody><tr><td><code>core/cpu</code></td><td><code>WARN</code>, <code>CRIT</code></td><td>85, 95</td><td>Total CPU use in percent</td></tr><tr><td></td><td><code>NUMPROCS</code></td><td>100</td><td>Processes listed in the report</td></tr><tr><td></td><td><code>SAMPLE_SECS</code></td><td>2</td><td>Seconds between the two <code>/proc/stat</code> samples</td></tr><tr><td></td><td><code>TEMPS</code></td><td>yes</td><td>Report CPU temperatures when <code>lm_sensors</code> is installed</td></tr><tr><td><code>core/load</code></td><td><code>WARN</code>, <code>CRIT</code></td><td>2x, 4x CPUs</td><td>15 minute load average; empty scales with the CPU count</td></tr><tr><td><code>core/memory</code></td><td><code>MIN_AVAIL_MB</code></td><td>256</td><td>Error at or below this much available memory</td></tr><tr><td></td><td><code>SWAP_WARN_MB</code></td><td>1024</td><td>Warning at or above this much swap in use</td></tr><tr><td></td><td><code>NUMPROCS</code></td><td>100</td><td>Processes listed in the report</td></tr><tr><td><code>core/users</code></td><td><code>ERROR_USERS</code>, <code>WARN_USERS</code></td><td>none</td><td>User names that raise an error or warning when logged in</td></tr><tr><td><code>storage/disk</code></td><td><code>WARN</code>, <code>CRIT</code></td><td>90, 99</td><td>Space and inode use in percent</td></tr><tr><td></td><td><code>SKIP</code></td><td>none</td><td>Mount points to skip</td></tr><tr><td></td><td><code>FSTYPES</code></td><td>xfs, ext2/3/4, btrfs, zfs, f2fs, jfs, reiserfs</td><td>Local file system types to check</td></tr><tr><td><code>storage/raid</code></td><td><code>MEGACLI</code></td><td><code>/opt/MegaRAID/MegaCli/MegaCli64</code></td><td>LSI MegaRAID utility, needs sudo</td></tr><tr><td><code>network/nics</code></td><td><code>NICS</code></td><td>all active</td><td>Interfaces to check</td></tr><tr><td></td><td><code>MAX_DROPPED</code>, <code>MAX_COLLISIONS</code>, <code>MAX_ERRORS</code></td><td>1000, 100, 100</td><td>Alert levels during the sample window</td></tr><tr><td></td><td><code>SAMPLE_SECS</code></td><td>5</td><td>Sample window in seconds</td></tr><tr><td><code>network/ping</code></td><td><code>COUNT</code>, <code>DEADLINE</code></td><td>3, 30</td><td>Packets and deadline, any reply passes</td></tr><tr><td><code>network/http</code>, <code>https</code>, <code>ftp</code></td><td><code>URL</code></td><td><code>&lt;scheme&gt;://&lt;host&gt;</code></td><td>URL to test</td></tr><tr><td></td><td><code>CONNECT_TIMEOUT</code>, <code>MAX_TIME</code>, <code>RETRIES</code></td><td>15, 30, 2</td><td>curl limits</td></tr></tbody></table></div>
+<p>A Web server that answers with an error page or a redirect still counts as up. An invalid HTTPS certificate counts as a failure.</p>
+
+<h2 id="profiles">Profiles for system_report.sh</h2>
+<p>Sites still on <code>system_report.sh</code> set levels in the <code>$CONFIGdir/&lt;host&gt;_profile.sh</code> script generated for each host. Edit the arguments inside the double quotes:</p>
+<div class="table-wrap"><table><thead><tr><th>Line</th><th>Arguments</th></tr></thead><tbody><tr><td><code>disk_checks.sh '/tmp /usr1' 80 90</code></td><td>Mounts to skip (or <code>NONE</code>), warning %, error %</td></tr><tr><td><code>cpu_checks.sh 75 85 200</code></td><td>Warning %, error %, processes listed</td></tr><tr><td><code>load_checks.sh 100 250</code></td><td>Warning and error 15 minute load</td></tr><tr><td><code>memory_checks.sh 128 4096 300</code></td><td>Error at MB available, warning at MB swap used, processes listed</td></tr><tr><td><code>network_checks.sh '' 5000 500 500 10</code></td><td>NICs (<code>''</code> for all), dropped, collisions, errors, sample seconds</td></tr><tr><td><code>user_checks.sh 'usr1 usr2' 'usr4'</code></td><td>Users that raise an error, users that raise a warning</td></tr></tbody></table></div>
+<p>The scripts are copied to <code>$REMOTEdir</code> on each host, <code>drsm/health_check_scripts</code> under the remote user's home by default. Delete a profile to have a new one generated. <code>utils/migrate_systems_dat.sh</code> carries these levels over to host files.</p>
+
+<h2 id="email">Email and text alerts</h2>
+<p>Alerts go to <code>root</code> on the monitor host until you add addresses. An alert for the same problem goes out at most once every 4 hours, so a host that stays down does not flood your inbox. Each connectivity alert includes the host's <code>IMPACT</code> line.</p>
+<pre><code><span class="p">$ </span>source ~/.drsm.sh
+<span class="p">$ </span>vi $DRSMHOME/etc/alert.email.list
+
+export EMAILlist="root,ops@example.com"
+export TEXTlist="5555555555@vtext.com"
+
+<span class="p">$ </span>$DRSMHOME/bin/test_alert.sh</code></pre>
+<p>For texts, use the carrier's email to text address, such as <code>number@vtext.com</code> (Verizon) or <code>number@tmomail.net</code> (T-Mobile).</p>
+<div class="callout warn"><p>Several carriers have shut down their email to text gateways, including AT&amp;T (2025), Sprint, Nextel and Cingular. Check with your carrier before relying on text alerts.</p></div>
+<p>DRSM uses the first <code>mail</code>, <code>mailx</code> or <code>s-nail</code> command it finds. Set <code>MAILcmd</code> in <code>~/.drsm.sh</code> to use another.</p>
+
+<h3 id="relay">Relay host</h3>
+<p>If your network has a mail relay, point postfix at it:</p>
+<pre><code><span class="r"># </span>vi /etc/postfix/main.cf
+
+relayhost = 192.168.1.12
+
+<span class="r"># </span>systemctl restart postfix</code></pre>
+
+<h3 id="smarthost">Smart host</h3>
+<p>Without a relay, or on a cloud server where port 25 is blocked, send through an external mail account on port 587:</p>
+<pre><code><span class="r"># </span>vi /etc/postfix/main.cf
+
+smtp_tls_security_level = encrypt
+smtp_sasl_auth_enable = yes
+smtp_sasl_security_options = noanonymous
+smtp_sasl_password_maps = hash:/etc/postfix/relay_passwd
+relayhost = [smtp.gmail.com]:587
+smtp_generic_maps = hash:/etc/postfix/generic
+
+<span class="r"># </span>vi /etc/postfix/relay_passwd
+[smtp.gmail.com]:587 USERNAME:PASSWORD
+
+<span class="r"># </span>chmod 600 /etc/postfix/relay_passwd
+<span class="r"># </span>postmap /etc/postfix/relay_passwd
+<span class="r"># </span>rm /etc/postfix/relay_passwd      # postmap made relay_passwd.db
+
+<span class="r"># </span>vi /etc/postfix/generic
+root@localdomain.local  username@example.com
+@localdomain.local      username@example.com
+
+<span class="r"># </span>postmap /etc/postfix/generic
+<span class="r"># </span>systemctl restart postfix
+<span class="r"># </span>tail -f /var/log/maillog</code></pre>
+<p>The generic map gives outgoing mail a valid From address. On Debian and Ubuntu the log is <code>/var/log/mail.log</code>.</p>
+<nav class="pager" aria-label="Previous and next page"><a class="card prev" href="plugins.html"><small>Previous</small>Plugins</a><a class="card next" href="databases.html"><small>Next</small>MySQL and Postgres</a></nav>
+  </main>
+</div>
+<footer class="foot">DataReel System Monitor (DRSM) 1.30 and later &middot; GNU General Public License v3 &middot; <a href="https://github.com/datareel/dr_system_monitor">github.com/datareel/dr_system_monitor</a></footer>
+</body>
+</html>
