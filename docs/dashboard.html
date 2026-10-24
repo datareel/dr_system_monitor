@@ -23,7 +23,7 @@
 </header>
 <div class="layout">
   <nav class="sidebar" aria-label="Documentation">
-    <h4>Get started</h4><a href="index.html">Overview</a><a href="install.html">Install and set up</a><a href="deployment.html">Deployment setups</a><h4>Using DRSM</h4><a href="dashboard.html" class="active" aria-current="page">Web dashboard</a><div class="toc"><a href="#overview">Overview</a><a href="#heatmap">Heat map</a><a href="#hosts">Hosts and reports</a><a href="#connectivity">Connectivity</a><a href="#anywhere">Phones and wall screens</a><a href="#customize">Customizing</a><a href="#webonly">Web only package</a><a href="#security">Security</a></div><a href="plugins.html">Plugins</a><a href="alerts.html">Thresholds and alerts</a><a href="databases.html">MySQL and Postgres</a><h4>Reference</h4><a href="changelog.html">What's new</a><h4>Links</h4><a href="https://datareel.com/drsm/dashboard/">Live demo</a><a href="https://github.com/datareel/dr_system_monitor">GitHub repository</a><a href="https://github.com/datareel/dr_system_monitor/issues">Report an issue</a>
+    <h4>Get started</h4><a href="index.html">Overview</a><a href="install.html">Install and set up</a><a href="deployment.html">Deployment setups</a><h4>Using DRSM</h4><a href="dashboard.html" class="active" aria-current="page">Web dashboard</a><div class="toc"><a href="#overview">Overview</a><a href="#heatmap">Heat map</a><a href="#hosts">Hosts and reports</a><a href="#connectivity">Connectivity</a><a href="#anywhere">Phones and wall screens</a><a href="#customize">Customizing</a><a href="#webonly">Web only package</a><a href="#login">Login from outside</a><a href="#security">Security</a></div><a href="plugins.html">Plugins</a><a href="alerts.html">Thresholds and alerts</a><a href="databases.html">MySQL and Postgres</a><h4>Reference</h4><a href="changelog.html">What's new</a><h4>Links</h4><a href="https://datareel.com/drsm/dashboard/">Live demo</a><a href="https://github.com/datareel/dr_system_monitor">GitHub repository</a><a href="https://github.com/datareel/dr_system_monitor/issues">Report an issue</a>
   </nav>
   <main class="content" id="main">
 <h1>Web dashboard</h1>
@@ -97,15 +97,39 @@ $STALEminutes = 60;                // Report age that counts as not reporting, 0
 
 <h2 id="webonly">Web only package</h2>
 <p><code>utils/make_web_demo.sh</code> builds a copy of the dashboard for a host with nothing but Apache and PHP, such as a HostGator or other cPanel account. It finds its own files, so no server paths need to be set.</p>
-<div class="table-wrap"><table><thead><tr><th>Option</th><th>Meaning</th></tr></thead><tbody><tr><td><code>-p /url/path</code></td><td>URL path it is served from, default <code>/drsm/dashboard</code></td></tr><tr><td><code>-o outdir</code></td><td>Output directory, default <code>./drsm_web</code></td></tr><tr><td><code>-t title</code></td><td>Name in the top bar</td></tr><tr><td><code>-s</code></td><td>Add sample reports for made up hosts, for a public demo</td></tr></tbody></table></div>
+<div class="table-wrap"><table><thead><tr><th>Option</th><th>Meaning</th></tr></thead><tbody><tr><td><code>-p /url/path</code></td><td>URL path it is served from, default <code>/drsm/dashboard</code></td></tr><tr><td><code>-o outdir</code></td><td>Output directory, default <code>./drsm_web</code></td></tr><tr><td><code>-t title</code></td><td>Name in the top bar</td></tr><tr><td><code>-s</code></td><td>Add sample reports for made up hosts, for a public demo</td></tr><tr><td><code>-a</code></td><td>Turn on the <a href="#login">login</a> and block direct access to the report folder</td></tr></tbody></table></div>
 <p>It writes <code>&lt;outdir&gt;/dashboard/</code> and <code>&lt;outdir&gt;/drsm_dashboard.zip</code>. How to upload it and keep its reports up to date is in <a href="deployment.html#workstation">Workstation with a hosted dashboard</a>.</p>
+
+<h2 id="login">Login from outside your network</h2>
+<p>The dashboard can ask for a user name and password from anyone outside your own networks, while people on the internal network get straight in. It is off by default, so a public demo stays open, and it is plain PHP, so it works on shared hosting.</p>
+<ol>
+<li>Make a password hash for each account. Run this on any machine with PHP; it asks for the password without showing it:
+<pre><code><span class="p">$ </span>php ~/drsm/utils/drsm_password.php admin</code></pre></li>
+<li>Add the settings to <code>config/drsm.php</code>, with the printed line in <code>$AUTHusers</code>:
+<pre><code>$AUTHenable = 1;
+$AUTHnetworks = array('127.0.0.1/32', '::1/128', '10.0.0.0/8',
+                      '172.16.0.0/12', '192.168.0.0/16');
+$AUTHusers = array(
+  'admin' =&gt; '$2y$10$...',
+);</code></pre></li>
+<li>Block direct access to the <code>reports</code> folder, which the login can not cover because it is served as plain files. <code>make_web_demo.sh -a</code> does this; otherwise put <code>Require all denied</code> in <code>reports/.htaccess</code>. With login on, the Archived reports buttons read reports through the pages.</li>
+</ol>
+<div class="table-wrap"><table><thead><tr><th>Setting</th><th>Meaning</th></tr></thead><tbody>
+<tr><td><code>$AUTHnetworks</code></td><td>Internal networks as CIDRs, IPv4 or IPv6, that need no login</td></tr>
+<tr><td><code>$AUTHproxies</code></td><td>Reverse proxies or CDNs in front of the site, such as Cloudflare. <code>X-Forwarded-For</code> is only read from these. Leave empty on a plain cPanel account</td></tr>
+<tr><td><code>$AUTHhttps</code></td><td>1 (default) refuses logins over plain HTTP</td></tr>
+<tr><td><code>$AUTHidleminutes</code>, <code>$AUTHmaxhours</code></td><td>Sign out after 60 minutes idle, or 12 hours after login</td></tr>
+<tr><td><code>$AUTHmaxfails</code>, <code>$AUTHlockminutes</code></td><td>Lock an address out for 15 minutes after 5 failed logins</td></tr>
+<tr><td><code>$AUTHstatedir</code></td><td>Failed login counts, default <code>config/auth</code>, must be writable by the Web server</td></tr>
+</tbody></table></div>
+<p>Passwords are stored as bcrypt hashes. Sessions use HttpOnly, SameSite cookies, Secure on HTTPS, with a new session id at login, and the login and sign out forms carry a CSRF token.</p>
 
 <h2 id="security">Security</h2>
 <ul>
 <li>Report text is escaped and printed as text, never run or rendered as HTML, so output from a monitored host cannot inject code into the page.</li>
 <li>Host names in URLs are checked, so <code>../</code> paths are refused.</li>
 <li>The Web only package blocks direct downloads of <code>status.json</code>.</li>
-<li>Reports still contain process lists and user names: put the dashboard behind a password and firewall, as in <a href="install.html#web">Web server</a>.</li>
+<li>Reports still contain process lists and user names: turn on the <a href="#login">login</a> or put the dashboard behind a firewall, as in <a href="install.html#web">Web server</a>.</li>
 </ul>
 <nav class="pager" aria-label="Previous and next page"><a class="card prev" href="deployment.html"><small>Previous</small>Deployment setups</a><a class="card next" href="plugins.html"><small>Next</small>Plugins</a></nav>
   </main>

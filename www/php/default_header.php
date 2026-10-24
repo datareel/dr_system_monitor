@@ -46,6 +46,13 @@ $drsm_nav = array(
       </button>
       <button type="button" class="tool icon-only" data-action="wall" title="Wall display (full screen)"><?php echo drsm_icon("expand"); ?><span class="sr">Wall display</span></button>
       <button type="button" class="tool icon-only" data-action="theme" title="Switch light or dark theme"><?php echo drsm_icon("sun"); ?><?php echo drsm_icon("moon"); ?><span class="sr">Switch theme</span></button>
+<?php if(isset($AUTHuser) && $AUTHuser != "") { ?>
+      <form class="signout" method="post" action="<?php echo h(drsm_url("login.php")); ?>">
+        <input type="hidden" name="action" value="logout">
+        <input type="hidden" name="csrf" value="<?php echo h($AUTHcsrf); ?>">
+        <button type="submit" class="tool icon-only" title="Sign out <?php echo h($AUTHuser); ?>"><?php echo drsm_icon("logout"); ?><span class="sr">Sign out</span></button>
+      </form>
+<?php } ?>
     </div>
   </div>
 </header>

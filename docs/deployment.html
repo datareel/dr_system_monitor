@@ -133,7 +133,7 @@ IMPACT="Cluster has one less node"</code></pre>
 <li><strong>Upload and extract it</strong>
 <p>Upload <code>drsm_dashboard.zip</code> to the parent of the URL path, <code>public_html/drsm</code> for <code>/drsm/osa</code>, and extract it there. In cPanel: <strong>File Manager</strong>, open <code>public_html</code>, create the <code>drsm</code> folder, open it, <strong>Upload</strong> the zip, then right click it and <strong>Extract</strong>. The package unpacks as <code>dashboard/</code>, so rename that folder to <code>osa</code>.</p></li>
 <li><strong>Password protect it</strong>
-<p>The reports list processes and logged in users. In cPanel open <strong>Directory Privacy</strong>, select the <code>osa</code> folder, turn on password protection and add a user. Do the same for <code>oca</code>.</p></li>
+<p>The reports list processes and logged in users. Build the packages with <code>-a</code> and add accounts to turn on the dashboard <a href="dashboard.html#login">login</a>, so your office network gets straight in and everyone else signs in. Or in cPanel open <strong>Directory Privacy</strong>, select the <code>osa</code> folder, turn on password protection and add a user. Do the same for <code>oca</code>.</p></li>
 <li><strong>Copy the reports up after each run</strong>
 <p>The dashboard reads the same files as on the workstation, under its <code>reports</code> folder. HostGator's SSH listens on port 2222; add the account to <code>~/.ssh/config</code> and copy your key with <code>ssh-copy-id</code> first. Then copy the reports with <code>rsync</code> after each run, from a small script that cron calls:</p>
 <pre><code><span class="p">$ </span>vi ~/.ssh/config

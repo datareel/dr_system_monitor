@@ -37,7 +37,7 @@
 # the Web side of a site where reports are copied in from a monitor
 # host.
 #
-# Usage: utils/make_web_demo.sh [-p /url/path] [-o outdir] [-t title] [-s]
+# Usage: utils/make_web_demo.sh [-p /url/path] [-o outdir] [-t title] [-s] [-a]
 #
 #   -p  URL path the dashboard is served from, default /drsm/dashboard
 #   -o  Output directory, default ./drsm_web
@@ -45,6 +45,10 @@
 #       otherwise "DR System Monitor"
 #   -s  Add sample reports for made up hosts. Nothing from the machine
 #       running this script goes into them.
+#   -a  Turn on login for access from outside the internal networks,
+#       and block the report folder so raw reports are only read
+#       through the pages. Add accounts to config/drsm.php with
+#       php utils/drsm_password.php before uploading.
 #
 # Writes <outdir>/dashboard/ and <outdir>/drsm_dashboard.zip. Upload
 # the zip into the parent of the URL path (public_html/drsm for
@@ -57,14 +61,16 @@ vpath="/drsm/dashboard"
 outdir="./drsm_web"
 title=""
 sample="0"
-while getopts "p:o:t:s" opt
+auth="0"
+while getopts "p:o:t:sa" opt
 do
     case ${opt} in
 	p) vpath="${OPTARG%/}" ;;
 	o) outdir="${OPTARG}" ;;
 	t) title="${OPTARG}" ;;
 	s) sample="1" ;;
-	*) echo "Usage: $0 [-p /url/path] [-o outdir] [-t title] [-s]"; exit 1 ;;
+	a) auth="1" ;;
+	*) echo "Usage: $0 [-p /url/path] [-o outdir] [-t title] [-s] [-a]"; exit 1 ;;
     esac
 done
 if [ "${vpath:0:1}" != "/" ]; then vpath="/${vpath}"; fi
@@ -105,6 +111,17 @@ if [ "${sample}" == "1" ]; then
 \$REFRESHseconds = 300;
 PHPCONF
 fi
+if [ "${auth}" == "1" ]; then
+    cat >> "${D}/config/drsm.php" <<'PHPCONF'
+// Login for access from outside the internal networks, see
+// php/drsm_auth.php for every setting. Add a line for each account
+// from: php utils/drsm_password.php <user>
+$AUTHenable = 1;
+$AUTHnetworks = array('127.0.0.1/32', '::1/128', '10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16');
+$AUTHusers = array(
+);
+PHPCONF
+fi
 echo '?>' >> "${D}/config/drsm.php"
 
 # The pages load ../config/drsm.php from the php directory
@@ -136,7 +153,11 @@ for d in config site; do
 </IfModule>
 HTACCESS
 done
-cat > "${D}/reports/.htaccess" <<'HTACCESS'
+if [ "${auth}" == "1" ]; then
+    # With login on, reports are read through the pages only
+    cp "${D}/config/.htaccess" "${D}/reports/.htaccess"
+else
+    cat > "${D}/reports/.htaccess" <<'HTACCESS'
 # Archived report lists
 Options +Indexes
 <FilesMatch "\.json$">
@@ -145,6 +166,7 @@ Options +Indexes
   </IfModule>
 </FilesMatch>
 HTACCESS
+fi
 
 # ------------------------------------------------------------
 # Sample reports

@@ -21,7 +21,7 @@ jobs:
 
       - name: PHP syntax check
         run: |
-          for f in www/php/*.php mysql/*.php; do
+          for f in www/php/*.php mysql/*.php utils/*.php; do
             php -l "$f" || exit 1
           done
 
@@ -45,7 +45,7 @@ jobs:
 
       - name: PHP ${{ matrix.php }} syntax check
         run: |
-          for f in www/php/*.php mysql/*.php; do
+          for f in www/php/*.php mysql/*.php utils/*.php; do
             php -l "$f" || exit 1
           done
 
@@ -54,3 +54,6 @@ jobs:
 
       - name: Web page tests
         run: bash tests/www_test.sh
+
+      - name: Login tests
+        run: bash tests/auth_test.sh

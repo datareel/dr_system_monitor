@@ -123,7 +123,7 @@ drsm_page_start($hst["name"], "hosts", $hst["state"]);
   <div class="hero-meta">
     <?php echo drsm_badge($hst["state"]); ?>
     <span class="muted">Reported <?php echo drsm_time_html($hst["time"]); ?></span>
-    <a class="button ghost" href="<?php echo h("{$REPORTvpath}/systems/" . rawurlencode($hst["name"]) . "/archive/"); ?>"><?php echo drsm_icon("archive"); ?>Archived reports</a>
+    <a class="button ghost" href="<?php echo h(drsm_archive_url($hst["name"])); ?>"><?php echo drsm_icon("archive"); ?>Archived reports</a>
   </div>
 </section>
 

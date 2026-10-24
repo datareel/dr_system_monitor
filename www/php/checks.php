@@ -109,7 +109,7 @@ drsm_page_start($title, ($kind == "check") ? "checks" : "overview", $state);
 <?php   } ?>
     </div>
 <?php } ?>
-    <a class="button ghost" href="<?php echo h($REPORTarchivevpath . "/"); ?>" title="Archived reports start with <?php echo h($archprefix); ?>"><?php echo drsm_icon("archive"); ?>Archived reports</a>
+    <a class="button ghost" href="<?php echo h(drsm_archive_url("", $archprefix)); ?>" title="Archived reports start with <?php echo h($archprefix); ?>"><?php echo drsm_icon("archive"); ?>Archived reports</a>
   </div>
 </section>
 
