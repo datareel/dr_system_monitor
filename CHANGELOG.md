@@ -2,6 +2,31 @@
 
 All notable changes to the DataReel System Monitor (DRSM) are listed here.
 
+## Unreleased: Dashboard login
+
+Optional login for dashboard access from the internet. Written by
+[Claude Code](https://claude.com/claude-code) at the request of the
+project owner. Off by default, so existing sites and the public demo
+are unchanged.
+
+### Added
+
+- `$AUTHenable` in `config/drsm.php`: requests from the internal
+  networks in `$AUTHnetworks` (CIDRs, IPv4 and IPv6) get open access,
+  everyone else gets a login page in the dashboard style. Plain PHP,
+  works on shared hosting.
+- Bcrypt password hashes in `$AUTHusers`, made with
+  `utils/drsm_password.php`.
+- Secure sessions (HttpOnly, SameSite, Secure on HTTPS, new id at
+  login, idle and absolute timeouts), CSRF tokens on the login and
+  sign out forms, and failed login lockouts per address and per user.
+  Logins need HTTPS unless `$AUTHhttps` is 0.
+- `X-Forwarded-For` is ignored unless the connection comes from a
+  proxy listed in `$AUTHproxies`.
+- `www/php/archive.php` reads archived reports through PHP, so the
+  login covers them. `make_web_demo.sh -a` builds a package with
+  login on and the report folder blocked.
+
 ## Unreleased: Web interface redesign
 
 A new look for the Web interface. Written by

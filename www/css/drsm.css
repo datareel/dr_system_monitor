@@ -423,6 +423,28 @@ a.kpi:hover { text-decoration: none; transform: translateY(-1px); border-color: 
 .button.ghost:hover { border-color: var(--border-strong); }
 .button.small { height: 30px; padding: 0 10px; font-size: .8rem; }
 
+/* ---------- Login ---------- */
+
+.signout { display: contents; }
+.login-tools { position: absolute; top: 12px; right: max(var(--gutter), env(safe-area-inset-right)); }
+.login { flex: 1 0 auto; display: grid; place-items: center; padding: 48px var(--gutter); }
+.login-card { width: 100%; max-width: 400px; padding: 28px; display: flex; flex-direction: column; gap: 18px; }
+.login-card h1 { font-size: 1.45rem; }
+.login-card h1 + p { margin-top: 6px; }
+.login-brand { display: flex; align-items: center; gap: 10px; font-weight: 700; }
+.login-form { display: flex; flex-direction: column; gap: 14px; }
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field label { font-size: .85rem; font-weight: 600; color: var(--text-2); }
+.field input {
+  height: 42px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--border);
+  background: var(--surface-2); color: var(--text); font: inherit;
+}
+.field input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(56, 189, 248, .2); }
+.button.block { width: 100%; height: 42px; justify-content: center; margin-top: 4px; }
+.button:disabled { opacity: .5; cursor: not-allowed; filter: none; }
+.login-foot { text-align: center; overflow-wrap: anywhere; }
+.login-body .footer { justify-content: center; }
+
 /* ---------- Host cards ---------- */
 
 .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 12px; }
@@ -624,6 +646,8 @@ pre.report span { display: inline-block; min-width: 100%; padding: 0 6px; margin
   .sec-sum { display: none; }
   .meta { gap: 6px 14px; }
   .gauges { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .login { padding: 56px var(--gutter) 24px; place-items: start center; }
+  .login-card { padding: 22px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

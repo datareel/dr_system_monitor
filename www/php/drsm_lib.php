@@ -7,7 +7,7 @@
 // PHP Version: 7.2 or higher, tested with PHP 8
 // Original Author(s): DataReel Software Development
 // File Creation Date: 10/23/2026
-// Date Last Modified: 10/23/2026
+// Date Last Modified: 10/24/2026
 //
 // Version control: 1.00
 //
@@ -48,6 +48,9 @@ $STALEminutes   = 60;   // Host report age that counts as stale, 0 off
 $DEMObuilt      = 0;    // Sample data build time, set by
                         // utils/make_web_demo.sh so report times
                         // stay recent on a live demo
+
+Login for access from outside the internal networks is off by
+default, see drsm_auth.php for the $AUTH settings.
 */
 // ----------------------------------------------------------- //
 // SCRIPT CONTENT STARTS BELOW.
@@ -84,6 +87,21 @@ function drsm_url($page, $args = array())
   $url = "{$WWWvpath}/php/{$page}";
   if(count($args) > 0) $url .= "?" . http_build_query($args);
   return $url;
+}
+
+// Archived reports. With login on they are read through archive.php,
+// since the report folder itself is not covered by the login.
+function drsm_archive_url($host = "", $prefix = "")
+{
+  global $REPORTvpath, $REPORTarchivevpath, $AUTHenable;
+  if(!empty($AUTHenable)) {
+    $args = array();
+    if($host != "") $args["h"] = $host;
+    if($prefix != "") $args["p"] = $prefix;
+    return drsm_url("archive.php", $args);
+  }
+  if($host != "") return "{$REPORTvpath}/systems/" . rawurlencode($host) . "/archive/";
+  return "{$REPORTarchivevpath}/";
 }
 
 // Severity order used to pick the worst state
@@ -477,7 +495,9 @@ function drsm_icon($name)
     "archive" => '<rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8M10 12h4"/>',
     "back" => '<path d="M15 18l-6-6 6-6"/>',
     "alert" => '<path d="M12 3l9.5 17H2.5z"/><path d="M12 10v4M12 17.5v.5"/>',
-    "check" => '<path d="M5 12.5l4.5 4.5L19 7.5"/>'
+    "check" => '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+    "lock" => '<rect x="4.5" y="10.5" width="15" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/>',
+    "logout" => '<path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 16l-4-4 4-4M6 12h10"/>'
   );
   $p = isset($paths[$name]) ? $paths[$name] : "";
   return "<svg class=\"icon\" viewBox=\"0 0 24 24\" aria-hidden=\"true\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">{$p}</svg>";
@@ -515,7 +535,7 @@ function drsm_head_assets()
 // Page layout. $PAGEtitle and $PAGEactive are read by default_header.php
 function drsm_page_start($title, $active, $state = "")
 {
-  global $SITEincludes, $WWWdir, $WWWvpath, $SITEtitle, $REFRESHseconds, $PAGEtitle, $PAGEactive, $PAGEstate;
+  global $SITEincludes, $WWWdir, $WWWvpath, $SITEtitle, $REFRESHseconds, $PAGEtitle, $PAGEactive, $PAGEstate, $AUTHuser, $AUTHcsrf;
   $PAGEtitle = $title;
   $PAGEactive = $active;
   $PAGEstate = $state;
@@ -537,6 +557,11 @@ function drsm_page_end()
     include_once("{$WWWdir}/php/default_footer.php");
   }
 }
+
+// Optional login for requests from outside the internal networks,
+// see drsm_auth.php. login.php does its own checks.
+require_once("{$WWWdir}/php/drsm_auth.php");
+if(!defined("DRSM_LOGIN_PAGE")) drsm_auth_require();
 
 // SCRIPT CONTENT ENDS ABOVE.
 // ----------------------------------------------------------- //

@@ -313,7 +313,8 @@ on any Linux machine with a copy of DRSM:
 
 $ ~/drsm/utils/make_web_demo.sh -p /drsm/dashboard -o /tmp/drsm_web
 
-Add -s for a public live demo with made up sample hosts. -p is the
+Add -s for a public live demo with made up sample hosts, or -a to
+turn on the login for access from outside your network. -p is the
 URL path the dashboard will be served from.
 
 Upload /tmp/drsm_web/drsm_dashboard.zip to the parent directory of
@@ -324,8 +325,73 @@ https://<your site>/drsm/dashboard/
 
 The package finds its own directory, so no server paths need to be
 set. Reports go in dashboard/reports, copied from your monitor host
-with the same layout as ${REPORTdir}. To protect a private copy,
-add a password with cPanel Directory Privacy on the dashboard folder.
+with the same layout as ${REPORTdir}. To protect a private copy, add
+-a to turn on the dashboard login, see the next section.
+
+Login for Access From Outside Your Network:
+------------------------------------------
+The dashboard can ask for a user name and password from anyone
+outside your own networks, while people on the internal network get
+straight in. It is off by default, so a public demo stays open. It is
+plain PHP, so it works on shared hosting with no server changes.
+
+1. Make a password hash for each account. Run this on any machine
+with PHP, it asks for the password without showing it:
+
+$ php ~/drsm/utils/drsm_password.php admin
+Password:
+Same password again:
+  'admin' => '$2y$10$Q4m...',
+
+2. Add the settings to $CONFIGdir/drsm.php (config/drsm.php in a Web
+only install), with the line printed above in $AUTHusers:
+
+$AUTHenable = 1;
+$AUTHnetworks = array('127.0.0.1/32', '::1/128', '10.0.0.0/8',
+                      '172.16.0.0/12', '192.168.0.0/16');
+$AUTHusers = array(
+  'admin' => '$2y$10$Q4m...',
+);
+
+$AUTHnetworks lists the internal networks as CIDRs, use your own
+office or VPN ranges, or a single public address such as
+'203.0.113.7/32'. An address not on the list gets the login page.
+
+3. Block direct access to the report folder, since it is served as
+plain files that the login does not cover. With login on, the
+"Archived reports" buttons read reports through the pages instead.
+make_web_demo.sh -a does this for you. Otherwise:
+
+$ printf 'Require all denied\n' > $REPORTdir/.htaccess
+
+Other settings, all optional:
+
+$AUTHproxies = array();     // Proxies or CDNs in front of the site
+$AUTHhttps = 1;             // Refuse logins over plain HTTP
+$AUTHidleminutes = 60;      // Sign out after this long idle
+$AUTHmaxhours = 12;         // Sign out this long after login
+$AUTHmaxfails = 5;          // Failed logins from one address before
+$AUTHlockminutes = 15;      // it is locked out for this long
+$AUTHstatedir = '/path';    // Failed login counts, default
+                            // $CONFIGdir/auth, must be writable by
+                            // the Web server
+$AUTHsessiondir = '';       // PHP session files, default PHP's own
+
+How it decides who is internal: the address of the connection
+(REMOTE_ADDR) is used, because a browser can put anything in an
+X-Forwarded-For header. Only when the site sits behind a reverse
+proxy or CDN, such as Cloudflare, list that proxy's ranges in
+$AUTHproxies. X-Forwarded-For is then read only from those proxies,
+right to left, and the first address that is not one of them counts.
+On a plain HostGator or cPanel account leave $AUTHproxies empty.
+
+Passwords are stored as bcrypt hashes, never in plain text. Sessions
+use HttpOnly, SameSite cookies, marked Secure on HTTPS, with a new
+session id at login. The login and sign out forms carry a CSRF token.
+After $AUTHmaxfails failed logins an address is locked out for
+$AUTHlockminutes minutes, and a user name after four times as many.
+Failed logins go to the PHP error log. The login page needs HTTPS
+unless $AUTHhttps is 0.
 
 Customizing the Web Interface:
 -----------------------------

@@ -149,12 +149,15 @@ chmod 664 ${CONFIGdir}/${fname}
 chown ${SYSADMIN_USERNAME}:${SYSADMIN_GROUPNAME} ${CONFIGdir}/${fname}
 
 echo "Installing PHP code"
-files="checks.php \
+files="archive.php \
+checks.php \
 default_footer.php \
 default_header.php \
+drsm_auth.php \
 drsm_lib.php \
 heatmap.php \
 index.php \
+login.php \
 query_post_validation.php \
 readreport.php \
 reports.php"
