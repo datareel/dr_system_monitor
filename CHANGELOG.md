@@ -30,6 +30,9 @@ show.
   internet.
 - `www/php/drsm_lib.php`, shared report parsing and page layout.
   `site/custom.css` and `$SITEtitle` for site branding.
+- `utils/make_web_demo.sh` builds a Web only copy of the dashboard for
+  shared hosting such as HostGator, unpacked into any directory, with
+  optional made up sample reports (`-s`) for a public live demo.
 - `tests/www_test.sh` renders every page from real `drsm_run.sh`
   reports. CI lints and tests the pages with PHP 7.2 and 8.3.
 

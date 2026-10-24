@@ -305,6 +305,28 @@ system admin reports.
 Host-based firewall settings, Debian and Ubuntu (ufw):
 # ufw allow from 192.168.122.0/24 to any port 80,443 proto tcp
 
+Web Only Install (Shared Hosting):
+---------------------------------
+The dashboard can run on a host with nothing but Apache and PHP 7.2
+or higher, such as a HostGator or cPanel account. Build the package
+on any Linux machine with a copy of DRSM:
+
+$ ~/drsm/utils/make_web_demo.sh -p /drsm/dashboard -o /tmp/drsm_web
+
+Add -s for a public live demo with made up sample hosts. -p is the
+URL path the dashboard will be served from.
+
+Upload /tmp/drsm_web/drsm_dashboard.zip to the parent directory of
+that path, public_html/drsm for /drsm/dashboard, and extract it. In
+cPanel: File Manager, open public_html, create the drsm folder, open
+it, Upload the zip, then right click the zip and Extract. Browse to
+https://<your site>/drsm/dashboard/
+
+The package finds its own directory, so no server paths need to be
+set. Reports go in dashboard/reports, copied from your monitor host
+with the same layout as ${REPORTdir}. To protect a private copy,
+add a password with cPanel Directory Privacy on the dashboard folder.
+
 Customizing the Web Interface:
 -----------------------------
 The Web interface has four views, linked from the top bar:

@@ -135,6 +135,19 @@ expect "dev health report" "Start of dev1"
 render checks.php "g=../x"
 expect "bad group falls back" "Production group"
 
+echo "== Web only demo package"
+bash "${TOPdir}/utils/make_web_demo.sh" -s -o "${T}/demo" > "${T}/demo.log" 2>&1
+W="${T}/demo/dashboard"
+(cd "${W}" && php -d error_reporting=-1 -d display_errors=stderr index.php > "${T}/page.html" 2> "${T}/page.err")
+if [ -s "${T}/page.err" ]; then fail "demo index.php PHP messages: $(head -3 "${T}/page.err")"; else pass "demo index.php renders without PHP messages"; fi
+expect "demo title" "DRSM Live Demo"
+expect "demo sample host" ">mail1</strong>"
+expect "demo links use the URL path" 'href="/drsm/dashboard/php/heatmap.php"'
+reject "demo hosts are not stale" "Last report is over"
+render heatmap.php "mode=metrics"
+expect "demo metrics" 'Memory used'
+if grep -rq "$(hostname)" "${W}/reports"; then fail "demo reports name this machine"; else pass "demo reports do not name this machine"; fi
+
 echo ""
 if [ ${failures} -eq 0 ]; then echo "All tests passed"; exit 0; fi
 echo "${failures} test(s) failed"
