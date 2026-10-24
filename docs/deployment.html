@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Deployment setups | DRSM Documentation</title>
+<meta name="description" content="Run DRSM on a 3 node production cluster, or on a workstation with the dashboard on a PHP hosting account.">
+<link rel="icon" href="images/logo.svg" type="image/svg+xml">
+<link rel="stylesheet" href="docs.css">
+<script src="docs.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="topbar">
+  <div class="topbar-inner">
+    <button class="tool icon-only menu-btn" type="button" data-action="menu" aria-label="Menu" aria-expanded="false"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+    <a class="brand" href="index.html"><img src="images/logo.svg" alt="">DRSM <small>Documentation</small></a>
+    <span class="spacer"></span>
+    <a class="tool primary" href="https://datareel.com/drsm/dashboard/"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg><span>Live demo</span></a>
+    <a class="tool hide-sm" href="https://github.com/datareel/dr_system_monitor"><svg class="icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.53-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.68 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.83 1.19 3.09 0 4.41-2.69 5.38-5.25 5.67.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5z"/></svg><span>GitHub</span></a>
+    <button class="tool icon-only" type="button" data-action="theme" aria-label="Switch light or dark theme"><svg class="icon sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg><svg class="icon moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+  </div>
+</header>
+<div class="layout">
+  <nav class="sidebar" aria-label="Documentation">
+    <h4>Get started</h4><a href="index.html">Overview</a><a href="install.html">Install and set up</a><a href="deployment.html" class="active" aria-current="page">Deployment setups</a><div class="toc"><a href="#cluster">Production cluster</a><a href="#workstation">Workstation and hosted</a><a href="#demo">Public live demo</a><a href="#cloud">Cloud servers</a></div><h4>Using DRSM</h4><a href="dashboard.html">Web dashboard</a><a href="plugins.html">Plugins</a><a href="alerts.html">Thresholds and alerts</a><a href="databases.html">MySQL and Postgres</a><h4>Reference</h4><a href="changelog.html">What's new</a><h4>Links</h4><a href="https://datareel.com/drsm/dashboard/">Live demo</a><a href="https://github.com/datareel/dr_system_monitor">GitHub repository</a><a href="https://github.com/datareel/dr_system_monitor/issues">Report an issue</a>
+  </nav>
+  <main class="content" id="main">
+<h1>Deployment setups</h1>
+<p class="lead">DRSM needs one monitor host and somewhere to serve the dashboard. They can be the same machine, a cluster, or a workstation paired with a PHP Web hosting account. These are the setups in use today.</p>
+
+<div class="grid">
+  <a class="card" href="#cluster"><h3>Production cluster</h3><p>A 3 node cluster runs DRSM and serves the dashboard. Checks keep running when a node fails.</p></a>
+  <a class="card" href="#workstation"><h3>Workstation and hosted dashboard</h3><p>DRSM on a workstation for OSA and OCA, with the dashboard on the datareel.com HostGator account.</p></a>
+  <a class="card" href="#demo"><h3>Public live demo</h3><p>The dashboard with made up sample hosts at <code>datareel.com/drsm/dashboard</code>.</p></a>
+</div>
+
+<h2 id="cluster">Production: 3 node cluster</h2>
+<p>For production, DRSM runs on a 3 node cluster. Each node has the same DRSM install and the same <code>sysadmin</code> account and SSH key, so any node can run the checks. Only the node that holds the cluster's floating IP runs them, so every host is checked once and every alert is sent once.</p>
+
+<svg class="diagram" viewBox="0 0 860 250" role="img" aria-labelledby="cl-t">
+<title id="cl-t">Production cluster: three nodes share the DRSM install and Web directory, the active node runs the cron jobs, and the dashboard is served from the cluster address.</title>
+<defs><marker id="c1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah hi" d="M0 0L10 5L0 10z"/></marker></defs>
+<rect class="box hi" x="20" y="20" width="240" height="110" rx="14"/>
+<text class="t" x="40" y="50">Node 1, active</text>
+<text class="s" x="40" y="72">holds the cluster IP</text>
+<text class="m" x="40" y="98">/etc/cron.d/drsm</text>
+<text class="m" x="40" y="118">drsm_run.sh</text>
+<rect class="box" x="310" y="20" width="240" height="110" rx="14"/>
+<text class="t" x="330" y="50">Node 2, standby</text>
+<text class="s" x="330" y="72">same DRSM install and key</text>
+<text class="s" x="330" y="98">takes over the cluster IP</text>
+<text class="s" x="330" y="118">and the cron jobs</text>
+<rect class="box" x="600" y="20" width="240" height="110" rx="14"/>
+<text class="t" x="620" y="50">Node 3, standby</text>
+<text class="s" x="620" y="72">same DRSM install and key</text>
+<text class="s" x="620" y="98">takes over the cluster IP</text>
+<text class="s" x="620" y="118">and the cron jobs</text>
+<rect class="box alt" x="20" y="170" width="820" height="60" rx="14"/>
+<text class="t" x="40" y="198">Shared $WWWdir: reports and dashboard</text>
+<text class="s" x="40" y="218">served by Apache on the cluster address, so the reports follow the active node</text>
+<path class="ln hi" d="M140 130V168" marker-end="url(#c1)"/>
+</svg>
+
+<ol class="steps">
+<li><strong>Install DRSM on every node</strong>
+<p>Create the <code>sysadmin</code> account with the same UID and GID (3500) on all three nodes, follow <a href="install.html#install">Install</a> on each, and copy the same <code>~/.ssh/id_ed25519</code> key pair to each so the monitored hosts accept every node. Keep the three installs on the same DRSM release.</p></li>
+<li><strong>Share the Web directory</strong>
+<p>Put <code>$WWWdir</code> (with <code>reports</code> and <code>config</code>) on the cluster's shared storage and serve it with Apache on the cluster address. The reports then follow the active node, and the dashboard shows the same history after a failover. Keep <code>etc/hosts</code> the same on every node, or on shared storage too.</p></li>
+<li><strong>Run the cron jobs on the active node</strong>
+<p><code>crontabs/cluster_crontab_example.txt</code> is written for <code>/etc/cron.d</code>, with the user name on each line. Have the cluster manager install it with the cluster IP, or start it from the same resource group, so it runs on one node at a time:</p>
+<pre><code><span class="r"># </span>vi /etc/cron.d/drsm
+
+*/30 * * * * sysadmin bash -c '/home/sysadmin/drsm/bin/drsm_run.sh -m probes &amp;&gt; /dev/null'
+15,45 * * * * sysadmin bash -c '/home/sysadmin/drsm/bin/drsm_run.sh &amp;&gt; /dev/null'
+15 13 * * mon-fri sysadmin bash -c '/home/sysadmin/drsm/bin/drsm_run.sh -e &amp;&gt; /dev/null'
+59 23 * * * sysadmin bash -c '/home/sysadmin/drsm/bin/archive.sh &amp;&gt; /dev/null'
+00 * * * *  sysadmin bash -c '/home/sysadmin/drsm/bin/purge.sh &amp;&gt; /dev/null'</code></pre></li>
+<li><strong>Monitor the cluster itself</strong>
+<p>Give the cluster address a host file with probes only, and give each node its own host file for health checks. If a node goes down you see it on the dashboard while the service address stays green.</p>
+<pre><code><span class="p">$ </span>cat ~/drsm/etc/hosts/cluster.conf
+DESCRIPTION="Production cluster address"
+IMPACT="Production services are down"
+COLLECTOR=none
+PROBES="network/ping network/https"
+
+<span class="p">$ </span>cat ~/drsm/etc/hosts/node1.conf
+DESCRIPTION="Cluster node 1"
+IMPACT="Cluster has one less node"</code></pre>
+<p>With the older <code>systems.dat</code>, set <code>is_cluster_ip</code> to <code>yes</code> on the cluster address row.</p></li>
+</ol>
+
+<h2 id="workstation">Workstation with a hosted dashboard (OSA and OCA)</h2>
+<p>For OSA and OCA, DRSM runs on a workstation and the dashboard lives on the datareel.com website, a HostGator shared hosting account. The hosting account only needs PHP: it never runs checks and needs no SSH access to the servers. The workstation runs the checks and copies the report files up after each run.</p>
+
+<svg class="diagram" viewBox="0 0 860 200" role="img" aria-labelledby="hg-t">
+<title id="hg-t">Workstation and hosted dashboard: DRSM on the workstation checks the OSA and OCA servers, then copies its reports to the dashboard on the datareel.com HostGator account.</title>
+<defs><marker id="h1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah hi" d="M0 0L10 5L0 10z"/></marker>
+<marker id="h2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah alt" d="M0 0L10 5L0 10z"/></marker></defs>
+<rect class="box" x="20" y="40" width="220" height="120" rx="14"/>
+<text class="t" x="40" y="72">OSA and OCA servers</text>
+<text class="s" x="40" y="96">cloud and hosted servers</text>
+<text class="s" x="40" y="118">keyed SSH from the</text>
+<text class="s" x="40" y="138">workstation</text>
+<rect class="box hi" x="320" y="40" width="220" height="120" rx="14"/>
+<text class="t" x="340" y="72">Workstation</text>
+<text class="m" x="340" y="98">~/drsm, user cron</text>
+<text class="m" x="340" y="120">drsm_run.sh</text>
+<text class="m" x="340" y="142">rsync reports</text>
+<rect class="box alt" x="620" y="40" width="220" height="120" rx="14"/>
+<text class="t" x="640" y="72">datareel.com</text>
+<text class="s" x="640" y="96">HostGator, PHP only</text>
+<text class="m" x="640" y="120">/drsm/&lt;site&gt;/</text>
+<text class="s" x="640" y="142">password protected</text>
+<path class="ln hi" d="M320 100H242" marker-end="url(#h1)"/>
+<text class="lbl" x="252" y="92">checks</text>
+<path class="ln alt" d="M540 100H618" marker-end="url(#h2)"/>
+<text class="lbl" x="579" y="92" text-anchor="middle">rsync</text>
+</svg>
+
+<ol class="steps">
+<li><strong>Install DRSM on the workstation</strong>
+<p>Use the development workstation config, which runs from your own account:</p>
+<pre><code><span class="p">$ </span>cd ~/git/dr_system_monitor
+<span class="p">$ </span>cp -p etc/drsm_dev.sh ~/.drsm.sh
+<span class="p">$ </span>./utils/install.sh</code></pre>
+<p>Add a host file for each OSA and OCA server. Most of them are cloud servers, so read <a href="#cloud">Cloud servers</a> for SSH users and ping.</p></li>
+<li><strong>Build the dashboard package</strong>
+<p><code>utils/make_web_demo.sh</code> builds a copy of the dashboard that finds its own files, so it runs from any folder. <code>-p</code> is the URL path it is served from and <code>-t</code> the name in its top bar. One package per site:</p>
+<pre><code><span class="p">$ </span>~/drsm/utils/make_web_demo.sh -p /drsm/osa -t "OSA System Monitor" -o /tmp/drsm_osa
+<span class="p">$ </span>~/drsm/utils/make_web_demo.sh -p /drsm/oca -t "OCA System Monitor" -o /tmp/drsm_oca</code></pre>
+<p>The paths above are examples; use the ones you want on the site.</p></li>
+<li><strong>Upload and extract it</strong>
+<p>Upload <code>drsm_dashboard.zip</code> to the parent of the URL path, <code>public_html/drsm</code> for <code>/drsm/osa</code>, and extract it there. In cPanel: <strong>File Manager</strong>, open <code>public_html</code>, create the <code>drsm</code> folder, open it, <strong>Upload</strong> the zip, then right click it and <strong>Extract</strong>. The package unpacks as <code>dashboard/</code>, so rename that folder to <code>osa</code>.</p></li>
+<li><strong>Password protect it</strong>
+<p>The reports list processes and logged in users. In cPanel open <strong>Directory Privacy</strong>, select the <code>osa</code> folder, turn on password protection and add a user. Do the same for <code>oca</code>.</p></li>
+<li><strong>Copy the reports up after each run</strong>
+<p>The dashboard reads the same files as on the workstation, under its <code>reports</code> folder. HostGator's SSH listens on port 2222; add the account to <code>~/.ssh/config</code> and copy your key with <code>ssh-copy-id</code> first. Then copy the reports with <code>rsync</code> after each run, from a small script that cron calls:</p>
+<pre><code><span class="p">$ </span>vi ~/.ssh/config
+
+Host datareel-web
+    HostName datareel.com
+    User &lt;cpanel user&gt;
+    Port 2222
+
+<span class="p">$ </span>vi ~/bin/drsm_osa.sh
+
+<span class="c">#!/bin/bash</span>
+<span class="c"># Run the checks, then copy the reports to the hosted dashboard</span>
+~/drsm/bin/drsm_run.sh
+rsync -az --delete --exclude=.htaccess \
+    ~/public_html/sysadmin/reports/ \
+    datareel-web:public_html/drsm/osa/reports/
+
+<span class="p">$ </span>chmod 755 ~/bin/drsm_osa.sh
+<span class="p">$ </span>crontab -e
+
+15,45 * * * * ~/bin/drsm_osa.sh &amp;&gt; /dev/null</code></pre>
+<p>Replace <code>~/public_html/sysadmin/reports/</code> with your <code>$REPORTdir</code>. The <code>--exclude=.htaccess</code> keeps the package's rules that turn on archive listings and hide <code>status.json</code>. If one workstation watches both sites, give each its own host group (<code>GROUP=osa</code>, <code>GROUP=oca</code>) and run <code>drsm_run.sh -g osa</code> and <code>-g oca</code>.</p></li>
+</ol>
+<div class="callout"><p>The dashboard marks a host <strong>Not reporting</strong> when its report is older than <code>$STALEminutes</code> (60 by default). On a hosted dashboard that also tells you the workstation stopped sending reports, for example when it was powered off.</p></div>
+
+<h2 id="demo">Public live demo</h2>
+<p>The live demo at <a href="https://datareel.com/drsm/dashboard/">https://datareel.com/drsm/dashboard/</a> is the same package built with <code>-s</code>, which adds sample reports for 15 made up hosts. Nothing from the machine that builds it goes into the sample reports, and their times always show as recent.</p>
+<pre><code><span class="p">$ </span>~/drsm/utils/make_web_demo.sh -p /drsm/dashboard -s -o /tmp/drsm_web</code></pre>
+<p>Upload <code>/tmp/drsm_web/drsm_dashboard.zip</code> to <code>public_html/drsm</code> and extract it. Rebuild and upload again to refresh the demo after a dashboard update.</p>
+
+<h2 id="cloud">Cloud servers</h2>
+<ul>
+<li><strong>Ping is blocked.</strong> Most cloud providers drop ICMP. Leave <code>network/ping</code> out of the host's <code>PROBES</code>. The health run reports an error when it cannot log in over SSH, so a down host still alerts. With the older <code>system_check.sh</code>, set <code>can_ping</code> to <code>no</code> and it tests the host with an SSH login instead.</li>
+<li><strong>SSH user, port and key.</strong> Cloud images log in as <code>ubuntu</code>, <code>ec2-user</code>, <code>rocky</code> and so on. Set them in the DRSM user's <code>~/.ssh/config</code> under the same name you used for the host:
+<pre><code>Host cloud1.example.com
+    User ubuntu
+    Port 22
+    IdentityFile ~/.ssh/id_ed25519</code></pre></li>
+<li><strong>Steal time.</strong> The CPU check reports hypervisor steal time, which shows a noisy neighbor or an exhausted burst credit.</li>
+<li><strong>Outbound mail.</strong> Most providers block port 25. Send alerts through a smart host on port 587, see <a href="alerts.html#smarthost">Smart host</a>.</li>
+<li><strong>SSH options.</strong> Connections use <code>BatchMode</code>, a 15 second connect timeout so a down host cannot hang a run, and <code>StrictHostKeyChecking=accept-new</code>: a new host key is accepted on first contact and a changed key is refused. Change them with <code>SSH_OPTS</code> and <code>SCP_OPTS</code> in <code>~/.drsm.sh</code>.</li>
+<li><strong>Shared hosting.</strong> Accounts such as HostGator shared plans use a jailed shell, often on port 2222. CPU, load and process numbers there are for the whole shared server, not just your account, and a check whose command is missing there, such as <code>smartctl</code> without root, reports <span class="badge">Unknown</span> instead of failing.</li>
+<li><strong>The monitor itself.</strong> To watch the monitor host, give it a host file with <code>COLLECTOR=local</code>, so no SSH is needed.</li>
+</ul>
+<nav class="pager" aria-label="Previous and next page"><a class="card prev" href="install.html"><small>Previous</small>Install and set up</a><a class="card next" href="dashboard.html"><small>Next</small>Web dashboard</a></nav>
+  </main>
+</div>
+<footer class="foot">DataReel System Monitor (DRSM) 1.30 and later &middot; GNU General Public License v3 &middot; <a href="https://github.com/datareel/dr_system_monitor">github.com/datareel/dr_system_monitor</a></footer>
+</body>
+</html>

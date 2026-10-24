@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DRSM Documentation</title>
+<meta name="description" content="DataReel System Monitor documentation: connectivity and health monitoring for servers, workstations and cloud hosts.">
+<link rel="icon" href="images/logo.svg" type="image/svg+xml">
+<link rel="stylesheet" href="docs.css">
+<script src="docs.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="topbar">
+  <div class="topbar-inner">
+    <button class="tool icon-only menu-btn" type="button" data-action="menu" aria-label="Menu" aria-expanded="false"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+    <a class="brand" href="index.html"><img src="images/logo.svg" alt="">DRSM <small>Documentation</small></a>
+    <span class="spacer"></span>
+    <a class="tool primary" href="https://datareel.com/drsm/dashboard/"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg><span>Live demo</span></a>
+    <a class="tool hide-sm" href="https://github.com/datareel/dr_system_monitor"><svg class="icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.53-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.68 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.83 1.19 3.09 0 4.41-2.69 5.38-5.25 5.67.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5z"/></svg><span>GitHub</span></a>
+    <button class="tool icon-only" type="button" data-action="theme" aria-label="Switch light or dark theme"><svg class="icon sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg><svg class="icon moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+  </div>
+</header>
+<div class="layout">
+  <nav class="sidebar" aria-label="Documentation">
+    <h4>Get started</h4><a href="index.html" class="active" aria-current="page">Overview</a><div class="toc"><a href="#what">What DRSM does</a><a href="#how">How it works</a><a href="#new">What's new</a><a href="#setups">Deployment setups</a><a href="#docs">Other documentation</a></div><a href="install.html">Install and set up</a><a href="deployment.html">Deployment setups</a><h4>Using DRSM</h4><a href="dashboard.html">Web dashboard</a><a href="plugins.html">Plugins</a><a href="alerts.html">Thresholds and alerts</a><a href="databases.html">MySQL and Postgres</a><h4>Reference</h4><a href="changelog.html">What's new</a><h4>Links</h4><a href="https://datareel.com/drsm/dashboard/">Live demo</a><a href="https://github.com/datareel/dr_system_monitor">GitHub repository</a><a href="https://github.com/datareel/dr_system_monitor/issues">Report an issue</a>
+  </nav>
+  <main class="content" id="main">
+<section class="hero">
+  <span class="badge new">Updated October 2026</span>
+  <h1 style="margin-top:14px">DataReel System Monitor</h1>
+  <p class="lead">DRSM watches the connectivity and health of your servers, workstations and cloud hosts. Checks are small BASH plugins, alerts go out by email and text, and a fast Web dashboard shows the state of every host at a glance.</p>
+  <div class="actions">
+    <a class="tool primary" href="https://datareel.com/drsm/dashboard/"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg><span>Open the live demo</span></a>
+    <a class="tool" href="install.html">Install DRSM</a>
+    <a class="tool" href="changelog.html">What's new</a>
+  </div>
+</section>
+
+<figure>
+  <img src="images/overview.png" width="1400" height="900" alt="The DRSM Overview page: a red banner saying 8 hosts need attention, counts of healthy, warning and error hosts, a Needs attention list, group checks, and a host matrix.">
+  <figcaption>The Overview page from the <a href="https://datareel.com/drsm/dashboard/">live demo</a>, which runs on made up sample hosts.</figcaption>
+</figure>
+
+<h2 id="what">What DRSM does</h2>
+<div class="grid">
+  <div class="card"><h3>Connectivity</h3><p>Ping, HTTP, HTTPS (with certificate checks) and FTP probes from the monitor host. Cloud hosts that block ping are checked with an SSH login.</p></div>
+  <div class="card"><h3>System health</h3><p>CPU (including cloud steal time), load, memory and swap, disk space and inodes, software and hardware RAID, network errors, and logged in users.</p></div>
+  <div class="card"><h3>Plugins</h3><p>Every check is a folder with a manifest and one BASH script. Add your own check without touching a core script.</p></div>
+  <div class="card"><h3>Situational awareness</h3><p>Overview, heat map, hosts and connectivity pages, on desktop, phone and NOC wall screen, in light or dark.</p></div>
+  <div class="card"><h3>Alerts</h3><p>Email and email to text alerts, throttled to one per problem every 4 hours, with the business impact in each message.</p></div>
+  <div class="card"><h3>Databases</h3><p>MySQL and Postgres backup, statistics and maintenance scripts, with stored credentials for unattended runs.</p></div>
+</div>
+
+<h2 id="how">How it works</h2>
+<p>DRSM runs from cron on one <strong>monitor host</strong>. <code>bin/drsm_run.sh</code> reads one file per host from <code>etc/hosts</code>, probes each host from the outside, and runs the host's plugins on it in a single SSH session. It writes plain text reports and a <code>status.json</code> per host. The Web dashboard reads those files, and errors go out as email and text alerts.</p>
+
+<svg class="diagram" viewBox="0 0 860 330" role="img" aria-labelledby="dg-t">
+<title id="dg-t">How DRSM works: the monitor host runs drsm_run.sh from cron, probes hosts from outside, runs plugins on hosts over SSH, and writes reports that the Web dashboard reads.</title>
+<defs>
+  <marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0 0L10 5L0 10z"/></marker>
+  <marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah hi" d="M0 0L10 5L0 10z"/></marker>
+  <marker id="a3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah alt" d="M0 0L10 5L0 10z"/></marker>
+</defs>
+<rect class="box hi" x="300" y="20" width="260" height="150" rx="14"/>
+<text class="t" x="320" y="50">Monitor host</text>
+<text class="s" x="320" y="70">workstation, server or cluster node</text>
+<text class="m" x="320" y="98">cron &#8594; bin/drsm_run.sh</text>
+<text class="m" x="320" y="120">plugins/ &#183; etc/hosts/</text>
+<text class="m" x="320" y="142">text_email_alert.sh</text>
+
+<rect class="box" x="20" y="20" width="200" height="150" rx="14"/>
+<text class="t" x="40" y="50">Linux hosts</text>
+<text class="s" x="40" y="70">servers, VMs, cloud servers</text>
+<text class="m" x="40" y="98">~/drsm_agent/</text>
+<text class="s" x="40" y="120">cpu, load, memory, users,</text>
+<text class="s" x="40" y="138">disk, raid, nics plugins</text>
+
+<rect class="box" x="640" y="20" width="200" height="150" rx="14"/>
+<text class="t" x="660" y="50">Services</text>
+<text class="s" x="660" y="70">checked from outside</text>
+<text class="s" x="660" y="98">ping</text>
+<text class="s" x="660" y="120">HTTP, HTTPS, FTP</text>
+
+<rect class="box" x="300" y="230" width="260" height="80" rx="14"/>
+<text class="t" x="320" y="260">Reports</text>
+<text class="m" x="320" y="284">$REPORTdir/systems/&lt;host&gt;/</text>
+
+<rect class="box alt" x="640" y="230" width="200" height="80" rx="14"/>
+<text class="t" x="660" y="260">Web dashboard</text>
+<text class="s" x="660" y="284">Apache + PHP, local or hosted</text>
+
+<rect class="box" x="20" y="230" width="200" height="80" rx="14"/>
+<text class="t" x="40" y="260">Email and text</text>
+<text class="s" x="40" y="284">alerts, 4 hour throttle</text>
+
+<path class="ln hi" d="M300 95H222" marker-end="url(#a2)"/>
+<text class="lbl" x="261" y="88" text-anchor="middle">SSH</text>
+<path class="ln hi" d="M560 95H638" marker-end="url(#a2)"/>
+<text class="lbl" x="599" y="88" text-anchor="middle">probes</text>
+<path class="ln" d="M430 170V228" marker-end="url(#a1)"/>
+<text class="lbl" x="440" y="204">report files, status.json</text>
+<path class="ln alt" d="M560 270H638" marker-end="url(#a3)"/>
+<text class="lbl" x="599" y="262" text-anchor="middle">read</text>
+<path class="ln" d="M300 270H222" marker-end="url(#a1)"/>
+<text class="lbl" x="261" y="262" text-anchor="middle">alerts</text>
+</svg>
+
+<p>Nothing needs to be installed on a monitored host except a user account with keyed SSH access. The plugins are copied over on the first run and only again when they change.</p>
+
+<h2 id="new">What's new</h2>
+<p>DRSM had a full code review and three feature releases in October 2026. See <a href="changelog.html">What's new</a> for the details.</p>
+<div class="grid">
+  <a class="card" href="changelog.html#v130"><h3>Code review and modernization</h3><p>Release 1.30. More than 30 monitoring and security fixes, RHEL 10, Debian, Ubuntu, PHP 8 and cloud server support.</p></a>
+  <a class="card" href="plugins.html"><h3>Plugin module system</h3><p><code>drsm_run.sh</code>, the plugin contract, host files, and a migration tool from <code>systems.dat</code>.</p></a>
+  <a class="card" href="dashboard.html"><h3>Dashboard redesign</h3><p>Situational awareness Overview, heat map with status icons, host reports with gauges, and a Web only package for shared hosting.</p></a>
+</div>
+
+<h2 id="setups">Deployment setups</h2>
+<p>DRSM runs anywhere there is BASH and SSH. Two setups are in use today and are described step by step in <a href="deployment.html">Deployment setups</a>:</p>
+<div class="grid">
+  <a class="card" href="deployment.html#cluster"><h3>Production cluster</h3><p>DRSM on a 3 node cluster, checks run once from the active node, dashboard served by the cluster.</p></a>
+  <a class="card" href="deployment.html#workstation"><h3>Workstation and hosted dashboard</h3><p>DRSM on a workstation, with the dashboard on the datareel.com website (HostGator) for OSA and OCA.</p></a>
+</div>
+
+<h2 id="docs">Other documentation</h2>
+<p>These pages cover the same ground as the text files that ship with DRSM. The text files stay the reference you can read on a server without a browser:</p>
+<ul>
+  <li><code>README.txt</code>, the full install and configuration guide</li>
+  <li><code>PLUGINS.md</code>, the plugin contract and runner</li>
+  <li><code>CHANGELOG.md</code>, the list of changes in each release</li>
+</ul>
+<nav class="pager" aria-label="Previous and next page"><a class="card next" href="install.html"><small>Next</small>Install and set up</a></nav>
+  </main>
+</div>
+<footer class="foot">DataReel System Monitor (DRSM) 1.30 and later &middot; GNU General Public License v3 &middot; <a href="https://github.com/datareel/dr_system_monitor">github.com/datareel/dr_system_monitor</a></footer>
+</body>
+</html>
