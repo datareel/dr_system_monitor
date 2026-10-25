@@ -2,14 +2,19 @@
 
 All notable changes to the DataReel System Monitor (DRSM) are listed here.
 
-## Unreleased: Dashboard login
+## 1.31 - 2026-10-25
+
+Release 1.31 includes the plugin framework, the Web interface redesign,
+the HTML documentation and the dashboard login below.
+
+### Dashboard login
 
 Optional login for dashboard access from the internet. Written by
 [Claude Code](https://claude.com/claude-code) at the request of the
 project owner. Off by default, so existing sites and the public demo
 are unchanged.
 
-### Added
+#### Added
 
 - `$AUTHenable` in `config/drsm.php`: requests from the internal
   networks in `$AUTHnetworks` (CIDRs, IPv4 and IPv6) get open access,
@@ -27,9 +32,9 @@ are unchanged.
   login covers them. `make_web_demo.sh -a` builds a package with
   login on and the report folder blocked.
 
-## Unreleased: HTML documentation
+### HTML documentation
 
-### Added
+#### Added
 
 - `docs/`, an HTML documentation set styled like the dashboard, with
   light and dark themes and no external fonts or scripts: overview,
@@ -40,11 +45,11 @@ are unchanged.
 - `tests/docs_test.sh`, run in CI, checks every local link, image and
   anchor in the docs.
 
-### Changed
+#### Changed
 
 - `utils/install.sh` installs the docs to `${DRSMHOME}/docs`.
 
-## Unreleased: Web interface redesign
+### Web interface redesign
 
 A new look for the Web interface. Written by
 [Claude Code](https://claude.com/claude-code) at the request of the
@@ -52,7 +57,7 @@ project owner. The pages read the same report files as before, so
 `system_report.sh`, `system_check.sh` and `drsm_run.sh` reports all
 show.
 
-### Added
+#### Added
 
 - Overview page for situational awareness: overall state banner, host
   counts, group connectivity and health checks, a "Needs attention"
@@ -78,13 +83,13 @@ show.
 - `tests/www_test.sh` renders every page from real `drsm_run.sh`
   reports. CI lints and tests the pages with PHP 7.2 and 8.3.
 
-### Changed
+#### Changed
 
 - The Web pages need PHP 7.2 or higher.
 - A custom `site/page_header.php` must print `drsm_head_assets()` to
   get the new styles, see README.txt.
 
-## Unreleased
+### Plugin framework
 
 Plugin framework, phase 1 of the plugin module design. Written by
 [Claude Code](https://claude.com/claude-code) at the request of the
@@ -92,7 +97,7 @@ project owner. Nothing existing is removed: `system_check.sh`,
 `system_report.sh` and the `bin/*_checks.sh` scripts work as before
 while sites move over.
 
-### Added
+#### Added
 
 - `bin/drsm_run.sh`, a plugin runner that replaces the per-host loops in
   `system_check.sh` and `system_report.sh`. It writes the same report
@@ -129,7 +134,7 @@ while sites move over.
 - `tests/drsm_run_test.sh`, run in CI, tests the runner, settings,
   timeouts, probes, groups and migration without SSH or root.
 
-### Changed
+#### Changed
 
 - `utils/install.sh` installs `lib`, `collectors`, `plugins` and
   PLUGINS.md, and creates `etc/hosts/_defaults.conf` once.
