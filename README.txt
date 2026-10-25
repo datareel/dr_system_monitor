@@ -107,11 +107,13 @@ $ for s in server1 server2 server3 server4; do
 
 Installing:
 ----------
-To install DRSM, from GITHUB:
+To install DRSM from the source code release on datareel.com:
 
 $ mkdir ~/git
 $  cd ~/git
-$  git clone https://github.com/datareel/dr_system_monitor
+$  wget https://datareel.com/downloads/drsm/dr_system_monitor-<version>.tar.gz
+$  tar xzf dr_system_monitor-<version>.tar.gz
+$  mv dr_system_monitor-<version> dr_system_monitor
 $  cd dr_system_monitor/
 
 Setup your DRSM configuration:
@@ -184,7 +186,9 @@ To setup a DRSM development workstation to run from your user account:
 
 $ mkdir -p ~/git
 $ cd ~/git
-$ git clone https://github.com/datareel/dr_system_monitor
+$ wget https://datareel.com/downloads/drsm/dr_system_monitor-<version>.tar.gz
+$ tar xzf dr_system_monitor-<version>.tar.gz
+$ mv dr_system_monitor-<version> dr_system_monitor
 $ cd ~/git/dr_system_monitor/etc
 $ cp -p drsm_dev.sh ~/.drsm.sh
 $ cd ~/git/dr_system_monitor/utils
@@ -917,11 +921,11 @@ See CHANGELOG.md for the list of changes in each release.
 
 Support and Bug Tracking:
 ------------------------
-For any DRSM support issues, questions, or suggestions open a ticket
-on GITHUB:
+For any DRSM support issues, questions, or suggestions use the
+DataReel contact page:
 
-https://github.com/datareel/dr_system_monitor/issues
+https://datareel.com/contact.php
 
-If you wish to contribute to the DRSM project, fork a copy of the DRSM
-repo or post code updates to open issue thread.
+If you wish to contribute to the DRSM project, send your code updates
+through the contact page.
 
