@@ -147,6 +147,78 @@ run -n -H box3
 rm -rf "${TOPdir}/plugins/local/zz_test_slow"
 expect "slow plugin is stopped" "${R}/systems/box3/box3_report.txt" "plugin local/zz_test_slow timed out after 1 seconds"
 
+echo "== windows reporting agent"
+rm -f "${T}/hosts/"*.conf
+W="${T}/wra"
+mkdir -p "${W}"
+now=$(date +%s)
+today=$(date -u +%Y-%m-%d)
+# Report in the agent's format: $1 == host, $2 == ETIME, $3 == newest
+# patch date, $4 == extra Defender event lines
+function wra_fixture() {
+    cat > "${W}/${1}_windows_report_agent.txt" <<REPORT
+Windows report agent from host ${1}
+VERSION: 3.2
+HOSTNAME: ${1}
+ETIME: ${2}
+DATETIME: $(date -d "@${2}")
+
+ALL INSTALLED PROGRAMS:
+--- 64-bit / Default Hive ---
+Name: 7-Zip 25.01 (x64) | Version: 25.01
+Name: Mozilla Firefox (x64 en-US) | Version: 140.0
+END ALL INSTALLED PROGRAMS
+
+WINDOWS DEFENDER ALERTS:
+<Event xmlns='x'><System><EventID>1002</EventID><TimeCreated SystemTime='${today}T01:00:00.0Z'/></System></Event>
+${4}
+END WINDOWS DEFENDER ALERTS
+
+INSTALLED WINDOWS PATCHES:
+Date:  ${today}
+ Patch: Security Intelligence Update for Microsoft Defender Antivirus - KB2267602
+Date:  ${3}
+ Patch: 2026-09 Cumulative Update for Windows 11
+END INSTALLED WINDOWS PATCHES
+
+HOT FIXES:
+Installed On:   9/9/2026
+END HOT FIXES
+REPORT
+}
+wra_fixture good1 "$((now - 600))" "$(date -d "-60 days" +%Y-%m-%d)" ""
+old_day=$(date -u -d "-10 days" +%Y-%m-%d)
+wra_fixture old1 "$((now - 20 * 86400))" "2026-1-5" "<Event><System><EventID>1116</EventID><TimeCreated SystemTime='${today}T02:00:00.0Z'/></System><EventData><Data Name='Threat Name'>Trojan:Win32/Fixture</Data></EventData></Event>
+<Event><System><EventID>5001</EventID><TimeCreated SystemTime='${old_day}T03:00:00.0Z'/></System></Event>
+<Event><System><EventID>1116</EventID><TimeCreated SystemTime='${old_day}T04:00:00.0Z'/></System><EventData><Data Name='Threat Name'>Old:Win32/Fixture</Data></EventData></Event>"
+cat > "${T}/hosts/_defaults.conf" <<HOSTS
+PLUGINS="core/load"
+PROBES="network/ping"
+WRA_REPORTS_DIR=${W}
+windows_apps_FORBIDDEN="firefox"
+HOSTS
+HOME="${T}/home" bash "${TOPdir}/utils/wra_hosts.sh" > "${T}/wra.log" 2>&1
+expect "wra_hosts.sh dry run lists hosts" "${T}/wra.log" "2 host files would be written"
+if [ ! -f "${T}/hosts/good1.conf" ]; then pass "dry run writes nothing"; else fail "dry run wrote a host file"; fi
+HOME="${T}/home" bash "${TOPdir}/utils/wra_hosts.sh" --apply > "${T}/wra.log" 2>&1
+expect "wra_hosts.sh writes host files" "${T}/hosts/good1.conf" "COLLECTOR=wra"
+printf 'HOST=never1\nPLATFORM=windows\nCOLLECTOR=wra\nPROBES=""\nPLUGINS="windows/checkin"\n' > "${T}/hosts/never1.conf"
+run -n
+G="${R}/systems/good1/good1_report.txt"
+O="${R}/systems/old1/old1_report.txt"
+expect "fresh report checks in" "${G}" "=== windows/checkin [OK]"
+expect "linux plugins skipped on windows" "${G}" "PLATFORM:windows"
+if ! grep -q "core/load\|network/ping" "${G}"; then pass "no ping or linux plugins for windows hosts"; else fail "ping or linux plugin ran on good1"; fi
+expect "definition updates do not count as patches" "${G}" "=== windows/patches [WARNING]"
+expect "routine Defender events ignored" "${G}" "=== windows/defender [OK]"
+expect "forbidden program found" "${G}" "forbidden program installed: Mozilla Firefox"
+expect "old report is an error" "${O}" "ERROR - old1 has not reported for 20 days"
+expect "threat is an error" "${O}" "Defender threat detected ${today}T02:00:00Z Trojan:Win32/Fixture"
+expect "protection off alerts past the 7 day window" "${O}" "Defender real-time protection turned off ${old_day}T03:00:00Z"
+if ! grep -q "Old:Win32/Fixture" "${O}"; then pass "threats older than 7 days do not alert"; else fail "old threat alerted"; fi
+expect "old patches are an error" "${O}" "=== windows/patches [ERROR]"
+expect "host with no report" "${R}/systems/never1/never1_report.txt" "never1 has never sent a Windows agent report"
+
 echo "== migration"
 rm -f "${T}/hosts/"*.conf
 cat > "${T}/www/config/systems.dat" <<'DAT'

@@ -17,6 +17,7 @@ lib/drsm_conf.sh           KEY=value reader for manifests and host files
 lib/drsm_job.sh            runs plugins on the target, with timeouts
 collectors/local.sh        runs plugins on the monitor host itself
 collectors/ssh-linux.sh    copies and runs plugins on Linux hosts over SSH
+collectors/wra.sh          reads Windows Reporting Agent reports for Windows hosts
 plugins/<category>/<name>/
     plugin.conf            manifest: description, platforms, settings
     check.sh               runs on the host (MODE=remote)
@@ -26,6 +27,7 @@ etc/hosts/_defaults.conf   settings shared by all hosts
 etc/hosts/<host>.conf      one file per host
 utils/new_plugin.sh        creates a plugin from a template
 utils/migrate_systems_dat.sh  converts systems.dat and profiles to host files
+utils/wra_hosts.sh         creates host files for Windows agent hosts
 ```
 
 ## Plugins included
@@ -43,9 +45,14 @@ utils/migrate_systems_dat.sh  converts systems.dat and profiles to host files
 | `network/http` | monitor | HTTP service answers |
 | `network/https` | monitor | HTTPS service answers with a valid certificate |
 | `network/ftp` | monitor | FTP service answers |
+| `windows/checkin` | agent report | Windows host reported recently, complete report, agent version |
+| `windows/defender` | agent report | Defender threats, protection turned off, old definitions |
+| `windows/patches` | agent report | Age of the newest Windows patch |
+| `windows/apps` | agent report | Required and forbidden installed programs |
 
-These are the checks from `bin/*_checks.sh` and `system_check.sh`, with
-the same messages and thresholds.
+The Linux checks are the ones from `bin/*_checks.sh` and `system_check.sh`,
+with the same messages and thresholds. The Windows plugins are described
+in [Windows hosts](#windows-hosts).
 
 ## Quick start
 
@@ -118,8 +125,8 @@ core_cpu_TIMEOUT=60
 | `HOST` | Name or address for SSH and probes, default is the file name |
 | `DESCRIPTION`, `IMPACT` | Shown in reports and alerts |
 | `GROUP` | Host group, selected with `drsm_run.sh -g` |
-| `PLATFORM` | `linux` today; `windows` when its collector is added |
-| `COLLECTOR` | `ssh`, `local` for the monitor host itself, `none` for probes only |
+| `PLATFORM` | `linux` or `windows` |
+| `COLLECTOR` | `ssh`, `local` for the monitor host itself, `wra` for Windows Reporting Agent hosts, `none` for probes only |
 | `ENABLED` | `no` skips the host |
 | `PROBES` | Plugins run from the monitor host against this host |
 | `PLUGINS` | Plugins run on the host |
@@ -130,6 +137,72 @@ what differs. Files starting with `_` are not hosts.
 
 If `network/ping` fails, the host is reported down and its remote
 plugins are skipped, as the old `system_report.sh` did.
+
+## Windows hosts
+
+Windows hosts run the Windows Reporting Agent, a small Windows service
+from the agent distribution. Every 45 minutes it sends a text report
+(installed programs, Windows Defender events, Windows Update history,
+hotfixes, users, IP addresses) to the monitor side by signed HTTPS
+upload, a CIFS share, or SCP. DRSM never connects to the Windows host:
+the `wra` collector runs the `windows/*` plugins on the monitor host
+against each host's last report,
+`${WRA_REPORTS_DIR}/<host>_windows_report_agent.txt`.
+
+A Windows host file, also in `etc/hosts/windows.conf_example`:
+
+```
+HOST=laptop1
+PLATFORM=windows
+COLLECTOR=wra
+PROBES=""
+PLUGINS="windows/checkin windows/defender windows/patches windows/apps"
+```
+
+`PROBES=""` turns off the ping probe, laptops move between networks.
+Set `WRA_REPORTS_DIR` once in `_defaults.conf`: it is `reports_dir`
+from the agent's `server.ini`, or the folder the CIFS or SCP delivery
+writes to. The default is `/var/www/html/windows/reports`. Set
+`WRA_NAME` when the agent reports under a name other than `HOST`.
+Linux plugins in `_defaults.conf` are skipped on Windows hosts.
+
+For many hosts, `utils/wra_hosts.sh` makes one host file per report.
+It only lists what it would write until run with `--apply`, and never
+changes a host file that exists:
+
+```
+$ ~/drsm/utils/wra_hosts.sh -d /var/www/html/windows/reports
+$ ~/drsm/utils/wra_hosts.sh -d /var/www/html/windows/reports --apply
+```
+
+| Plugin | Setting | Default | Meaning |
+| --- | --- | --- | --- |
+| `windows/checkin` | `WARN_HOURS` | 48 | Hours without a report before a warning |
+| | `CRIT_DAYS` | 15 | Days without a report before an error |
+| | `MIN_VERSION` | | Lowest agent version that does not warn |
+| `windows/defender` | `LOOKBACK_DAYS` | 7 | Days of Defender events that alert |
+| | `PROTECTION_LOOKBACK_DAYS` | 30 | Days that protection turned off keeps alerting |
+| | `CRIT_EVENTS` | threats, failed remediation, protection off | Event IDs that are errors |
+| | `WARN_EVENTS` | threat removed, update failures | Event IDs that are warnings |
+| | `DEFINITIONS_WARN_DAYS` | 7 | Age of the newest Security Intelligence update, 0 to skip |
+| `windows/patches` | `WARN_DAYS`, `CRIT_DAYS` | 45, 90 | Age of the newest Windows patch |
+| | `IGNORE` | definition updates | Patch titles that do not count |
+| `windows/apps` | `REQUIRED` | NONE | Programs that must be installed |
+| | `FORBIDDEN` | NONE | Programs that are errors |
+| | `WARN` | NONE | Programs that are warnings |
+
+The `windows/apps` lists are case insensitive regular expressions
+separated by semicolons, because program names have spaces:
+`windows_apps_REQUIRED="Microsoft Defender;Mozilla Firefox"`.
+
+A host that has never sent a report, or whose report file is empty, is
+an ERROR from `windows/checkin`; the other Windows plugins are UNKNOWN
+until a report arrives. To run a Windows plugin by hand:
+
+```
+$ DRSM_TARGET=laptop1 DRSM_WRA_REPORT=/var/www/html/windows/reports/laptop1_windows_report_agent.txt \
+    bash ~/drsm/plugins/windows/checkin/check.sh
+```
 
 ## Writing a plugin
 
@@ -222,6 +295,9 @@ one line per plugin, with the plugin's settings and timeout. Probe jobs
 run on the monitor host. Remote jobs go through the host's collector:
 
 - `local` runs the job in place from `${DRSMHOME}`.
+- `wra` runs the `windows/*` plugins in place from `${DRSMHOME}` against
+  the host's last Windows Reporting Agent report. See
+  [Windows hosts](#windows-hosts).
 - `ssh-linux` copies `lib/drsm_plugin.sh` and the host's plugins to
   `~/drsm_agent` on the host as one tar stream (skipped when the
   checksum has not changed), then runs the whole job in one SSH session
@@ -255,7 +331,7 @@ so `-g dev` writes the same `_dev` files as before. Alerts use
 The design in the project doc adds, in later releases: storage, network
 and core checks (SMART, mounts, backup age, TCP ports, TLS expiry, DNS,
 time sync, failed services); generic database, container, service and
-process plugins plus a `custom/command` catch-all; a Windows collector
-over OpenSSH and PowerShell; configurable notifiers (email, SMS, Slack,
+process plugins plus a `custom/command` catch-all; live Windows checks
+over OpenSSH and PowerShell, alongside the Windows Reporting Agent; configurable notifiers (email, SMS, Slack,
 ntfy, webhook) with alert-on-change; and a plugin status grid in the
 Web interface.

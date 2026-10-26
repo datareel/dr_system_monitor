@@ -4,7 +4,26 @@ All notable changes to the DataReel System Monitor (DRSM) are listed here.
 
 ## Unreleased
 
-- utils/drsm_web_sync.sh copies ${REPORTdir} to a Web only dashboard
+### Windows hosts
+
+#### Added
+
+- `windows/checkin`, `windows/defender`, `windows/patches` and
+  `windows/apps` plugins for Windows hosts that run the Windows
+  Reporting Agent. They read the report the agent sends to the monitor
+  side, so DRSM never connects to the Windows host.
+- `collectors/wra.sh` (`COLLECTOR=wra`, `PLATFORM=windows`), with the
+  `WRA_REPORTS_DIR` and `WRA_NAME` host keys.
+- `utils/wra_hosts.sh` creates host files from the agent reports
+  directory, dry run unless `--apply`.
+- `etc/hosts/windows.conf_example` and tests in
+  `tests/drsm_run_test.sh`.
+
+### Hosted dashboard
+
+#### Added
+
+- `utils/drsm_web_sync.sh` copies ${REPORTdir} to a Web only dashboard
   on another server (WEBSYNC_DEST in ~/.drsm.sh) with rsync over SSH.
   Dry run unless --apply, retries, one run at a time, never touches
   the remote pages, config or .htaccess files.
