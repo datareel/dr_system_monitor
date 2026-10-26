@@ -128,6 +128,12 @@ expect "legacy report shown" 'old1 disk is at 90%'
 render readreport.php "n=../../etc"
 expect "path traversal refused" "Host not found"
 
+render host_status.php "n=db1"
+expect "host status JSON" '"host":"db1"'
+expect "host status age" '"age_secs":'
+render host_status.php "n=../../etc"
+expect "host status path traversal refused" '"error":"not found"'
+
 render checks.php ""
 expect "connectivity report" "Connectivity tests"
 render checks.php "r=health&g=dev"
