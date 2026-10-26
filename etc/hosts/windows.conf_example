@@ -1,0 +1,34 @@
+# DRSM host file for a Windows host that runs the Windows Reporting
+# Agent, copy to <host>.conf in this directory, or create them all
+# with utils/wra_hosts.sh. The agent sends its report to the monitor
+# side, DRSM reads the last report and never connects to the host.
+
+# The name the agent reports as, lower case without the domain
+HOST=laptop1
+DESCRIPTION="Field laptop"
+IMPACT="Laptop may be missing security updates or protection"
+GROUP=production
+PLATFORM=windows
+COLLECTOR=wra
+
+# Directory the agent reports land in: reports_dir in the agent
+# server.ini, or the CIFS share or SCP directory. Best set once in
+# _defaults.conf.
+WRA_REPORTS_DIR=/var/www/html/windows/reports
+# Report name when it differs from HOST
+# WRA_NAME=laptop1
+
+# Laptops move between networks, so no ping probe. Servers that
+# always answer can keep PROBES="network/ping".
+PROBES=""
+PLUGINS="windows/checkin windows/defender windows/patches windows/apps"
+
+# Plugin settings, see plugins/windows/*/plugin.conf
+windows_checkin_WARN_HOURS=48
+windows_checkin_CRIT_DAYS=15
+# windows_checkin_MIN_VERSION=3.2
+# windows_defender_LOOKBACK_DAYS=7
+# windows_patches_WARN_DAYS=45
+# Semicolon separated, case insensitive regular expressions
+# windows_apps_REQUIRED="Microsoft Defender;Mozilla Firefox"
+# windows_apps_FORBIDDEN="uTorrent;TeamViewer"

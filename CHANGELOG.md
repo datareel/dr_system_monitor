@@ -2,6 +2,23 @@
 
 All notable changes to the DataReel System Monitor (DRSM) are listed here.
 
+## Unreleased
+
+### Windows hosts
+
+#### Added
+
+- `windows/checkin`, `windows/defender`, `windows/patches` and
+  `windows/apps` plugins for Windows hosts that run the Windows
+  Reporting Agent. They read the report the agent sends to the monitor
+  side, so DRSM never connects to the Windows host.
+- `collectors/wra.sh` (`COLLECTOR=wra`, `PLATFORM=windows`), with the
+  `WRA_REPORTS_DIR` and `WRA_NAME` host keys.
+- `utils/wra_hosts.sh` creates host files from the agent reports
+  directory, dry run unless `--apply`.
+- `etc/hosts/windows.conf_example` and tests in
+  `tests/drsm_run_test.sh`.
+
 ## 1.31 - 2026-10-25
 
 Release 1.31 includes the plugin framework, the Web interface redesign,
