@@ -128,7 +128,9 @@ for n in ${NICS}
 do
     if ! nic_exists "${n}"; then continue; fi
     ETH="${n}"
-    IPADDR=$(${IP} -o -4 addr show dev "${ETH}" 2> /dev/null | awk '{ print $4 }' | tr '\n' ' ')
+    # First address, and a count of the rest: shared hosts carry many
+    # extra /32 addresses on one interface
+    IPADDR=$(${IP} -o -4 addr show dev "${ETH}" 2> /dev/null | awk '{ a[++n] = $4 } END { if (n > 1) printf "%s (+%d more) ", a[1], n - 1; else if (n == 1) printf "%s ", a[1] }')
     DESCRIPTION="${IPADDR}NIC"
 
     RXBYTES=$(nicstat "${n}" rx_bytes)
