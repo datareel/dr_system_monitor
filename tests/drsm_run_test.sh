@@ -187,7 +187,10 @@ END HOT FIXES
 REPORT
 }
 wra_fixture good1 "$((now - 600))" "$(date -d "-60 days" +%Y-%m-%d)" ""
-wra_fixture old1 "$((now - 20 * 86400))" "2026-1-5" "<Event><System><EventID>1116</EventID><TimeCreated SystemTime='${today}T02:00:00.0Z'/></System><EventData><Data Name='Threat Name'>Trojan:Win32/Fixture</Data></EventData></Event>"
+old_day=$(date -u -d "-10 days" +%Y-%m-%d)
+wra_fixture old1 "$((now - 20 * 86400))" "2026-1-5" "<Event><System><EventID>1116</EventID><TimeCreated SystemTime='${today}T02:00:00.0Z'/></System><EventData><Data Name='Threat Name'>Trojan:Win32/Fixture</Data></EventData></Event>
+<Event><System><EventID>5001</EventID><TimeCreated SystemTime='${old_day}T03:00:00.0Z'/></System></Event>
+<Event><System><EventID>1116</EventID><TimeCreated SystemTime='${old_day}T04:00:00.0Z'/></System><EventData><Data Name='Threat Name'>Old:Win32/Fixture</Data></EventData></Event>"
 cat > "${T}/hosts/_defaults.conf" <<HOSTS
 PLUGINS="core/load"
 PROBES="network/ping"
@@ -211,6 +214,8 @@ expect "routine Defender events ignored" "${G}" "=== windows/defender [OK]"
 expect "forbidden program found" "${G}" "forbidden program installed: Mozilla Firefox"
 expect "old report is an error" "${O}" "ERROR - old1 has not reported for 20 days"
 expect "threat is an error" "${O}" "Defender threat detected ${today}T02:00:00Z Trojan:Win32/Fixture"
+expect "protection off alerts past the 7 day window" "${O}" "Defender real-time protection turned off ${old_day}T03:00:00Z"
+if ! grep -q "Old:Win32/Fixture" "${O}"; then pass "threats older than 7 days do not alert"; else fail "old threat alerted"; fi
 expect "old patches are an error" "${O}" "=== windows/patches [ERROR]"
 expect "host with no report" "${R}/systems/never1/never1_report.txt" "never1 has never sent a Windows agent report"
 

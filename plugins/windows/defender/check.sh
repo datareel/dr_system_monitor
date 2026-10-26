@@ -43,6 +43,8 @@ LOOKBACK_DAYS=$(drsm_setting LOOKBACK_DAYS 7)
 CRIT_EVENTS=$(drsm_setting CRIT_EVENTS "1006 1015 1116 1118 1119 5001 5010 5012")
 WARN_EVENTS=$(drsm_setting WARN_EVENTS "1117 2001 2003 2004 3002 5008")
 DEFINITIONS_WARN_DAYS=$(drsm_setting DEFINITIONS_WARN_DAYS 7)
+PROTECTION_LOOKBACK_DAYS=$(drsm_setting PROTECTION_LOOKBACK_DAYS 30)
+PROTECTION_EVENTS=$(drsm_setting PROTECTION_EVENTS "5001 5010 5012")
 
 wra_load_report || drsm_exit
 echo "Microsoft Defender checks for ${WRA_HOST}"
@@ -52,6 +54,7 @@ if ! wra_has_section "WINDOWS DEFENDER ALERTS" "${REPORT}"; then
 fi
 
 since=$(date -u -d "-${LOOKBACK_DAYS} days" +%Y-%m-%dT%H:%M:%S)
+psince=$(date -u -d "-${PROTECTION_LOOKBACK_DAYS} days" +%Y-%m-%dT%H:%M:%S)
 
 # One line per event: time|id|threat or detail, newest first as sent
 events=$(wra_section "WINDOWS DEFENDER ALERTS" "${REPORT}" | awk '
@@ -92,7 +95,11 @@ while IFS='|' read -r t id detail
 do
     [ "${id}" == "" ] && continue
     total=$((total + 1))
-    if [[ "${t}" < "${since}" ]]; then continue; fi
+    if [[ " ${PROTECTION_EVENTS} " == *" ${id} "* ]]; then
+	if [[ "${t}" < "${psince}" ]]; then continue; fi
+    elif [[ "${t}" < "${since}" ]]; then
+	continue
+    fi
     recent=$((recent + 1))
     msg="${WRA_HOST} Defender $(event_label "${id}") ${t}Z${detail:+ ${detail}}"
     if [[ " ${CRIT_EVENTS} " == *" ${id} "* ]]; then

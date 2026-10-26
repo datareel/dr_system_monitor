@@ -181,6 +181,7 @@ $ ~/drsm/utils/wra_hosts.sh -d /var/www/html/windows/reports --apply
 | | `CRIT_DAYS` | 15 | Days without a report before an error |
 | | `MIN_VERSION` | | Lowest agent version that does not warn |
 | `windows/defender` | `LOOKBACK_DAYS` | 7 | Days of Defender events that alert |
+| | `PROTECTION_LOOKBACK_DAYS` | 30 | Days that protection turned off keeps alerting |
 | | `CRIT_EVENTS` | threats, failed remediation, protection off | Event IDs that are errors |
 | | `WARN_EVENTS` | threat removed, update failures | Event IDs that are warnings |
 | | `DEFINITIONS_WARN_DAYS` | 7 | Age of the newest Security Intelligence update, 0 to skip |
