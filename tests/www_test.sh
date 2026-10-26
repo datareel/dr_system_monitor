@@ -135,6 +135,49 @@ expect "dev health report" "Start of dev1"
 render checks.php "g=../x"
 expect "bad group falls back" "Production group"
 
+echo "== Trends"
+if [ -s "${W}/reports/systems/web1/metrics_history.tsv" ] && grep -q "mem_total_mb=" "${W}/reports/systems/web1/metrics_history.tsv"; then
+    pass "drsm_run.sh writes the metrics history"
+else
+    fail "drsm_run.sh writes the metrics history"
+fi
+# Ten days of history for db1: a daily CPU cycle, disk growth, NIC and
+# disk I/O counters, and one CPU spike that must be flagged
+HIST="${W}/reports/systems/db1/metrics_history.tsv"
+awk -v now="$(date +%s)" 'BEGIN {
+    start = now - 10 * 86400; tot = 0; idle = 0; tx = 0; io = 0
+    for (t = start; t < now; t += 900) {
+        h = (t % 86400) / 3600
+        cpu = 20 + 15 * sin(h / 24 * 6.283) + (t % 7)
+        if (t >= now - 3 * 3600 && t < now - 3 * 3600 + 900) cpu = 99
+        tot += 180000; idle += int(180000 * (1 - cpu / 100)); tx += 50000000; io += 90000
+        printf "%d\tcpu_used_pct=%d\tcpu_count=2\tcpu_ticks_total=%d\tcpu_ticks_idle=%d\tload_15m=0.5", t, cpu, tot, idle
+        printf "\tmem_total_mb=8000\tmem_available_mb=%d\tswap_used_mb=0\tswap_total_mb=2048", 5000 + (t % 300)
+        printf "\tdisk_used_pct{mount=\"/\"}=%d\tdisk_size_mb{mount=\"/\"}=100000\tdisk_used_mb{mount=\"/\"}=%d", 40 + (t - start) / 86400, 40000 + (t - start) / 86.4
+        printf "\tnic_tx_bytes{nic=\"eth0\"}=%d\tnic_rx_bytes{nic=\"eth0\"}=%d", tx, tx / 2
+        printf "\tdiskio_read_ops{dev=\"vda\"}=%d\tdiskio_write_ops{dev=\"vda\"}=%d\tdiskio_read_bytes{dev=\"vda\"}=%d\tdiskio_write_bytes{dev=\"vda\"}=%d\n", io, io, io * 4096, io * 4096
+    }
+}' > "${HIST}"
+render trends.php ""
+expect "trends in the menu" 'href="/drsm/dashboard/php/trends.php"'
+expect "fleet capacity table" "Capacity by host"
+expect "host with history links" 'trends.php?h=db1'
+expect "host without history" "No metrics history yet"
+render trends.php "h=db1&r=7d"
+expect "capacity table" "Capacity and sizing"
+expect "cpu row" '<th scope="row">CPU</th>'
+expect "disk growth, 1000 MB a day" "Growth 29.3 GB a month"
+expect "network per 30 days" "Network out"
+expect "disk iops" "Disk IOPS vda"
+expect "hourly baseline" "normal by hour of day"
+expect "spike flagged" "Above normal"
+expect "chart drawn" 'class="trend-plot"'
+reject "no cloud panel without aws plugin" "AWS: what you pay for"
+render trends.php "h=../../etc"
+expect "bad host falls back to all hosts" "Capacity by host"
+render trends.php "h=old1&r=bogus"
+expect "no history message" "utils/drsm_metrics_backfill.sh --apply"
+
 echo "== Web only demo package"
 bash "${TOPdir}/utils/make_web_demo.sh" -s -o "${T}/demo" > "${T}/demo.log" 2>&1
 W="${T}/demo/dashboard"
@@ -146,6 +189,9 @@ expect "demo links use the URL path" 'href="/drsm/dashboard/php/heatmap.php"'
 reject "demo hosts are not stale" "Last report is over"
 render heatmap.php "mode=metrics"
 expect "demo metrics" 'Memory used'
+render trends.php "h=www2&r=7d"
+expect "demo trends" "Capacity and sizing"
+expect "demo spike flagged" "Above normal"
 if grep -rq "$(hostname)" "${W}/reports"; then fail "demo reports name this machine"; else pass "demo reports do not name this machine"; fi
 
 echo ""

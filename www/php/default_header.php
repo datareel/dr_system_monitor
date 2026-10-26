@@ -10,6 +10,7 @@ $drsm_nav = array(
   "overview" => array("Overview", "index.php", "grid"),
   "heatmap" => array("Heat map", "heatmap.php", "heat"),
   "hosts" => array("Hosts", "reports.php", "list"),
+  "trends" => array("Trends", "trends.php", "trend"),
   "checks" => array("Connectivity", "checks.php", "net")
 );
 ?>

@@ -66,6 +66,8 @@ source "${CONFIG_FILE}"
 source "${DRSMHOME}/bin/system_functions.sh"
 # shellcheck source=lib/drsm_conf.sh
 source "${DRSMHOME}/lib/drsm_conf.sh"
+# shellcheck source=lib/drsm_history.sh
+source "${DRSMHOME}/lib/drsm_history.sh"
 
 if [ "${HOSTSdir}" == "" ]; then HOSTSdir="${DRSMHOME}/etc/hosts"; fi
 if [ "${PLUGINSdir}" == "" ]; then PLUGINSdir="${DRSMHOME}/plugins"; fi
@@ -492,6 +494,7 @@ do
     cat "${report}" > "${REPORTdir}/systems/${host}/${host}_report.txt"
     cat "${report}" > "${REPORTdir}/systems/${host}/archive/${host}_report_${DATEEXT}.txt"
     write_status_json "${REPORTdir}/systems/${host}/status.json"
+    drsm_history_append "${report}" "${REPORTdir}/systems/${host}/${DRSM_HISTORY_FILE}"
     cat "${report}" >> "${statusfile}"
     log "Checks complete on ${host}"
 done

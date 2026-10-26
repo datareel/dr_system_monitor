@@ -84,6 +84,8 @@ echo "Free SWAP:  ${free_swap} MB"
 echo "Total free: ${free} MB"
 drsm_metric mem_available_mb "${MemAvailable}"
 drsm_metric swap_used_mb "${used_swap}"
+drsm_metric mem_total_mb "${total_physical}"
+drsm_metric swap_total_mb "${total_swap}"
 echo "Process usage:"
 echo ' %MEM   PID USER     COMMAND'
 echo "${PROCS}"

@@ -271,6 +271,33 @@ function host_report() {
     touch -d "@${et}" "${hd}/${h}_report.txt" 2>/dev/null
 }
 
+# 30 days of metrics history for the trends page: a daily cycle around
+# the host's current use, slow disk growth, and a CPU spike on www2
+function sample_history() {
+    # $1 host, $2 cpu%, $3 mem%, $4 disk% of /var, $5 cpus, $6 spike yes/no
+    awk -v now="${NOW}" -v cpu="$2" -v mem="$3" -v disk="$4" -v cpus="$5" -v spike="$6" -v seed="${#1}$2$3" 'BEGIN {
+	srand(seed)
+	total = 8192 * (int(cpus / 2) + 1); size = 512000
+	start = now - 30 * 86400; ticks = 0; idle = 0; tx = 0; rx = 0; ops = 0; byt = 0
+	for (t = start; t <= now - 900; t += 900) {
+	    day = 0.5 + 0.5 * sin(((t % 86400) / 3600 - 9) / 24 * 6.2832)
+	    c = cpu * (0.4 + 0.9 * day) + rand() * 4
+	    if (spike == "yes" && t > now - 4 * 3600 && t <= now - 3 * 3600) c = 99
+	    if (c > 100) c = 100
+	    ticks += 90000 * cpus; idle += int(90000 * cpus * (1 - c / 100))
+	    m = mem * (0.85 + 0.2 * day) + rand() * 2; if (m > 99) m = 99
+	    used = size * (disk - 4 + 4 * (t - start) / (30 * 86400)) / 100
+	    tx += int((300000 + 900000 * day) * 900 * (0.8 + rand() * 0.4)); rx += int((80000 + 200000 * day) * 900)
+	    o = int((60 + 400 * day) * 900 * (0.8 + rand() * 0.4)); ops += o; byt += o * 12288
+	    printf "%d\tcpu_used_pct=%d\tcpu_count=%d\tcpu_ticks_total=%d\tcpu_ticks_idle=%d\tcpu_ticks_steal=0", t, c, cpus, ticks, idle
+	    printf "\tload_15m=%.2f\tmem_total_mb=%d\tmem_available_mb=%d\tswap_used_mb=0\tswap_total_mb=4096", c / 100 * cpus * 1.2, total, total * (100 - m) / 100
+	    printf "\tdisk_used_pct{mount=\"/var\"}=%d\tdisk_size_mb{mount=\"/var\"}=%d\tdisk_used_mb{mount=\"/var\"}=%d", used / size * 100, size, used
+	    printf "\tnic_rx_bytes{nic=\"eth0\"}=%d\tnic_tx_bytes{nic=\"eth0\"}=%d", rx, tx
+	    printf "\tdiskio_read_ops{dev=\"sda\"}=%d\tdiskio_write_ops{dev=\"sda\"}=%d\tdiskio_read_bytes{dev=\"sda\"}=%d\tdiskio_write_bytes{dev=\"sda\"}=%d\n", ops / 3, ops - int(ops / 3), byt / 3, byt - int(byt / 3)
+	}
+    }' > "${R}/systems/${1}/metrics_history.tsv"
+}
+
 if [ "${sample}" == "1" ]; then
     #          host     description                  impact                     group       cpu mem disk load cpus swap web extra
     host_report www1    "Public web server 1"        "Website is degraded"      production  34  58  61  120  4   3  yes none
@@ -288,6 +315,15 @@ if [ "${sample}" == "1" ]; then
     host_report build1  "CI build server"            "Builds stop"              dev         73  66  58  350  8  12  no  user
     host_report dev1    "Development web server"     "Developers blocked"       dev         15  40  49   45  4   0  yes none
     host_report test1   "QA test server"             "Testing is blocked"       dev         11  35  38   25  4   0  no  none
+
+    sample_history www1 34 58 61 4 no
+    sample_history www2 70 71 64 4 yes
+    sample_history db1 46 88 78 8 no
+    sample_history db2 12 63 80 8 no
+    sample_history app1 27 49 44 4 no
+    sample_history cache1 6 81 33 2 no
+    sample_history files1 9 41 86 4 no
+    sample_history build1 60 66 58 8 no
 
     # Group reports from the same host reports, as drsm_run.sh writes them
     for g in production dev; do

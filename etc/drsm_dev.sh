@@ -29,6 +29,8 @@ export TZ=UTC
 export TEMPfile_age=60
 # Age off report files in days
 export REPORTSfile_age=3
+# Days of metrics history kept for the trends page, see lib/drsm_history.sh
+export HISTORYdays=730
 # Age off offline report files in days
 export OFFLINEfile_age=30
 # Age off database and system backups

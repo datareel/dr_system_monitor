@@ -500,6 +500,8 @@ function drsm_icon($name)
     "alert" => '<path d="M12 3l9.5 17H2.5z"/><path d="M12 10v4M12 17.5v.5"/>',
     "check" => '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
     "lock" => '<rect x="4.5" y="10.5" width="15" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/>',
+    "trend" => '<path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/>',
+    "cloud" => '<path d="M7 18a4.5 4.5 0 0 1-.6-9 6 6 0 0 1 11.5 1.5A3.75 3.75 0 0 1 17.5 18z"/>',
     "logout" => '<path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 16l-4-4 4-4M6 12h10"/>'
   );
   $p = isset($paths[$name]) ? $paths[$name] : "";

@@ -40,6 +40,8 @@ utils/wra_hosts.sh         creates host files for Windows agent hosts
 | `core/users` | host | Logged in users, alerts for listed user names |
 | `storage/disk` | host | Space and inodes on every local file system |
 | `storage/raid` | host | mdadm software RAID, LSI MegaRAID drives |
+| `storage/diskio` | host | Disk read and write operations and bytes, for IOPS and throughput trends |
+| `cloud/aws` | host | AWS EC2 instance type, zone, public IPv4 and EBS volume sizes from instance metadata |
 | `network/nics` | host | Interface errors, drops, collisions |
 | `network/ping` | monitor | Host answers ping |
 | `network/http` | monitor | HTTP service answers |
@@ -49,6 +51,13 @@ utils/wra_hosts.sh         creates host files for Windows agent hosts
 | `windows/defender` | agent report | Defender threats, protection turned off, old definitions |
 | `windows/patches` | agent report | Age of the newest Windows patch |
 | `windows/apps` | agent report | Required and forbidden installed programs |
+
+`storage/diskio` and `cloud/aws` never alert. They add numbers to the
+trends page, so they are not in the default plugin list: add them to
+`PLUGINS` for the hosts you size, for example
+`PLUGINS="... storage/diskio cloud/aws"` for an EC2 instance. Skip
+`storage/diskio` on shared hosting, where `/proc/diskstats` is the
+provider's whole server.
 
 The Linux checks are the ones from `bin/*_checks.sh` and `system_check.sh`,
 with the same messages and thresholds. The Windows plugins are described

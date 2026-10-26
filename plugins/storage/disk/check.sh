@@ -47,8 +47,8 @@ echo "Disk usage checks for ${HOST}"
 
 # Check every mounted local file system, including mounts that are
 # not listed in /etc/fstab (systemd mount units, cloud-init disks).
-# Columns: type, use%, inode use%, mount point
-while read -r FSTYPE PCENT IPCENT DIR
+# Columns: type, size MB, used MB, use%, inode use%, mount point
+while read -r FSTYPE SIZEMB USEDMB PCENT IPCENT DIR
 do
     match=0
     for t in ${FSTYPES}; do
@@ -82,6 +82,13 @@ do
 	echo "${HOST}:${DIR} checks good at ${DISKSPACE}% capacity."
     fi
     drsm_metric disk_used_pct "${DISKSPACE}" "mount=\"${DIR}\""
+    # Sizes for capacity planning on the trends page
+    SIZEMB="${SIZEMB%M}"
+    USEDMB="${USEDMB%M}"
+    if [[ "${SIZEMB}" =~ ^[0-9]+$ ]] && [[ "${USEDMB}" =~ ^[0-9]+$ ]]; then
+	drsm_metric disk_size_mb "${SIZEMB}" "mount=\"${DIR}\""
+	drsm_metric disk_used_mb "${USEDMB}" "mount=\"${DIR}\""
+    fi
 
     # Btrfs and ZFS do not use fixed inode tables and report "-"
     if [[ "${INODES}" =~ ^[0-9]+$ ]] && [ "${INODES}" -ge "${ALERT}" ]
@@ -93,7 +100,7 @@ do
 	    drsm_warn "${HOST}:${DIR} is at ${INODES}% inode usage."
 	fi
     fi
-done < <(df --output=fstype,pcent,ipcent,target 2> /dev/null | sed '1d' | sort -u -k4)
+done < <(df -BM --output=fstype,size,used,pcent,ipcent,target 2> /dev/null | sed '1d' | sort -u -k6)
 
 drsm_exit
 # ----------------------------------------------------------- 

@@ -23,7 +23,7 @@
 </header>
 <div class="layout">
   <nav class="sidebar" aria-label="Documentation">
-    <h4>Get started</h4><a href="index.html">Overview</a><a href="install.html">Install and set up</a><a href="deployment.html">Deployment setups</a><h4>Using DRSM</h4><a href="dashboard.html" class="active" aria-current="page">Web dashboard</a><div class="toc"><a href="#overview">Overview</a><a href="#heatmap">Heat map</a><a href="#hosts">Hosts and reports</a><a href="#connectivity">Connectivity</a><a href="#anywhere">Phones and wall screens</a><a href="#customize">Customizing</a><a href="#webonly">Web only package</a><a href="#login">Login from outside</a><a href="#security">Security</a></div><a href="plugins.html">Plugins</a><a href="alerts.html">Thresholds and alerts</a><a href="databases.html">MySQL and Postgres</a><h4>Reference</h4><a href="changelog.html">What's new</a><h4>Links</h4><a href="https://datareel.com/drsm/dashboard/">Live demo</a><a href="https://datareel.com/downloads/drsm/">Downloads</a><a href="https://datareel.com/contact.php">Report an issue</a>
+    <h4>Get started</h4><a href="index.html">Overview</a><a href="install.html">Install and set up</a><a href="deployment.html">Deployment setups</a><h4>Using DRSM</h4><a href="dashboard.html" class="active" aria-current="page">Web dashboard</a><div class="toc"><a href="#overview">Overview</a><a href="#heatmap">Heat map</a><a href="#hosts">Hosts and reports</a><a href="#connectivity">Connectivity</a><a href="#trends">Trends</a><a href="#anywhere">Phones and wall screens</a><a href="#customize">Customizing</a><a href="#webonly">Web only package</a><a href="#login">Login from outside</a><a href="#security">Security</a></div><a href="plugins.html">Plugins</a><a href="alerts.html">Thresholds and alerts</a><a href="databases.html">MySQL and Postgres</a><h4>Reference</h4><a href="changelog.html">What's new</a><h4>Links</h4><a href="https://datareel.com/drsm/dashboard/">Live demo</a><a href="https://datareel.com/downloads/drsm/">Downloads</a><a href="https://datareel.com/contact.php">Report an issue</a>
   </nav>
   <main class="content" id="main">
 <h1>Web dashboard</h1>
@@ -58,6 +58,16 @@
 <h2 id="connectivity">Connectivity</h2>
 <p>The <strong>Connectivity</strong> page has the connectivity (probe) and health reports for each host group, the same reports that go out in the alert emails.</p>
 <figure><img src="images/connectivity.png" width="1400" height="900" loading="lazy" alt="Connectivity page with the group reports"><figcaption>Group connectivity and health reports</figcaption></figure>
+
+<h2 id="trends">Trends and capacity planning</h2>
+<p>The <strong>Trends</strong> page answers two questions from the history of every report: how big does each host need to be, and what is normal for it. Pick a range of 7, 30 or 90 days, a year, or all of the history.</p>
+<ul>
+<li><strong>Capacity by host</strong> compares every host: CPUs, memory and disk it has, what it needs, and whether it is <strong>oversized</strong> (it would fit in less than half), <strong>right-sized</strong> or <strong>undersized</strong>. Need keeps 30% free (<code>$TRENDheadroom</code>): CPU at the 95th percentile of use, memory at the 99th percentile, and disk at today's use plus a year of the measured growth.</li>
+<li>A host's page adds the average, 95th percentile and peak of each resource, disk growth per month and the date a disk reaches 90%, network traffic per 30 days, and disk IOPS and throughput.</li>
+<li>On an EC2 instance with the <code>cloud/aws</code> plugin, <strong>AWS: what you pay for</strong> puts the instance type, EBS volumes, data transfer out, EBS I/O and public IPv4 address beside the measured need, and lists what DRSM cannot see: prices and Savings Plans, EBS volume types and provisioned IOPS, snapshots, and the internet share of the traffic.</li>
+<li>Each chart shows the <strong>normal range</strong> as a band: the median for that hour of the day, plus or minus 3 robust standard deviations (<code>$TRENDsigma</code>). Values outside it are marked and listed under <strong>Outside the normal range</strong>. Ranges start after a day of history and follow the hour of the day once there are 3 days.</li>
+</ul>
+<p>The page reads <code>reports/systems/&lt;host&gt;/metrics_history.tsv</code>: <code>bin/drsm_run.sh</code> adds one line of metrics per report and keeps <code>HISTORYdays</code> days (730 by default). Reports themselves are purged after days, so after an upgrade run <code>utils/drsm_metrics_backfill.sh</code> once to start the history from the reports already archived and the offline archives. It is a dry run until <code>--apply</code>. Set <code>$TRENDshared = array("host");</code> in <code>config/drsm.php</code> for shared hosting accounts, whose figures are the provider's whole server.</p>
 
 <h2 id="anywhere">Phones, tablets and wall screens</h2>
 <div class="shots phone">

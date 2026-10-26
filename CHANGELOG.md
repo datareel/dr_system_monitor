@@ -4,6 +4,33 @@ All notable changes to the DataReel System Monitor (DRSM) are listed here.
 
 ## Unreleased
 
+### Trends and capacity planning
+
+#### Added
+
+- Trends page (`www/php/trends.php`): capacity by host with what each
+  host has and needs (oversized, right-sized, undersized), averages,
+  95th percentiles and peaks, disk growth and time to 90% full,
+  network traffic per 30 days, disk IOPS and throughput, and charts
+  with a normal range learned per hour of the day. Values outside the
+  range are flagged and listed. `$TRENDheadroom`, `$TRENDsigma` and
+  `$TRENDshared` in `config/drsm.php`.
+- AWS panel for EC2 hosts: instance type, EBS volumes, data transfer
+  out, EBS I/O and public IPv4 beside the measured need, with a list
+  of billed items DRSM cannot measure.
+- Metrics history, `reports/systems/<host>/metrics_history.tsv`, one
+  line per report written by `bin/drsm_run.sh` (`lib/drsm_history.sh`),
+  kept `HISTORYdays` days (730). `bin/purge.sh` keeps it.
+- `utils/drsm_metrics_backfill.sh` builds the history from archived
+  and offline reports, dry run unless `--apply`.
+- `storage/diskio` plugin (disk I/O counters) and `cloud/aws` plugin
+  (EC2 instance metadata). Neither alerts.
+- New metrics: `cpu_count` and `cpu_ticks_*` counters (`core/cpu`),
+  `mem_total_mb` and `swap_total_mb` (`core/memory`), `disk_size_mb`
+  and `disk_used_mb` (`storage/disk`).
+- The Web only demo (`make_web_demo.sh -s`) has 30 days of sample
+  history.
+
 ### Windows hosts
 
 #### Added

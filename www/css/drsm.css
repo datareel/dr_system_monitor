@@ -600,6 +600,45 @@ pre.report span { display: inline-block; min-width: 100%; padding: 0 6px; margin
 :root.wall .page { max-width: none; }
 :root.wall .kpi-value { font-size: 2.4rem; }
 
+/* ---------- Trends ---------- */
+
+.host-pick select {
+  height: 36px; padding: 0 30px 0 12px; border-radius: 11px; border: 1px solid var(--border);
+  background: var(--surface-2); color: var(--text); font: inherit; font-weight: 600; font-size: .86rem;
+}
+.trend-table td, .trend-table th { vertical-align: top; }
+.trend-table tbody th { font-weight: 650; white-space: nowrap; }
+.trend-table .badge { vertical-align: middle; white-space: nowrap; }
+.trend-table .num, .trend-table thead th { white-space: nowrap; }
+.trend-table td.small { min-width: 200px; }
+.notes { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; color: var(--text-2); font-size: .9rem; }
+.trend-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 460px), 1fr)); gap: 18px; }
+.trend-card .panel-head { margin-bottom: 6px; }
+.trend-card h2 { font-size: 1rem; }
+.trend-now { font-size: 1.25rem; font-weight: 750; font-variant-numeric: tabular-nums; }
+.trend-plot { position: relative; }
+.trend-svg { display: block; width: 100%; height: auto; overflow: visible; }
+.trend-svg .grid { stroke: var(--border); stroke-width: 1; }
+.trend-svg .ax { fill: var(--muted); font-size: 11px; font-family: var(--font); }
+.trend-svg .band rect { fill: var(--accent); opacity: .14; }
+.trend-svg .line { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.trend-svg .anom { stroke: var(--surface); stroke-width: 2; }
+.trend-svg .anom.hi { fill: var(--warn); }
+.trend-svg .anom.lo { fill: var(--unk-ink); }
+.trend-svg .xhair { stroke: var(--text-2); stroke-width: 1; stroke-dasharray: 3 3; opacity: 0; }
+.trend-plot.hover .xhair { opacity: .7; }
+.trend-tip {
+  position: absolute; top: 0; z-index: 5; pointer-events: none; padding: 6px 9px; border-radius: 8px;
+  background: var(--surface-3); border: 1px solid var(--border-strong); box-shadow: var(--shadow);
+  font-size: .78rem; line-height: 1.35; white-space: nowrap; color: var(--text);
+}
+.trend-tip .muted { display: block; }
+.trend-foot { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 8px; font-size: .8rem; color: var(--text-2); }
+.trend-foot strong { color: var(--text); font-variant-numeric: tabular-nums; }
+.key-band, .key-anom { display: inline-block; vertical-align: -1px; margin-right: 5px; }
+.key-band { width: 14px; height: 10px; border-radius: 2px; background: var(--accent); opacity: .3; }
+.key-anom { width: 9px; height: 9px; border-radius: 50%; background: var(--warn); }
+
 /* ---------- Responsive ---------- */
 
 @media (max-width: 1200px) {

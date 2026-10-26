@@ -219,6 +219,38 @@ if ! grep -q "Old:Win32/Fixture" "${O}"; then pass "threats older than 7 days do
 expect "old patches are an error" "${O}" "=== windows/patches [ERROR]"
 expect "host with no report" "${R}/systems/never1/never1_report.txt" "never1 has never sent a Windows agent report"
 
+echo "== metrics history"
+printf 'HOST=box1\nCOLLECTOR=local\nPROBES=""\nPLUGINS="core/memory core/cpu storage/disk"\ncore_cpu_SAMPLE_SECS=1\n' > "${T}/hosts/box1.conf"
+H1="${R}/systems/box1/metrics_history.tsv"
+rm -f "${H1}"
+run -n -H box1
+lines=$(wc -l < "${H1}")
+expect "history has the run's metrics" "${H1}" "mem_available_mb="
+expect "memory size metric" "${H1}" "mem_total_mb="
+expect "cpu tick counters" "${H1}" "cpu_ticks_total="
+expect "disk size metric" "${H1}" "disk_size_mb{mount="
+sleep 1
+run -n -H box1
+if [ "$(wc -l < "${H1}")" -gt "${lines}" ]; then pass "each run adds a history line"; else fail "history did not grow"; fi
+# Backfill from the archive: drop the history and rebuild it
+archived=$(ls "${R}/systems/box1/archive/" | wc -l)
+rm -f "${H1}"
+HOME="${T}/home" bash "${TOPdir}/utils/drsm_metrics_backfill.sh" --no-offline box1 > "${T}/backfill.log" 2>&1
+expect "backfill dry run says what it would add" "${T}/backfill.log" "box1: ${archived} archived reports, 0 lines in history, ${archived} to add"
+if [ ! -f "${H1}" ]; then pass "backfill dry run writes nothing"; else fail "backfill dry run wrote ${H1}"; fi
+HOME="${T}/home" bash "${TOPdir}/utils/drsm_metrics_backfill.sh" --apply --no-offline box1 > "${T}/backfill.log" 2>&1
+if [ "$(wc -l < "${H1}")" -eq "${archived}" ]; then pass "backfill wrote one line per report"; else fail "backfill wrote $(wc -l < "${H1}") lines for ${archived} reports"; fi
+HOME="${T}/home" bash "${TOPdir}/utils/drsm_metrics_backfill.sh" --apply --no-offline box1 > "${T}/backfill.log" 2>&1
+expect "second backfill adds nothing" "${T}/backfill.log" "${archived} lines in history, 0 to add"
+# Old lines age off
+old=$(( $(date +%s) - 800 * 86400 ))
+{ echo -e "${old}\tcpu_used_pct=1"; cat "${H1}"; } > "${T}/h.tmp" && cat "${T}/h.tmp" > "${H1}"
+( source "${TOPdir}/lib/drsm_history.sh"; HISTORYdays=730 drsm_history_trim "${H1}" )
+if grep -q "^${old}" "${H1}"; then fail "history older than HISTORYdays kept"; else pass "history older than HISTORYdays dropped"; fi
+touch -d "10 days ago" "${H1}"
+HOME="${T}/home" bash "${TOPdir}/bin/purge.sh" > /dev/null 2>&1
+if [ -f "${H1}" ]; then pass "purge.sh keeps the metrics history"; else fail "purge.sh deleted the metrics history"; fi
+
 echo "== migration"
 rm -f "${T}/hosts/"*.conf
 cat > "${T}/www/config/systems.dat" <<'DAT'

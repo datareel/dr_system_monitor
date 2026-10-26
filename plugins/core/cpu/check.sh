@@ -50,6 +50,13 @@ num_cpus=$(grep -c '^cpu[0-9]' /proc/stat)
 declare -A prev_total prev_idle prev_steal
 while read -r name user nice system idle iowait irq softirq steal _
 do
+    if [ "${name}" == "cpu" ]; then
+	# Totals since boot. The trends page uses the change between two
+	# runs for the average CPU use over the whole interval.
+	ticks_total=$((user+nice+system+idle+iowait+irq+softirq+steal))
+	ticks_idle=$((idle+iowait))
+	ticks_steal=${steal}
+    fi
     prev_total[$name]=$((user+nice+system+idle+iowait+irq+softirq+steal))
     prev_idle[$name]=$((idle+iowait))
     prev_steal[$name]=${steal}
@@ -93,6 +100,10 @@ echo "Total usage: ${cpu_usage}%"
 echo "Total steal: ${steal_pct[cpu]}%"
 drsm_metric cpu_used_pct "${cpu_usage}"
 drsm_metric cpu_steal_pct "${steal_pct[cpu]}"
+drsm_metric cpu_count "${num_cpus}"
+drsm_metric cpu_ticks_total "${ticks_total}"
+drsm_metric cpu_ticks_idle "${ticks_idle}"
+drsm_metric cpu_ticks_steal "${ticks_steal}"
 echo "Process usage:"
 echo ' %CPU %MEM     ELAPSED COMMAND'
 echo "${PROCS}"

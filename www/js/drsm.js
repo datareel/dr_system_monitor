@@ -231,6 +231,60 @@
     if (el && el.tagName === "DETAILS") el.open = true;
   }
 
+  // ---------- Trend charts ----------
+
+  function fmtValue(v, unit) {
+    if (v === null || v === undefined) return "-";
+    if (unit === "%") return (v < 10 ? v.toFixed(1) : Math.round(v)) + "%";
+    if (unit === "MB" || unit === "B/s") {
+      var b = unit === "MB" ? v * 1048576 : v, u = ["B", "KB", "MB", "GB", "TB"], i = 0;
+      while (Math.abs(b) >= 1024 && i < u.length - 1) { b /= 1024; i++; }
+      return (i === 0 ? Math.round(b) : b.toFixed(1)) + " " + u[i] + (unit === "B/s" ? "/s" : "");
+    }
+    if (unit === "IOPS") return (v < 10 ? v.toFixed(1) : Math.round(v)) + " IOPS";
+    return String(Math.round(v * 100) / 100);
+  }
+
+  // Crosshair and read out of the nearest time bucket
+  function setupTrend(box) {
+    var meta;
+    try { meta = JSON.parse(box.getAttribute("data-trend")); } catch (e) { return; }
+    var svg = box.querySelector("svg"), tip = box.querySelector(".trend-tip"), line = box.querySelector(".xhair");
+    if (!svg || !tip || !meta.pts || !meta.pts.length) return;
+    function move(e) {
+      var r = svg.getBoundingClientRect();
+      var cx = (e.touches ? e.touches[0].clientX : e.clientX) - r.left;
+      var t = meta.from + ((cx / r.width * meta.vw) - meta.l) / meta.w * (meta.to - meta.from);
+      var best = null, bd = Infinity;
+      meta.pts.forEach(function (p) { var dd = Math.abs(p[0] - t); if (dd < bd) { bd = dd; best = p; } });
+      if (!best) return;
+      var vx = meta.l + (best[0] - meta.from) / (meta.to - meta.from) * meta.w;
+      line.setAttribute("x1", vx); line.setAttribute("x2", vx);
+      var when = new Date(best[0] * 1000).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+      tip.innerHTML = "";
+      var strong = document.createElement("strong");
+      strong.textContent = fmtValue(best[1], meta.unit);
+      tip.appendChild(strong);
+      tip.appendChild(document.createTextNode(" " + when));
+      if (best[2] !== null) {
+        var n = document.createElement("span");
+        n.className = "muted";
+        n.textContent = "normal " + fmtValue(best[2], meta.unit) + " to " + fmtValue(best[3], meta.unit);
+        tip.appendChild(n);
+      }
+      tip.hidden = false;
+      var px = vx / meta.vw * r.width;
+      tip.style.left = Math.max(0, Math.min(px + 10, r.width - tip.offsetWidth)) + "px";
+      box.classList.add("hover");
+    }
+    function leave() { tip.hidden = true; box.classList.remove("hover"); }
+    svg.addEventListener("mousemove", move);
+    svg.addEventListener("touchstart", move, { passive: true });
+    svg.addEventListener("touchmove", move, { passive: true });
+    svg.addEventListener("mouseleave", leave);
+    svg.addEventListener("touchend", leave);
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     refreshSecs = parseInt(document.body.getAttribute("data-refresh"), 10) || 0;
     left = refreshSecs;
@@ -262,6 +316,10 @@
 
     $all("[data-filter-scope]").forEach(setupFilters);
     $all("table.sortable").forEach(setupSort);
+    $all("[data-trend]").forEach(setupTrend);
+    $all("select[data-autosubmit]").forEach(function (sel) {
+      sel.addEventListener("change", function () { sel.form.submit(); });
+    });
     openTarget();
     window.addEventListener("hashchange", openTarget);
 
