@@ -338,6 +338,21 @@ set. Reports go in dashboard/reports, copied from your monitor host
 with the same layout as ${REPORTdir}. To protect a private copy, add
 -a to turn on the dashboard login, see the next section.
 
+To copy the reports up after each run, set the destination in
+~/.drsm.sh and run utils/drsm_web_sync.sh. It copies only
+${REPORTdir}, never the remote pages or config/drsm.php, and only
+makes an outgoing SSH connection, so the monitor host needs no
+static IP address. Without --apply it is a dry run:
+
+export WEBSYNC_DEST="datareel-web:public_html/drsm/dashboard/reports"
+
+$ ~/drsm/utils/drsm_web_sync.sh
+$ ~/drsm/utils/drsm_web_sync.sh --apply
+
+A cron line that runs the checks and then copies the reports:
+
+*/15 * * * * ~/drsm/bin/drsm_run.sh &> /dev/null; ~/drsm/utils/drsm_web_sync.sh --apply &> /dev/null
+
 Login for Access From Outside Your Network:
 ------------------------------------------
 The dashboard can ask for a user name and password from anyone

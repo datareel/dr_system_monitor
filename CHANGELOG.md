@@ -2,6 +2,13 @@
 
 All notable changes to the DataReel System Monitor (DRSM) are listed here.
 
+## Unreleased
+
+- utils/drsm_web_sync.sh copies ${REPORTdir} to a Web only dashboard
+  on another server (WEBSYNC_DEST in ~/.drsm.sh) with rsync over SSH.
+  Dry run unless --apply, retries, one run at a time, never touches
+  the remote pages, config or .htaccess files.
+
 ## 1.31 - 2026-10-25
 
 Release 1.31 includes the plugin framework, the Web interface redesign,

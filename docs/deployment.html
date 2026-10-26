@@ -135,7 +135,7 @@ IMPACT="Cluster has one less node"</code></pre>
 <li><strong>Password protect it</strong>
 <p>The reports list processes and logged in users. Build the packages with <code>-a</code> and add accounts to turn on the dashboard <a href="dashboard.html#login">login</a>, so your office network gets straight in and everyone else signs in. Or in cPanel open <strong>Directory Privacy</strong>, select the <code>osa</code> folder, turn on password protection and add a user. Do the same for <code>oca</code>.</p></li>
 <li><strong>Copy the reports up after each run</strong>
-<p>The dashboard reads the same files as on the workstation, under its <code>reports</code> folder. HostGator's SSH listens on port 2222; add the account to <code>~/.ssh/config</code> and copy your key with <code>ssh-copy-id</code> first. Then copy the reports with <code>rsync</code> after each run, from a small script that cron calls:</p>
+<p>The dashboard reads the same files as on the workstation, under its <code>reports</code> folder. HostGator's SSH listens on port 2222; add the account to <code>~/.ssh/config</code> and copy your key with <code>ssh-copy-id</code> first. Then set <code>WEBSYNC_DEST</code> and copy the reports with <code>utils/drsm_web_sync.sh</code> after each run:</p>
 <pre><code><span class="p">$ </span>vi ~/.ssh/config
 
 Host datareel-web
@@ -143,20 +143,18 @@ Host datareel-web
     User &lt;cpanel user&gt;
     Port 2222
 
-<span class="p">$ </span>vi ~/bin/drsm_osa.sh
+<span class="p">$ </span>vi ~/.drsm.sh
 
-<span class="c">#!/bin/bash</span>
-<span class="c"># Run the checks, then copy the reports to the hosted dashboard</span>
-~/drsm/bin/drsm_run.sh
-rsync -az --delete --exclude=.htaccess \
-    ~/public_html/sysadmin/reports/ \
-    datareel-web:public_html/drsm/osa/reports/
+export WWWdir=${HOME}/public_html/sysadmin
+...
+export WEBSYNC_DEST="datareel-web:public_html/drsm/osa/reports"
 
-<span class="p">$ </span>chmod 755 ~/bin/drsm_osa.sh
+<span class="p">$ </span>~/drsm/utils/drsm_web_sync.sh            <span class="c"># dry run, lists what it would copy</span>
+<span class="p">$ </span>~/drsm/utils/drsm_web_sync.sh --apply
 <span class="p">$ </span>crontab -e
 
-15,45 * * * * ~/bin/drsm_osa.sh &amp;&gt; /dev/null</code></pre>
-<p>Replace <code>~/public_html/sysadmin/reports/</code> with your <code>$REPORTdir</code>. The <code>--exclude=.htaccess</code> keeps the package's rules that turn on archive listings and hide <code>status.json</code>. If one workstation watches both sites, give each its own host group (<code>GROUP=osa</code>, <code>GROUP=oca</code>) and run <code>drsm_run.sh -g osa</code> and <code>-g oca</code>.</p></li>
+15,45 * * * * ~/drsm/bin/drsm_run.sh &amp;&gt; /dev/null; ~/drsm/utils/drsm_web_sync.sh --apply &amp;&gt; /dev/null</code></pre>
+<p><code>drsm_web_sync.sh</code> copies only <code>$REPORTdir</code> with <code>rsync --delete</code>, retries a failed copy, and skips a run while the last one is still going. The workstation only makes outgoing connections, so it needs no static IP address. It never copies the pages or <code>config/drsm.php</code>, so the hosted login settings stay as they are, and it leaves the remote <code>.htaccess</code> files alone, which keeps the package's rules that turn on archive listings and hide <code>status.json</code>. If one workstation watches both sites, give each its own host group (<code>GROUP=osa</code>, <code>GROUP=oca</code>) and run <code>drsm_run.sh -g osa</code> and <code>-g oca</code>.</p></li>
 </ol>
 <div class="callout"><p>The dashboard marks a host <strong>Not reporting</strong> when its report is older than <code>$STALEminutes</code> (60 by default). On a hosted dashboard that also tells you the workstation stopped sending reports, for example when it was powered off.</p></div>
 
