@@ -10,6 +10,7 @@ Contents:
 * Installing
 * Setting up a DRSM development workstation
 * Adding systems to monitor
+* Removing a system
 * Web Server Setup
 * Customizing the Web Interface
 * Setting custom alert thresholds
@@ -253,6 +254,22 @@ To test your production and development configurations:
 
 $ ~/drsm/bin/system_check.sh
 $ ~/drsm/bin/system_check.sh NO DEV
+
+Removing a system:
+-----------------
+utils/drsm_remove_host.sh stops monitoring a host and removes its
+reports. It only lists what it would remove until run with --apply:
+
+$ ~/drsm/utils/drsm_remove_host.sh vm4
+$ ~/drsm/utils/drsm_remove_host.sh --apply vm4
+
+It removes the host file (saved first to etc/hosts/removed), the
+${REPORTdir}/systems/<host> folder with its archive and any other per
+host files kept there, and the <host>_profile.sh and systems.dat lines
+used before host files. Add --remote to also delete the DRSM files on
+the host over SSH, or --keep-reports to keep the reports. The group
+reports drop the host on the next run, and a hosted dashboard fed by
+utils/drsm_web_sync.sh drops it on the next sync.
 
 Web Server Setup:
 -------------------

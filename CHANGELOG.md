@@ -28,6 +28,13 @@ All notable changes to the DataReel System Monitor (DRSM) are listed here.
   Dry run unless --apply, retries, one run at a time, never touches
   the remote pages, config or .htaccess files.
 
+### Removing hosts
+
+- `utils/drsm_remove_host.sh` removes a host file (backed up to
+  `etc/hosts/removed`), its `${REPORTdir}/systems/<host>` folder, and
+  its old profile and `systems.dat` lines. Dry run unless `--apply`;
+  `--remote` also deletes the DRSM files on the host.
+
 ### Fixes
 
 - `network/nics` reads `/proc/net/dev` on hosts without

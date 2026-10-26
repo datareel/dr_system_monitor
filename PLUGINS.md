@@ -135,6 +135,10 @@ core_cpu_TIMEOUT=60
 `PLUGINS` list and site wide settings there. A host file only lists
 what differs. Files starting with `_` are not hosts.
 
+To stop monitoring a host and remove its reports, run
+`utils/drsm_remove_host.sh <host>` (dry run) and then with `--apply`.
+The host file is saved to `etc/hosts/removed` first.
+
 If `network/ping` fails, the host is reported down and its remote
 plugins are skipped, as the old `system_report.sh` did.
 

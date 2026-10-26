@@ -240,6 +240,25 @@ expect "NONE becomes empty" "${W}" 'core_users_ERROR_USERS=""'
 HOME="${T}/home" bash "${TOPdir}/bin/drsm_run.sh" -l > "${T}/list.log" 2>&1
 expect "migrated host lists" "${T}/list.log" "web1 (linux, collector ssh)"
 
+echo "== remove host"
+mkdir -p "${R}/systems/web1/archive" "${T}/remote/drsm_agent"
+echo "x" > "${R}/systems/web1/web1_report.txt"
+echo "x" > "${R}/systems/web1/metrics_history.csv"
+function remove() { HOME="${T}/home" bash "${TOPdir}/utils/drsm_remove_host.sh" "$@" > "${T}/remove.log" 2>&1; }
+remove web1
+expect "remove dry run lists the host file" "${T}/remove.log" "remove ${T}/hosts/web1.conf"
+expect "remove dry run lists the reports" "${T}/remove.log" "remove ${R}/systems/web1"
+if [ -f "${W}" ] && [ -d "${R}/systems/web1" ] && grep -q "^web1," "${T}/www/config/systems.dat"; then pass "remove dry run changes nothing"; else fail "remove dry run changed files"; fi
+remove --apply --remote web1
+if [ ! -e "${W}" ] && ls "${T}/hosts/removed/web1.conf."* > /dev/null 2>&1; then pass "host file removed and saved"; else fail "host file not removed or not saved"; fi
+if [ ! -e "${R}/systems/web1" ]; then pass "reports and metrics history removed"; else fail "web1 reports still there"; fi
+if ! grep -q "^web1," "${T}/www/config/systems.dat" && [ ! -e "${T}/www/config/web1_profile.sh" ]; then pass "old systems.dat line and profile removed"; else fail "old setup still has web1"; fi
+if [ ! -e "${T}/remote/drsm_agent" ]; then pass "remote plugin bundle removed"; else fail "remote drsm_agent still there"; fi
+remove --apply good1
+if [ ! -e "${R}/systems/good1" ]; then pass "reports removed for a host with no host file"; else fail "good1 reports still there"; fi
+if remove ../web1; then fail "path accepted as a host name"; else pass "path refused as a host name"; fi
+if remove nosuchhost; then fail "unknown host accepted"; else pass "unknown host is an error"; fi
+
 echo ""
 if [ ${failures} -eq 0 ]; then echo "All tests passed"; exit 0; fi
 echo "${failures} test(s) failed"
