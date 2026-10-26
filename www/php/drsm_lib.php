@@ -460,11 +460,14 @@ function drsm_age_text($secs)
   return round($secs / 86400) . " days";
 }
 
-function drsm_time_html($epoch)
+// A time shown as "5 min ago" in the browser, or with $absolute as the
+// date and time in the viewer's own time zone
+function drsm_time_html($epoch, $absolute = false)
 {
   if(!$epoch) return "<span class=\"muted\">never</span>";
   $full = date("M j, Y g:i A T", $epoch);
-  return "<time datetime=\"" . h(date("c", $epoch)) . "\" data-epoch=\"" . (int)$epoch . "\" title=\"" . h($full) . "\">" . h($full) . "</time>";
+  $attr = $absolute ? "data-abs" : "data-epoch";
+  return "<time datetime=\"" . h(date("c", $epoch)) . "\" " . $attr . "=\"" . (int)$epoch . "\" title=\"" . h($full) . "\">" . h($full) . "</time>";
 }
 
 // Short name of a plugin id, storage/disk shows as disk

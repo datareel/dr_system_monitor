@@ -714,6 +714,24 @@ Monitoring cloud servers:
   first contact, a changed host key is refused. To change the options
   set SSH_OPTS and SCP_OPTS in your ~/.drsm.sh file.
 
+* A health run opens an SSH session for each plugin. Shared hosting
+  such as HostGator may refuse logins that come in a burst. Reuse one
+  connection per host with SSH connection sharing in the monitoring
+  account's ~/.ssh/config:
+
+  Host *
+      ControlMaster auto
+      ControlPath ~/.ssh/cm/%C
+      ControlPersist 120
+
+  $ mkdir -m 700 ~/.ssh/cm
+
+  The connection test before the plugins is tried 3 times, 10 seconds
+  apart. Set DRSM_SSH_TRIES and DRSM_SSH_WAIT in ~/.drsm.sh to change it.
+
+* Jailed shells on shared hosting have no /sys/class/net. The
+  network/nics plugin then reads /proc/net/dev.
+
 * Shared hosting accounts (for example HostGator shared plans) use a
   jailed SSH shell, often on port 2222. Set the port in ~/.ssh/config.
   On shared hosting the CPU, load, and process checks show the shared

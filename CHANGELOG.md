@@ -28,6 +28,17 @@ All notable changes to the DataReel System Monitor (DRSM) are listed here.
   Dry run unless --apply, retries, one run at a time, never touches
   the remote pages, config or .htaccess files.
 
+### Fixes
+
+- `network/nics` reads `/proc/net/dev` on hosts without
+  `/sys/class/net`, such as HostGator jailed shells, where it used to
+  report OK with no interfaces. It now warns when it finds none.
+- The SSH collector tries the connection test 3 times, 10 seconds
+  apart (`DRSM_SSH_TRIES`, `DRSM_SSH_WAIT`), and the docs show SSH
+  connection sharing for hosts that throttle login bursts.
+- The page footer shows the date and time the page was generated, in
+  the viewer's time zone, instead of "just now".
+
 ## 1.31 - 2026-10-25
 
 Release 1.31 includes the plugin framework, the Web interface redesign,

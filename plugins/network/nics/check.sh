@@ -6,9 +6,9 @@
 # Shell: BASH shell
 # Original Author(s): DataReel Software Development
 # File Creation Date: 10/23/2026
-# Date Last Modified: 10/23/2026
+# Date Last Modified: 10/26/2026
 #
-# Version control: 1.00
+# Version control: 1.01
 #
 # Contributor(s):
 # ----------------------------------------------------------- 
@@ -34,6 +34,9 @@
 # The kernel counters are totals since boot, so alerts are based on
 # how much they grow during the sample window.
 #
+# The counters come from /sys/class/net, or from /proc/net/dev on hosts
+# without /sys/class/net, such as jailed shells on shared hosting.
+#
 # ----------------------------------------------------------- 
 # shellcheck source=lib/drsm_plugin.sh
 source "${DRSM_LIB:-$(dirname "$0")/../../../lib}/drsm_plugin.sh"
@@ -44,31 +47,69 @@ COLLMAX=$(drsm_setting MAX_COLLISIONS 100)
 MAXERRORS=$(drsm_setting MAX_ERRORS 100)
 retry_wait=$(drsm_setting SAMPLE_SECS 5)
 
+USE_PROC="no"
+if [ ! -d /sys/class/net ] && [ -r /proc/net/dev ]; then USE_PROC="yes"; fi
+
+function skip_nic() {
+    case "${1}" in
+	lo|virbr*|macvtap*|veth*|docker*|br-*|cni*|flannel*|cali*|vnet*|tap*) return 0 ;;
+    esac
+    return 1
+}
+
 if drsm_is_none "${NICS}"; then
     # All interfaces that are up, skipping loopback and virtual
     # bridge, container, and VM tap devices
     NICS=""
-    for d in /sys/class/net/*
-    do
-	n=$(basename "${d}")
-	case "${n}" in
-	    lo|virbr*|macvtap*|veth*|docker*|br-*|cni*|flannel*|cali*|vnet*|tap*) continue ;;
-	esac
-	if [ "$(cat "${d}/operstate" 2> /dev/null)" == "up" ]; then NICS="${NICS} ${n}"; fi
-    done
+    if [ "${USE_PROC}" == "yes" ]; then
+	# No link state in /proc/net/dev, so take every listed interface
+	for n in $(awk -F: 'NR > 2 { gsub(/ /, "", $1); print $1 }' /proc/net/dev)
+	do
+	    if ! skip_nic "${n}"; then NICS="${NICS} ${n}"; fi
+	done
+    else
+	for d in /sys/class/net/*
+	do
+	    n=$(basename "${d}")
+	    if skip_nic "${n}"; then continue; fi
+	    if [ "$(cat "${d}/operstate" 2> /dev/null)" == "up" ]; then NICS="${NICS} ${n}"; fi
+	done
+    fi
 fi
 
 IP="ip"
 if [ -x /usr/sbin/ip ]; then IP="/usr/sbin/ip"; elif [ -x /sbin/ip ]; then IP="/sbin/ip"; fi
 
-function nicstat() { cat "/sys/class/net/${1}/statistics/${2}" 2> /dev/null || echo 0; }
+# /proc/net/dev fields after "name:": rx bytes packets errs drop fifo
+# frame compressed multicast, then tx bytes packets errs drop fifo colls
+function nicstat() {
+    if [ "${USE_PROC}" == "yes" ]; then
+	local f
+	case "${2}" in
+	    rx_bytes) f=1 ;; rx_errors) f=3 ;; rx_dropped) f=4 ;;
+	    tx_bytes) f=9 ;; tx_errors) f=11 ;; tx_dropped) f=12 ;; collisions) f=14 ;;
+	    *) echo 0; return ;;
+	esac
+	awk -F: -v n="${1}" -v f="${f}" '{ i = $1; gsub(/ /, "", i) } i == n { split($2, v, " "); print v[f] + 0; found = 1 } END { if (!found) print 0 }' /proc/net/dev
+    else
+	cat "/sys/class/net/${1}/statistics/${2}" 2> /dev/null || echo 0
+    fi
+}
+
+function nic_exists() {
+    if [ "${USE_PROC}" == "yes" ]; then
+	awk -F: -v n="${1}" '{ i = $1; gsub(/ /, "", i) } i == n { found = 1 } END { exit !found }' /proc/net/dev
+    else
+	[ -d "/sys/class/net/${1}" ]
+    fi
+}
 
 UPTIME=$(uptime -p 2> /dev/null || uptime)
 
 declare -A start
 for n in ${NICS}
 do
-    if [ ! -d "/sys/class/net/${n}" ]; then
+    if ! nic_exists "${n}"; then
 	drsm_warn "${HOST} network interface ${n} not found"
 	continue
     fi
@@ -77,11 +118,15 @@ do
     done
 done
 
+if [ "$(echo ${NICS})" == "" ]; then
+    drsm_warn "${HOST} no network interfaces found to check"
+fi
+
 sleep "${retry_wait}"
 
 for n in ${NICS}
 do
-    if [ ! -d "/sys/class/net/${n}" ]; then continue; fi
+    if ! nic_exists "${n}"; then continue; fi
     ETH="${n}"
     IPADDR=$(${IP} -o -4 addr show dev "${ETH}" 2> /dev/null | awk '{ print $4 }' | tr '\n' ' ')
     DESCRIPTION="${IPADDR}NIC"

@@ -49,6 +49,20 @@
     });
   }
 
+  // Date and time in the viewer's own time zone, set once
+  function localTimes() {
+    $all("time[data-abs]").forEach(function (t) {
+      var e = parseInt(t.getAttribute("data-abs"), 10);
+      if (!(e > 0)) return;
+      try {
+        t.textContent = new Date(e * 1000).toLocaleString(undefined, {
+          year: "numeric", month: "short", day: "numeric",
+          hour: "numeric", minute: "2-digit", second: "2-digit", timeZoneName: "short"
+        });
+      } catch (err) { /* keep the server's text */ }
+    });
+  }
+
   // ---------- Live refresh ----------
 
   var refreshSecs = 0, left = 0, paused = false, ringLen = 56.55;
@@ -258,6 +272,7 @@
     }
 
     updateTimes();
+    localTimes();
     setInterval(tick, 1000);
   });
 })();

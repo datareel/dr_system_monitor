@@ -6,9 +6,9 @@
 # Shell: BASH shell
 # Original Author(s): DataReel Software Development
 # File Creation Date: 10/23/2026
-# Date Last Modified: 10/23/2026
+# Date Last Modified: 10/26/2026
 #
-# Version control: 1.00
+# Version control: 1.01
 #
 # Contributor(s):
 # ----------------------------------------------------------- 
@@ -41,10 +41,19 @@ if [ "${DRSM_REMOTE_BASE}" == "" ]; then DRSM_REMOTE_BASE="drsm_agent"; fi
 if [ "${DRSM_SSH}" == "" ]; then DRSM_SSH="ssh"; fi
 COLLECTOR_BASE="${DRSM_REMOTE_BASE}"
 
+if [ "${DRSM_SSH_TRIES}" == "" ]; then DRSM_SSH_TRIES=3; fi
+if [ "${DRSM_SSH_WAIT}" == "" ]; then DRSM_SSH_WAIT=10; fi
+
 function collector_check()
 {
-    # shellcheck disable=SC2086
-    ${DRSM_SSH} ${SSH_OPTS} "${1}" "hostname -s" &> /dev/null
+    # Retry, some hosts (shared hosting) refuse a login now and then
+    local try
+    for (( try = 1; try <= DRSM_SSH_TRIES; try++ )); do
+	# shellcheck disable=SC2086
+	if ${DRSM_SSH} ${SSH_OPTS} "${1}" "hostname -s" &> /dev/null; then return 0; fi
+	if [ ${try} -lt ${DRSM_SSH_TRIES} ]; then sleep "${DRSM_SSH_WAIT}"; fi
+    done
+    return 1
 }
 
 function collector_sync()

@@ -5,7 +5,7 @@
 </main>
 <footer class="footer">
   <span>DataReel System Monitor</span>
-  <span class="muted">Page generated <?php echo drsm_time_html(time()); ?></span>
+  <span class="muted">Page generated <?php echo drsm_time_html(time(), true); ?></span>
 </footer>
 </body>
 </html>
