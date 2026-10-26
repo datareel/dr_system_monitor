@@ -185,11 +185,17 @@ function drsm_trend_load($host, $since)
       if($label != "") $lab[$name][$label] = $v;
       else $m[$name] = $v;
     }
+    // Pushed reports (Windows agent) carry the time the counters were
+    // read. A report drsm_run.sh saw twice is one sample, and rates use
+    // the time between reports, not between runs.
+    $st = isset($m["sample_etime"]) ? $m["sample_etime"] : 0;
+    if($st > 0 && $prev !== null && $st == $prev["st"]) continue;
     $t = drsm_demo_time($t);
     if($d["first"] == 0) $d["first"] = $t;
     $d["last"] = $t;
     $d["count"]++;
     $dt = ($prev !== null) ? $t - $prev["t"] : 0;
+    if($st > 0 && $prev !== null && $prev["st"] > 0) $dt = $st - $prev["st"];
     $rate_ok = ($dt > 0 && $dt <= DRSM_TREND_MAX_GAP);
 
     if(isset($m["cpu_count"]) && $m["cpu_count"] > 0) $cpus = $m["cpu_count"];
@@ -268,7 +274,7 @@ function drsm_trend_load($host, $since)
       foreach($lab["diskio_sample_iops"] as $dev => $v) drsm_trend_push($d["series"], "iopeak:{$dev}", $t, $v);
     }
 
-    $prev = array("t" => $t, "m" => $m, "lab" => $lab);
+    $prev = array("t" => $t, "st" => $st, "m" => $m, "lab" => $lab);
     $prevt = (int)$parts[0];
   }
   fclose($fh);

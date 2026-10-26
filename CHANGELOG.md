@@ -45,6 +45,12 @@ All notable changes to the DataReel System Monitor (DRSM) are listed here.
   directory, dry run unless `--apply`.
 - `etc/hosts/windows.conf_example` and tests in
   `tests/drsm_run_test.sh`.
+- `windows/resources` plugin: CPU, memory, commit charge, disk space
+  per drive and network counters from agent 3.3 reports, with the
+  Linux metric names so Windows hosts appear on the gauges and the
+  trends page. The trends page times rates by the report's
+  `sample_etime`, because the agent and `drsm_run.sh` run on their
+  own schedules.
 
 ### Hosted dashboard
 
