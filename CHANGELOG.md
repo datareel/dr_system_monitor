@@ -145,6 +145,18 @@ stable release until 1.32 is final.
   trends page. The trends page times rates by the report's
   `sample_etime`, because the agent and `drsm_run.sh` run on their
   own schedules.
+- Windows host pages show the whole agent report: each check starts
+  with a one line summary, and lists the IP addresses, user profiles,
+  service tag, every installed program, the Windows Update history,
+  hotfixes and all Defender events. Uptime under a day is shown in
+  hours, and the plugins say DataReel Reporting Agent.
+- `drsm_detail name value` (`DETAIL name=value` lines) puts host facts
+  in the Details panel of the host page. The Windows plugins use it
+  for the agent version, IP address, service tag, user profiles,
+  hardware, drives, uptime, newest patch and Defender definitions.
+- The memory, load and swap gauges fall back to the `mem_total_mb`,
+  `cpu_count` and `swap_total_mb` metrics, so Windows hosts get a
+  memory gauge.
 
 ### Hosted dashboard
 

@@ -146,6 +146,7 @@ function drsm_line_level($line)
   if(strpos($line, "UNKNOWN - ") === 0) return "UNKNOWN";
   if(strpos($line, "INFO - ") === 0) return "INFO";
   if(strpos($line, "METRIC ") === 0) return "METRIC";
+  if(strpos($line, "DETAIL ") === 0) return "DETAIL";
   return "";
 }
 
@@ -165,12 +166,13 @@ Parse a host or group report. Returns:
   pre      lines before the first section
   messages ERROR, WARNING and UNKNOWN lines with their plugin
   metrics  name => list of array(labels, value)
+  details  host facts from DETAIL name=value lines, name => value
   state    worst state found in the lines and sections
 */
 function drsm_parse_report($fname)
 {
   $r = array("fields" => array(), "sections" => array(), "pre" => array(),
-             "messages" => array(), "metrics" => array(), "state" => "OK",
+             "messages" => array(), "metrics" => array(), "details" => array(), "state" => "OK",
              "exists" => false, "mtime" => 0);
   $lines = drsm_read_lines($fname);
   if($lines === false) return $r;
@@ -204,6 +206,9 @@ function drsm_parse_report($fname)
     }
     else if($level == "METRIC" && preg_match('/^METRIC ([A-Za-z0-9_.]+)(\{.*\})?=(-?[0-9.]+)/', $line, $m)) {
       $r["metrics"][$m[1]][] = array($m[2], (float)$m[3]);
+    }
+    else if($level == "DETAIL" && preg_match('/^DETAIL ([^=]{1,64})=(.*)$/', $line, $m)) {
+      if(!isset($r["details"][$m[1]])) $r["details"][$m[1]] = trim($m[2]);
     }
   }
   return $r;
@@ -261,6 +266,7 @@ function drsm_host_metrics($rep)
 
   $avail = drsm_metric_max($m, "mem_available_mb", $labels);
   $total = drsm_section_number($s, "core/memory", "Total physical:");
+  if(!$total) $total = drsm_metric_max($m, "mem_total_mb", $labels);
   if($avail !== null && $total) {
     $pct = max(0, min(100, 100 - ($avail / $total * 100)));
     $out["mem"] = array("pct" => $pct, "text" => round($pct) . "%", "detail" => round($avail) . " MB free of " . round($total) . " MB");
@@ -275,12 +281,14 @@ function drsm_host_metrics($rep)
 
   $v = drsm_metric_max($m, "load_15m", $labels);
   $cpus = drsm_section_number($s, "core/load", "Number of CPUs:");
+  if(!$cpus) $cpus = drsm_metric_max($m, "cpu_count", $labels);
   if($v !== null && $cpus) {
     $out["load"] = array("pct" => $v / $cpus * 100, "text" => (string)$v, "detail" => "{$v} on {$cpus} CPUs");
   }
 
   $v = drsm_metric_max($m, "swap_used_mb", $labels);
   $total = drsm_section_number($s, "core/memory", "Total SWAP:");
+  if(!$total) $total = drsm_metric_max($m, "swap_total_mb", $labels);
   if($v !== null && $total) {
     $pct = $v / $total * 100;
     $out["swap"] = array("pct" => $pct, "text" => round($pct) . "%", "detail" => round($v) . " MB of " . round($total) . " MB");

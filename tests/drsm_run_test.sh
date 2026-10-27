@@ -237,7 +237,13 @@ expect "forbidden program found" "${G}" "forbidden program installed: Mozilla Fi
 expect "old report is an error" "${O}" "ERROR - old1 has not reported for 20 days"
 expect "threat is an error" "${O}" "Defender threat detected ${today}T02:00:00Z Trojan:Win32/Fixture"
 expect "protection off alerts past the 7 day window" "${O}" "Defender real-time protection turned off ${old_day}T03:00:00Z"
-if ! grep -q "Old:Win32/Fixture" "${O}"; then pass "threats older than 7 days do not alert"; else fail "old threat alerted"; fi
+if ! grep -q "ERROR - .*Old:Win32/Fixture" "${O}"; then pass "threats older than 7 days do not alert"; else fail "old threat alerted"; fi
+expect "old threat still listed" "${O}" "${old_day}T04:00:00Z  1116  threat detected  Old:Win32/Fixture"
+expect "check in summary first" "${G}" "Agent 3.2 reported 0 hours ago"
+expect "host details from plugins" "${G}" "DETAIL Hardware=4 CPUs, 15.6 GB memory"
+expect "program list" "${G}" "  Mozilla Firefox (x64 en-US) 140.0"
+expect "hotfix list" "${G}" "  2026-09-09"
+expect "uptime under a day in hours" "${G}" "up 1 day"
 expect "old patches are an error" "${O}" "=== windows/patches [ERROR]"
 expect "resources from the report" "${G}" "=== windows/resources [WARNING]"
 expect "full drive warns" "${G}" "WARNING - good1:C: is at 95.0% capacity."

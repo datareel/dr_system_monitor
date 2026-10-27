@@ -116,7 +116,7 @@ do
     if [ "${apply}" == "0" ]; then continue; fi
     mkdir -p "${outdir}"
     cat > "${conf}" <<HOST
-# DRSM host file for a Windows Reporting Agent host, made by
+# DRSM host file for a DataReel Reporting Agent host, made by
 # utils/wra_hosts.sh. See etc/hosts/windows.conf_example.
 HOST=${name}
 DESCRIPTION="Windows host ${name}"

@@ -44,7 +44,6 @@ CRIT_DAYS=$(drsm_setting CRIT_DAYS 90)
 IGNORE=$(drsm_setting IGNORE "Security Intelligence Update|Definition Update|Malicious Software Removal Tool")
 
 wra_load_report || drsm_exit
-echo "Windows patch checks for ${WRA_HOST}"
 if ! wra_has_section "INSTALLED WINDOWS PATCHES" "${REPORT}" && ! wra_has_section "HOT FIXES" "${REPORT}"; then
     drsm_unknown "${WRA_HOST} report has no patch sections, it may be from send_test_report.exe"
     drsm_exit
@@ -70,7 +69,6 @@ if [ "${last}" == "" ]; then
     source="hotfix list"
 fi
 
-echo "Patches in the update history: ${count}, hotfixes: ${hcount}"
 if [ "${last}" == "" ]; then
     drsm_warn "${WRA_HOST} report lists no installed Windows patches"
     drsm_exit
@@ -78,6 +76,8 @@ fi
 
 age=$(( ( $(date +%s) - $(date -d "${last}" +%s) ) / 86400 ))
 if [ ${age} -lt 0 ]; then age=0; fi
+echo "Newest Windows patch ${last}, ${age} days ago, ${count} updates and ${hcount} hotfixes"
+drsm_detail "Newest Windows patch" "${last}"
 if [ ${age} -gt "${CRIT_DAYS}" ]; then
     drsm_crit "${WRA_HOST} newest Windows patch is ${age} days old, installed ${last}"
     echo "IMPACT - ${WRA_HOST} is missing Windows security updates"
@@ -86,8 +86,19 @@ elif [ ${age} -gt "${WARN_DAYS}" ]; then
 else
     drsm_ok "${WRA_HOST} newest Windows patch installed ${last}, ${age} days ago (${source})"
 fi
-echo "Newest patches:"
-echo "${patches}" | awk -F'|' -v d="${last}" 'NF > 1 { split($1, a, "-"); if (sprintf("%04d-%02d-%02d", a[1], a[2], a[3]) == d) print "  " $2 }' | head -5
+
+# Full update history, newest first, then the hotfix list
+echo ""
+echo "Windows Update history, newest first (definition updates left out):"
+echo "${patches}" | awk -F'|' 'NF > 1 { split($1, a, "-"); printf "%04d-%02d-%02d  %s\n", a[1], a[2], a[3], $2 }' | sort -r -s -k1,1
+if wra_has_section "HOT FIXES" "${REPORT}"; then
+    echo ""
+    echo "Hotfixes:"
+    wra_section "HOT FIXES" "${REPORT}" | awk '
+	/^Hotfix ID:/ { id = $3 }
+	/^Description:/ { d = $0; sub(/^Description: */, "", d) }
+	/^Installed On:/ { split($3, a, "/"); printf "  %04d-%02d-%02d  %s  %s\n", a[3], a[1], a[2], id, d }' | sort -r
+fi
 
 drsm_metric wra_patch_age_days "${age}"
 drsm_metric wra_patches "${count}"

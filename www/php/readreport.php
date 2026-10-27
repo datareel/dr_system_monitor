@@ -90,6 +90,7 @@ function drsm_render_lines($lines)
       case "UNKNOWN": $cls = "l-unk"; break;
       case "INFO": $cls = "l-info"; break;
       case "METRIC": $cls = "l-metric"; break;
+      case "DETAIL": $cls = "l-metric"; break;
     }
     $out .= ($cls != "") ? "<span class=\"{$cls}\">" . h($line) . "</span>\n" : h($line) . "\n";
   }
@@ -145,6 +146,9 @@ drsm_page_start($hst["name"], "hosts", $hst["state"]);
 <?php foreach($meta as $k => $v) { if($v == "") continue; ?>
       <dt><?php echo h($k); ?></dt><dd><?php echo h($v); ?></dd>
 <?php } ?>
+<?php foreach($rep["details"] as $k => $v) { if($v == "" || isset($meta[$k])) continue; ?>
+      <dt><?php echo h($k); ?></dt><dd><?php echo h($v); ?></dd>
+<?php } ?>
 <?php if(isset($rep["fields"]["REPORT_TIME"]) && $DEMObuilt == 0) { ?>
       <dt>Report time</dt><dd><?php echo h($rep["fields"]["REPORT_TIME"]); ?></dd>
 <?php } ?>
@@ -187,7 +191,7 @@ drsm_page_start($hst["name"], "hosts", $hst["state"]);
             if($lvl == "ERROR" || $lvl == "WARNING" || $lvl == "UNKNOWN") { $summary = $line; break; }
           }
           if($summary == "") {
-            foreach($s["lines"] as $line) if(trim($line) != "" && drsm_line_level($line) != "METRIC") { $summary = $line; break; }
+            foreach($s["lines"] as $line) if(trim($line) != "" && !in_array(drsm_line_level($line), array("METRIC", "DETAIL"))) { $summary = $line; break; }
           } ?>
     <details class="section <?php echo h(drsm_state_class($s["state"])); ?>" id="<?php echo h(drsm_plugin_anchor($s["id"])); ?>"<?php if($open) echo " open"; ?>>
       <summary>

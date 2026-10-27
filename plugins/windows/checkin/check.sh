@@ -44,14 +44,13 @@ CRIT_DAYS=$(drsm_setting CRIT_DAYS 15)
 MIN_VERSION=$(drsm_setting MIN_VERSION "")
 REPORT="${DRSM_WRA_REPORT}"
 
-echo "Windows Reporting Agent check in for ${WRA_HOST}"
 if [ "${REPORT}" == "" ]; then
     drsm_unknown "${WRA_HOST} DRSM_WRA_REPORT is not set, use COLLECTOR=wra for Windows hosts"
     drsm_exit
 fi
 if [ ! -e "${REPORT}" ]; then
     drsm_crit "${WRA_HOST} has never sent a Windows agent report, no ${REPORT}"
-    echo "IMPACT - ${WRA_HOST} needs the Windows Reporting Agent installed or registered"
+    echo "IMPACT - ${WRA_HOST} needs the DataReel Reporting Agent installed or registered"
     drsm_exit
 fi
 if [ ! -r "${REPORT}" ]; then
@@ -60,7 +59,7 @@ if [ ! -r "${REPORT}" ]; then
 fi
 if [ ! -s "${REPORT}" ]; then
     drsm_crit "${WRA_HOST} Windows agent report file is empty"
-    echo "IMPACT - ${WRA_HOST} needs the Windows Reporting Agent installed or fixed"
+    echo "IMPACT - ${WRA_HOST} needs the DataReel Reporting Agent installed or fixed"
     drsm_exit
 fi
 
@@ -78,6 +77,10 @@ if [ ${age} -lt 0 ]; then age=0; fi
 hours=$((age / 3600))
 days=$((age / 86400))
 
+ips=$(wra_section "IP ADDRESS" "${REPORT}" | sed -n 's/^IPv4 Address: *//p' | tr -d ' ' | paste -sd ' ' -)
+echo "Agent ${version:-unknown} reported ${hours} hours ago${ips:+, IP ${ips}}"
+drsm_detail "Agent" "DataReel Reporting Agent ${version:-unknown}"
+if [ "${ips}" != "" ]; then drsm_detail "IP address" "${ips// /, }"; fi
 echo "Agent version: ${version:-unknown}"
 echo "Reported host name: ${reported}"
 echo "Last report: ${datetime} (${hours} hours ago)"
@@ -106,6 +109,34 @@ if [ "${MIN_VERSION}" != "" ] && [ "${version}" != "" ]; then
     if [ "${lowest}" != "${MIN_VERSION}" ]; then
 	drsm_warn "${WRA_HOST} runs Windows agent version ${version}, ${MIN_VERSION} or later is required"
     fi
+fi
+
+# Inventory from the report
+if wra_has_section "SERVICE TAG AND BARCODE" "${REPORT}"; then
+    # Lines with a value after the colon, a VM has no BIOS serial or asset tag
+    tag=$(wra_section "SERVICE TAG AND BARCODE" "${REPORT}" | grep -E ':[[:space:]]*[^[:space:]]')
+    echo ""
+    echo "Service tag and barcode:"
+    if [ "${tag}" != "" ]; then
+	echo "${tag}" | sed 's/^/  /'
+	drsm_detail "Service tag" "$(echo "${tag}" | sed 's/^[^:]*: *//' | paste -sd ' ' - | sed 's/ \{1,\}/, /g')"
+    else
+	echo "  no service tag (virtual machine or no BIOS asset tag)"
+	drsm_detail "Service tag" "none (virtual machine or no BIOS asset tag)"
+    fi
+fi
+if wra_has_section "IP ADDRESS" "${REPORT}"; then
+    echo ""
+    echo "IP addresses:"
+    wra_section "IP ADDRESS" "${REPORT}" | grep -v '^ *$' | sed 's/^/  /'
+fi
+if wra_has_section "USERS" "${REPORT}"; then
+    # Profile folders, without the built in ones
+    users=$(wra_section "USERS" "${REPORT}" | sed -n 's/^\[DIR\] *//p' | grep -Ev '^(All Users|Default|Default User|Public)$')
+    echo ""
+    echo "User profiles: $(echo "${users}" | grep -c .)"
+    drsm_detail "User profiles" "$(echo "${users}" | grep . | paste -sd ',' - | sed 's/,/, /g')"
+    echo "${users}" | grep . | sed 's/^/  /'
 fi
 
 drsm_metric wra_report_age_seconds "${age}"

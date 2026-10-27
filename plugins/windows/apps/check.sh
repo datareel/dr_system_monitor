@@ -43,7 +43,6 @@ FORBIDDEN=$(drsm_setting FORBIDDEN NONE)
 WARNLIST=$(drsm_setting WARN NONE)
 
 wra_load_report || drsm_exit
-echo "Installed program checks for ${WRA_HOST}"
 if ! wra_has_section "ALL INSTALLED PROGRAMS" "${REPORT}"; then
     drsm_unknown "${WRA_HOST} report has no installed programs section"
     drsm_exit
@@ -53,7 +52,7 @@ fi
 apps=$(wra_section "ALL INSTALLED PROGRAMS" "${REPORT}" | sed -n 's/^Name: \(.*\) | Version: *\(.*\)$/\1 \2/p; t; s/^Name: //p' | sort -uf)
 count=0
 if [ "${apps}" != "" ]; then count=$(echo "${apps}" | wc -l); fi
-echo "Installed programs: ${count}"
+echo "${count} installed programs"
 
 function each_pattern()
 {
@@ -85,6 +84,9 @@ done < <(each_pattern "${WARNLIST}")
 if [ "${DRSM_HAS_ERROR}" == "0" ] && [ "${DRSM_HAS_WARNING}" == "0" ]; then
     drsm_ok "${WRA_HOST} installed program checks good"
 fi
+echo ""
+echo "Installed programs:"
+echo "${apps}" | sed 's/^/  /'
 drsm_metric wra_installed_programs "${count}"
 drsm_exit
 # ----------------------------------------------------------- 
