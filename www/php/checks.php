@@ -48,6 +48,7 @@ require_once("{$WWWdir}/php/drsm_lib.php");
 $kind = (isset($_GET['r']) && $_GET['r'] == "health") ? "health" : "check";
 $group = isset($_GET['g']) ? CleanQueryAsString($_GET['g'], 64) : "production";
 if(!preg_match('/^[A-Za-z0-9-]+$/', $group)) $group = "production";
+$group = drsm_group_canon($group);
 
 // The site whose group reports are shown: site= when it names a site
 // this visitor may see, else the first site in the picked scope. The

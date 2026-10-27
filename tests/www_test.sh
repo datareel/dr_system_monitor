@@ -216,7 +216,12 @@ printf 'NAME="Lab"\nSTALE_MINUTES=30\n' > "${T}/sites/beta/lab.site"
 printf 'HOST=web1\nSITE=acme/hq\nDESCRIPTION="HQ web"\n' > "${T}/hosts/hq_web1.conf"
 printf 'SITE=acme/branch\ncore_load_CRIT=-1\n' > "${T}/hosts/app1.conf"
 printf 'SITE=beta/lab\n' > "${T}/hosts/lab1.conf"
+# Tiers: a QA site that sets GROUP for its hosts, an OPS host
+printf 'NAME="QA lab"\nGROUP=qa\n' > "${T}/sites/acme/qa.site"
+printf 'SITE=acme/qa\n' > "${T}/hosts/qa1.conf"
+printf 'SITE=acme/hq\nGROUP=ops\n' > "${T}/hosts/ops1.conf"
 HOME="${T}/home" bash "${TOPdir}/bin/drsm_run.sh" -n >> "${T}/run.log" 2>&1
+HOME="${T}/home" bash "${TOPdir}/bin/drsm_run.sh" -n -g qa >> "${T}/run.log" 2>&1
 # The lab collector stopped an hour ago
 old=$(( $(date +%s) - 3600 ))
 sed -i "s/\"time\":[0-9]*,\"stale_minutes\"/\"time\":${old},\"stale_minutes\"/" "${W}/reports/orgs/beta/lab/site.json"
@@ -257,6 +262,40 @@ render heatmap.php "" "drsm_site=acme/hq"
 expect "Organizations menu clears the scope on other pages" 'href="/drsm/dashboard/php/orgs.php?site="><svg'
 render index.php ""
 expect "overview Organizations link clears the scope" 'href="/drsm/dashboard/php/orgs.php?site=">Organizations</a>'
+
+echo "== Tiers"
+render orgs.php ""
+expect "tier buttons" 'data-tier-filter><a href="/drsm/dashboard/php/orgs.php?site=&amp;tier=" class="active" aria-current="page">All</a>'
+expect "tiers in DEV, QA, OPS order" '>DEV</a><a href="/drsm/dashboard/php/orgs.php?site=&amp;tier=qa">QA</a><a href="/drsm/dashboard/php/orgs.php?site=&amp;tier=ops">OPS</a>'
+expect "tier counts on the site card" '<ul class="tier-counts" aria-label="Hosts by tier">'
+expect "OPS count for the head office" '<span class="tier tier-ops">OPS</span>2</li>'
+expect "tier in the tile tip" 'title="qa1 (QA) - '
+render orgs.php "tier=qa"
+expect "QA filter keeps qa1" 'title="qa1 (QA) - '
+reject "QA filter hides OPS hosts" 'title="ops1 (OPS) - '
+reject "QA filter hides sites with no QA hosts" 'data-site="beta/lab"'
+expect "QA count marked active" '<li class="active"><span class="tier tier-qa">QA</span>1</li>'
+render orgs.php "" "drsm_tier=dev"
+expect "tier cookie filters" 'title="dev1 (DEV) - '
+reject "tier cookie hides other tiers" 'title="qa1 (QA) - '
+render orgs.php "tier=" "drsm_tier=dev"
+expect "tier= clears the filter" 'title="qa1 (QA) - '
+render orgs.php "tier=<b>"
+reject "bad tier ignored" "<b>"
+render orgs.php "" "drsm_tier=staging"
+expect "unknown cookie tier still shown to clear" '>STAGING</a>'
+expect "no hosts in the tier" "No STAGING hosts in these sites."
+render heatmap.php "tier=dev"
+expect "heat map tier badge" 'dev1<span class="tier tier-dev" title="Tier">DEV</span>'
+reject "heat map tier filter" 'truncate">db1<'
+expect "heat map tier link keeps the view" 'href="/drsm/dashboard/php/heatmap.php?mode=status&amp;sort=state&amp;tier=qa">QA</a>'
+render reports.php "tier=ops"
+expect "hosts tier column" '>Tier</th>'
+expect "hosts tier badge" '<span class="tier tier-ops" title="Tier">OPS</span>'
+expect "ops host listed" '>ops1</a>'
+reject "dev host filtered out" '>dev1</a>'
+render checks.php "r=health&g=ops"
+expect "g=ops is the production report" "Start of db1"
 
 render index.php ""
 expect "per site table" 'id="site-table"'

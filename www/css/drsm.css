@@ -665,6 +665,16 @@ pre.report span { display: inline-block; min-width: 100%; padding: 0 6px; margin
 .site-counts li { display: inline-flex; align-items: center; gap: 5px; }
 .site-counts li[class] { color: var(--tone-ink); font-weight: 600; }
 .site-counts li.ok { color: var(--text-2); font-weight: 500; }
+/* Tiers: outlined so they never read as a host state */
+.tier { display: inline-block; margin-left: 6px; padding: 0 5px; border: 1px solid currentColor; border-radius: 5px; color: var(--text-2); font-size: .66rem; font-weight: 700; letter-spacing: .04em; line-height: 1.45; vertical-align: 1px; }
+.tier.tier-dev { color: var(--accent-2); }
+.tier.tier-qa { color: var(--accent); }
+.tier-counts { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: .78rem; color: var(--text-2); }
+.tier-counts li { display: inline-flex; align-items: center; gap: 4px; }
+.tier-counts .tier { margin-left: 0; }
+.tier-counts li.active { color: var(--text); font-weight: 700; }
+td > .tier:first-child { margin-left: 0; }
+.show-md-inline { display: none; }
 .matrix.tiles { grid-template-columns: repeat(auto-fill, minmax(24px, 1fr)); }
 .matrix.metric .cell { background: var(--hc); opacity: .95; }
 .matrix .cell.none { background: var(--none); box-shadow: inset 0 0 0 1px var(--border); opacity: 1; }
@@ -694,6 +704,7 @@ pre.report span { display: inline-block; min-width: 100%; padding: 0 6px; margin
   .nav a span { display: none; }
   .nav a { padding: 8px 10px; }
   .hide-md { display: none; }
+  .show-md-inline { display: inline; }
 }
 @media (max-width: 720px) {
   body { font-size: 14px; }

@@ -7,7 +7,8 @@ HOST=cloud1
 DESCRIPTION="Primary cloud web server"
 # Shown in alerts when the host is down
 IMPACT="Public website is down"
-# Host group, run with: drsm_run.sh -g <group>, default production
+# Host group and tier: ops (production, the default), dev or qa, run
+# with: drsm_run.sh -g <group>
 GROUP=production
 # linux, or windows when its collector is available
 PLATFORM=linux

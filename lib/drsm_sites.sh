@@ -35,7 +35,8 @@
 #
 #   ${SITESdir}/<org>.org          NAME, CONTACT
 #   ${SITESdir}/<org>/<site>.site  NAME, LOCATION, TZ, ALERT_EMAIL,
-#                                  STALE_MINUTES, COLLECTOR_ID, and any
+#                                  ALERT_EMAIL_<TIER>, STALE_MINUTES,
+#                                  COLLECTOR_ID, and any
 #                                  host key or plugin setting as a
 #                                  default for the site's hosts
 #
@@ -115,9 +116,43 @@ function drsm_read_site()
     return 0
 }
 
+# Host groups are tiers: dev, qa and ops. ops is another name for
+# production, the group that has always had no file suffix and sends
+# texts, so ops hosts run and report with the production hosts.
+function drsm_group_canon()
+{
+    # Group name $1 as drsm_run.sh uses it: lower case, ops is
+    # production, empty is production
+    local g="${1,,}"
+    if [ "${g}" == "" ] || [ "${g}" == "ops" ]; then g="production"; fi
+    echo "${g}"
+}
+
+function drsm_group_tier()
+{
+    # Tier label for group $1: OPS for production, else the group in
+    # upper case (DEV, QA)
+    local g
+    g=$(drsm_group_canon "${1}")
+    if [ "${g}" == "production" ]; then echo "OPS"; else echo "${g^^}"; fi
+}
+
+function drsm_site_alert_email()
+{
+    # Alert addresses for group $2 from site array $1:
+    # ALERT_EMAIL_<TIER>, else ALERT_EMAIL
+    local -n __sa="${1}"
+    local t
+    t=$(drsm_group_tier "${2}")
+    t="${t//[^A-Z0-9_]/_}"
+    if [ "${__sa[ALERT_EMAIL_${t}]}" != "" ]; then echo "${__sa[ALERT_EMAIL_${t}]}"; else echo "${__sa[ALERT_EMAIL]}"; fi
+}
+
 function drsm_is_site_key()
 {
     local k
+    # Per tier alert addresses
+    if [[ "${1}" == ALERT_EMAIL_* ]]; then return 0; fi
     for k in ${DRSM_SITE_KEYS}; do
 	if [ "${1}" == "${k}" ]; then return 0; fi
     done

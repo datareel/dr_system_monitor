@@ -324,7 +324,7 @@ function drsm_load_host($hostdir, $site = DRSM_LEGACY_SITE)
     "key" => drsm_host_key($hostdir, $site),
     "description" => isset($f["DESCRIPTION"]) ? $f["DESCRIPTION"] : "",
     "impact" => isset($f["IMPACT"]) ? $f["IMPACT"] : "",
-    "group" => (isset($f["GROUP"]) && $f["GROUP"] != "") ? $f["GROUP"] : "production",
+    "group" => drsm_group_canon(isset($f["GROUP"]) ? $f["GROUP"] : ""),
     "platform" => isset($f["PLATFORM"]) ? $f["PLATFORM"] : "",
     "collector" => isset($f["COLLECTOR"]) ? $f["COLLECTOR"] : "",
     "time" => (isset($f["ETIME"]) && ctype_digit($f["ETIME"])) ? drsm_demo_time((int)$f["ETIME"]) : $rep["mtime"],
@@ -352,7 +352,7 @@ function drsm_load_host($hostdir, $site = DRSM_LEGACY_SITE)
       $host["plugins"][$p["id"]] = array("state" => (string)$p["state"], "secs" => isset($p["secs"]) ? (int)$p["secs"] : 0);
       $host["state"] = drsm_worst($host["state"], (string)$p["state"]);
     }
-    if(isset($status["group"]) && $status["group"] != "") $host["group"] = (string)$status["group"];
+    if(isset($status["group"]) && $status["group"] != "") $host["group"] = drsm_group_canon((string)$status["group"]);
   }
   else {
     foreach($secs as $id => $s) $host["plugins"][$id] = array("state" => $s["state"], "secs" => $s["secs"]);
@@ -426,6 +426,101 @@ function drsm_host_counts($hosts)
     }
   }
   return $c;
+}
+
+/*
+Tiers. A host's GROUP is its tier: dev, qa or ops. ops is another name
+for production, which keeps its old report file names, so a host's
+group is production for both and its tier is ops. Other groups are
+tiers of their own. The tier filter on the Organizations, Heat map and
+Hosts pages is kept like the site picker: tier= in the URL, then the
+drsm_tier cookie.
+*/
+function drsm_group_canon($g)
+{
+  $g = strtolower(trim((string)$g));
+  return ($g == "" || $g == "ops") ? "production" : $g;
+}
+
+function drsm_tier_id($group)
+{
+  $g = drsm_group_canon($group);
+  return ($g == "production") ? "ops" : $g;
+}
+
+function drsm_tier_label($tier)
+{
+  return strtoupper($tier);
+}
+
+// Tiers of $hosts, in DEV, QA, OPS order, then any others A to Z
+function drsm_tiers($hosts)
+{
+  $seen = array();
+  foreach($hosts as $hst) $seen[drsm_tier_id($hst["group"])] = true;
+  $out = array();
+  foreach(array("dev", "qa", "ops") as $t) {
+    if(isset($seen[$t])) { $out[] = $t; unset($seen[$t]); }
+  }
+  $rest = array_keys($seen);
+  sort($rest);
+  return array_merge($out, $rest);
+}
+
+// The tier filter, "" for all: tier= sets it and the cookie, tier=
+// with no value clears both
+function drsm_tier_from_request()
+{
+  global $WWWvpath;
+  $v = null;
+  if(isset($_GET["tier"]) && is_string($_GET["tier"])) {
+    $v = strtolower(trim($_GET["tier"]));
+    if($v != "" && !preg_match('/^[a-z0-9][a-z0-9_-]{0,31}$/', $v)) $v = null;
+    if($v !== null && !headers_sent()) {
+      $path = ($WWWvpath != "") ? "{$WWWvpath}/" : "/";
+      if($v == "") header("Set-Cookie: drsm_tier=; Path={$path}; Max-Age=0; SameSite=Lax", false);
+      else header("Set-Cookie: drsm_tier=" . rawurlencode($v) . "; Path={$path}; Max-Age=31536000; SameSite=Lax", false);
+    }
+  }
+  if($v === null) {
+    $v = (isset($_COOKIE["drsm_tier"]) && is_string($_COOKIE["drsm_tier"])) ? strtolower($_COOKIE["drsm_tier"]) : "";
+    if(!preg_match('/^[a-z0-9][a-z0-9_-]{0,31}$/', $v)) $v = "";
+  }
+  return $v;
+}
+
+// Hosts of tier $tier, every host for ""
+function drsm_tier_filter($hosts, $tier)
+{
+  if($tier == "") return $hosts;
+  $out = array();
+  foreach($hosts as $k => $hst) {
+    if(drsm_tier_id($hst["group"]) == $tier) $out[$k] = $hst;
+  }
+  return $out;
+}
+
+// Small tier badge for a host
+function drsm_tier_badge($group)
+{
+  $t = drsm_tier_id($group);
+  return "<span class=\"tier tier-" . h($t) . "\" title=\"Tier\">" . h(drsm_tier_label($t)) . "</span>";
+}
+
+// Tier buttons: All and each tier in $tiers. $link($tier) builds the
+// URL for a tier. Nothing when the hosts are all one tier.
+function drsm_tier_buttons($tiers, $tier, $link)
+{
+  if(count($tiers) < 2 && $tier == "") return "";
+  // A tier kept in the cookie that these hosts lack still shows, so
+  // it can be seen and cleared
+  if($tier != "" && !in_array($tier, $tiers)) $tiers[] = $tier;
+  $out = "<div class=\"seg\" role=\"group\" aria-label=\"Tier\" data-tier-filter>";
+  $out .= "<a href=\"" . h($link("")) . "\"" . ($tier == "" ? " class=\"active\" aria-current=\"page\"" : "") . ">All</a>";
+  foreach($tiers as $t) {
+    $out .= "<a href=\"" . h($link($t)) . "\"" . ($tier == $t ? " class=\"active\" aria-current=\"page\"" : "") . ">" . h(drsm_tier_label($t)) . "</a>";
+  }
+  return $out . "</div>";
 }
 
 function drsm_groups($hosts)

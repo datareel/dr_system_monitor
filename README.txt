@@ -829,6 +829,14 @@ in each site file, and print the setup for each with:
 
 $ ~/drsm/utils/drsm_add_collector.sh -u user@dashboard -r /path/reports acme/hq
 
+Tiers: GROUP sorts hosts into dev, qa and ops (production, the
+default, is ops by another name and keeps its report file names). Run
+each tier with drsm_run.sh, -g dev and -g qa for the others. GROUP in
+a site file sets the tier for the whole site. ALERT_EMAIL_DEV,
+ALERT_EMAIL_QA and ALERT_EMAIL_OPS in a site file send each tier's
+alerts to its own addresses, else ALERT_EMAIL is used. The
+Organizations, Heat map and Hosts pages filter by tier.
+
 To limit dashboard users to their own organizations or sites, see
 $AUTHscopes and $AUTHnetworkscopes in php/drsm_auth.php. PLUGINS.md
 has the full list of site settings and tools.

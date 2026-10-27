@@ -52,6 +52,9 @@ $multi = (count($sites) > 1);
 $bysite = ($multi && isset($_GET['by']) && $_GET['by'] == "site");
 
 $hosts = drsm_load_hosts($scope);
+$alltiers = drsm_tiers($hosts);
+$tier = drsm_tier_from_request();
+$hosts = drsm_tier_filter($hosts, $tier);
 $overall = "OK";
 foreach($hosts as $hst) $overall = drsm_worst($overall, $hst["state"]);
 
@@ -60,12 +63,15 @@ if($sortby == "state") uasort($hosts, "drsm_cmp_worst");
 
 // One map for every host, or one per site
 $sets = $bysite ? drsm_hosts_by_site($hosts, $sites) : array("" => $hosts);
+// With a tier picked, skip the sites that have no hosts in it
+if($tier != "" && $bysite) $sets = array_filter($sets, "count");
 $metriccols = drsm_metric_columns();
 
-function drsm_heat_link($mode, $sortby, $bysite)
+function drsm_heat_link($mode, $sortby, $bysite, $tier = null)
 {
   $args = array("mode" => $mode, "sort" => $sortby);
   if($bysite) $args["by"] = "site";
+  if($tier !== null) $args["tier"] = $tier;
   return drsm_url("heatmap.php", $args);
 }
 
@@ -73,6 +79,7 @@ function drsm_heat_link($mode, $sortby, $bysite)
 function drsm_heat_row_head($hst, $hurl, $showsite)
 {
   return "<th scope=\"row\"><a href=\"" . h($hurl) . "\"><span class=\"dot-lg " . h(drsm_state_class($hst["state"])) . "\" aria-hidden=\"true\"></span><span class=\"truncate\">" . h($hst["name"])
+    . drsm_tier_badge($hst["group"])
     . ($showsite ? "<span class=\"site-tag\">" . h(drsm_site_label($hst["site"])) . "</span>" : "") . "</span></a></th>";
 }
 
@@ -181,6 +188,7 @@ drsm_page_start("Heat map", "heatmap", $overall);
     <p class="muted"><?php echo $mode == "status" ? "Each cell is one plugin check on one host. Select a cell to open that check." : "Resource use on each host from the latest plugin metrics."; ?></p>
   </div>
   <div class="head-actions">
+    <?php echo drsm_tier_buttons($alltiers, $tier, function($t) use ($mode, $sortby, $bysite) { return drsm_heat_link($mode, $sortby, $bysite, $t); }); ?>
     <div class="seg" role="group" aria-label="Heat map type">
       <a href="<?php echo h(drsm_heat_link("status", $sortby, $bysite)); ?>"<?php if($mode == "status") echo ' class="active" aria-current="page"'; ?>>Check status</a>
       <a href="<?php echo h(drsm_heat_link("metrics", $sortby, $bysite)); ?>"<?php if($mode == "metrics") echo ' class="active" aria-current="page"'; ?>>Resource use</a>

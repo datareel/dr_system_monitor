@@ -16,6 +16,9 @@ LOCATION="Springfield"
 # Alert email addresses for the site, comma separated, replace the
 # addresses in alert.email.list. Texts still go to its TEXTlist.
 # ALERT_EMAIL="ops@example.com, oncall@example.com"
+# Alert addresses for one tier (DEV, QA or OPS), else ALERT_EMAIL
+# ALERT_EMAIL_DEV="dev@example.com"
+# ALERT_EMAIL_QA="qa@example.com"
 # Minutes before a host report, or the site collector, counts as
 # stale on the dashboard, default 60
 STALE_MINUTES=60
@@ -26,6 +29,7 @@ STALE_MINUTES=60
 
 # Any host key or plugin setting is a default for the site's hosts,
 # read after _defaults.conf and before each host file
+# GROUP=qa              # tier for every host of a QA or DEV site
 # PROBES="network/ping"
 # WRA_REPORTS_DIR=/var/www/html/windows/reports/example
 # storage_disk_WARN=85
