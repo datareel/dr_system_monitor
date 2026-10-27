@@ -33,11 +33,14 @@
 # Reporting Agent, one per report in the agent reports directory.
 # Existing host files are never changed. Dry run unless --apply.
 #
-# Usage: wra_hosts.sh [--apply] [-d reports dir] [-g group] [-o output dir]
+# Usage: wra_hosts.sh [--apply] [-d reports dir] [-g group] [-s org/site] [-o output dir]
 #   --apply  Write the host files, default is to list what would be written
-#   -d       Agent reports directory, default WRA_REPORTS_DIR from
-#            _defaults.conf, else /var/www/html/windows/reports
+#   -d       Agent reports directory, default WRA_REPORTS_DIR from the
+#            site file with -s, else _defaults.conf, else
+#            /var/www/html/windows/reports
 #   -g       Host group, default production
+#   -s       Site of the hosts, written as SITE=. The host files are
+#            named <org>_<site>_<host>.conf.
 #   -o       Output directory, default ${HOSTSdir} or ${DRSMHOME}/etc/hosts
 #
 # Put the shared Windows settings in _defaults.conf, for example
@@ -52,26 +55,36 @@ if [ ! -f "${CONFIG_FILE}" ]; then echo "Missing base config ${CONFIG_FILE}"; ex
 source "${CONFIG_FILE}"
 # shellcheck source=lib/drsm_conf.sh
 source "${DRSMHOME}/lib/drsm_conf.sh"
+# shellcheck source=lib/drsm_sites.sh
+source "${DRSMHOME}/lib/drsm_sites.sh"
 
 apply="0"
 group="production"
 outdir="${HOSTSdir:-${DRSMHOME}/etc/hosts}"
 reportsdir=""
+site=""
 function usage() { sed -n '/^# Usage:/,/^#   -o/p' "$0" | sed 's/^# \{0,1\}//'; exit 1; }
 while [ $# -gt 0 ]; do
     case "${1}" in
 	--apply) apply="1" ;;
 	-d) reportsdir="${2}"; shift ;;
 	-g) group="${2}"; shift ;;
+	-s) site="${2,,}"; shift ;;
 	-o) outdir="${2}"; shift ;;
 	*) usage ;;
     esac
     shift
 done
 
+if [ "${site}" != "" ] && ! drsm_valid_site "${site}"; then
+    echo "ERROR - Site ${site} is not org/site, IDs use a-z, 0-9, _ and -"
+    exit 1
+fi
 if [ "${reportsdir}" == "" ]; then
+    # The site file's agent reports directory, else _defaults.conf's
     declare -A DEFAULTS=()
     if [ -f "${outdir}/_defaults.conf" ]; then drsm_read_conf "${outdir}/_defaults.conf" DEFAULTS; fi
+    if [ "${site}" != "" ]; then drsm_read_site "${site}" DEFAULTS; fi
     reportsdir="${DEFAULTS[WRA_REPORTS_DIR]:-/var/www/html/windows/reports}"
 fi
 if [ ! -d "${reportsdir}" ]; then
@@ -90,7 +103,10 @@ do
 	echo "WARNING - Skipping ${f}, not a host name"
 	continue
     fi
+    # Hosts in a site get the site in the file name, two sites may
+    # have a host with the same name
     conf="${outdir}/${name}.conf"
+    if [ "${site}" != "" ]; then conf="${outdir}/${site%%/*}_${site#*/}_${name}.conf"; fi
     if [ -e "${conf}" ]; then
 	skipped=$((skipped + 1))
 	continue
@@ -112,6 +128,7 @@ COLLECTOR=wra
 PROBES=""
 PLUGINS="windows/checkin windows/defender windows/patches windows/apps windows/resources"
 HOST
+    if [ "${site}" != "" ]; then sed -i "s|^GROUP=.*|&\nSITE=${site}|" "${conf}"; fi
 done
 shopt -u nullglob
 

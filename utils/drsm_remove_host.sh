@@ -32,18 +32,20 @@
 #
 # Stop monitoring a host and remove its reports. Dry run unless --apply.
 #
-# Usage: drsm_remove_host.sh [--apply] [--remote] [--keep-reports] host
+# Usage: drsm_remove_host.sh [--apply] [--remote] [--keep-reports] [org/site/]host
 #   --apply         Remove the files, default is to list what would go
 #   --remote        Also remove the plugin bundle (${DRSM_REMOTE_BASE},
 #                   default drsm_agent) and the older ${REMOTEdir} check
 #                   scripts from the host over SSH
 #   --keep-reports  Keep ${REPORTdir}/systems/<host>, only stop monitoring
 #   host            Host file name in ${HOSTSdir} without .conf, or the
-#                   HOST= value inside it
+#                   HOST= value inside it. Use org/site/host when two
+#                   sites have a host with that name.
 #
 # Removed:
 #   ${HOSTSdir}/<host>.conf, saved first to ${HOSTSdir}/removed/
-#   ${REPORTdir}/systems/<host>/ with its archive and any other per host
+#   ${REPORTdir}/systems/<host>/, or orgs/<org>/<site>/systems/<host>/
+#   for a host in a site, with its archive and any other per host
 #   files kept there, such as metrics history
 #   ${CONFIGdir}/<host>_profile.sh and the <host> lines of systems.dat
 #   and *_systems.dat, used before the move to host files (saved to
@@ -63,12 +65,14 @@ source "${CONFIG_FILE}"
 source "${DRSMHOME}/bin/system_functions.sh"
 # shellcheck source=lib/drsm_conf.sh
 source "${DRSMHOME}/lib/drsm_conf.sh"
+# shellcheck source=lib/drsm_sites.sh
+source "${DRSMHOME}/lib/drsm_sites.sh"
 
 apply="0"
 remote="0"
 keep="0"
 name=""
-function usage() { sed -n '/^# Usage:/,/^#                   HOST= value/p' "$0" | sed 's/^# \{0,1\}//'; exit 1; }
+function usage() { sed -n '/^# Usage:/,/^#                   sites have a host/p' "$0" | sed 's/^# \{0,1\}//'; exit 1; }
 while [ $# -gt 0 ]; do
     case "${1}" in
 	--apply) apply="1" ;;
@@ -80,6 +84,17 @@ while [ $# -gt 0 ]; do
     shift
 done
 if [ "${name}" == "" ]; then usage; fi
+# org/site/host names the site
+wantsite=""
+if [[ "${name}" == */*/* ]]; then
+    wantsite="${name%/*}"
+    wantsite="${wantsite,,}"
+    name="${name##*/}"
+    if ! drsm_valid_site "${wantsite}"; then
+	echo "ERROR - Not a site: ${wantsite}"
+	exit 1
+    fi
+fi
 # A host name, never a path
 if ! [[ "${name}" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]]; then
     echo "ERROR - Not a host name: ${name}"
@@ -89,19 +104,45 @@ fi
 if [ "${HOSTSdir}" == "" ]; then HOSTSdir="${DRSMHOME}/etc/hosts"; fi
 if [ "${DRSM_REMOTE_BASE}" == "" ]; then DRSM_REMOTE_BASE="drsm_agent"; fi
 
-# Find the host file by file name, or by the HOST= value inside it
-hostfile=""
-if [ -f "${HOSTSdir}/${name}.conf" ]; then
-    hostfile="${HOSTSdir}/${name}.conf"
-else
-    for f in "${HOSTSdir}"/*.conf; do
-	[ -f "${f}" ] || continue
-	case "$(basename "${f}")" in _*) continue ;; esac
-	declare -A H=()
-	drsm_read_conf "${f}" H
-	if [ "${H[HOST]}" == "${name}" ]; then hostfile="${f}"; break; fi
-    done
+# Find the host by its file name or HOST= value, in every site or the
+# one asked for, and by its reports for hosts with no host file
+declare -A FOUND=()
+for f in "${HOSTSdir}"/*.conf; do
+    [ -f "${f}" ] || continue
+    case "$(basename "${f}")" in _*) continue ;; esac
+    declare -A H=()
+    drsm_read_conf "${f}" H
+    if [ "${H[HOST]}" == "${name}" ] || { [ "${H[HOST]}" == "" ] && [ "$(basename "${f}" .conf)" == "${name}" ]; }; then
+	fs=$(drsm_host_file_site "${f}")
+	if [ "${wantsite}" == "" ] || [ "${wantsite}" == "${fs}" ]; then FOUND[${fs}]="${f}"; fi
+    elif [ "$(basename "${f}" .conf)" == "${name}" ] && [ "${wantsite}" == "" ]; then
+	FOUND[$(drsm_host_file_site "${f}")]="${f}"
+    fi
+    unset H
+done
+for d in "${REPORTdir}/systems/${name}" "${REPORTdir}"/orgs/*/*/systems/"${name}"; do
+    [ -d "${d}" ] || continue
+    if [ "${d}" == "${REPORTdir}/systems/${name}" ]; then
+	fs="${DRSM_LEGACY_SITE}"
+    else
+	fs="${d#"${REPORTdir}/orgs/"}"
+	fs="${fs%/systems/*}"
+    fi
+    if [ "${wantsite}" != "" ] && [ "${wantsite}" != "${fs}" ]; then continue; fi
+    if [ "${FOUND[${fs}]+set}" != "set" ]; then FOUND[${fs}]=""; fi
+done
+if [ ${#FOUND[@]} -gt 1 ]; then
+    echo "ERROR - ${name} is in more than one site, use org/site/host:"
+    for fs in $(printf '%s\n' "${!FOUND[@]}" | sort); do echo "  ${fs}/${name}"; done
+    exit 1
 fi
+site="${wantsite:-$(drsm_default_site)}"
+hostfile=""
+if [ ${#FOUND[@]} -eq 1 ]; then
+    site="${!FOUND[*]}"
+    hostfile="${FOUND[${site}]}"
+fi
+hostreports="$(drsm_site_root "${site}")/systems"
 
 host="${name}"
 collector="ssh"
@@ -116,10 +157,12 @@ if ! [[ "${host}" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]]; then
     exit 1
 fi
 
+label="${host}"
+if [ "${site}" != "${DRSM_LEGACY_SITE}" ]; then label="${site}/${host}"; fi
 if [ "${apply}" == "1" ]; then
-    echo "Removing ${host} from DRSM"
+    echo "Removing ${label} from DRSM"
 else
-    echo "Dry run, add --apply to remove ${host} from DRSM"
+    echo "Dry run, add --apply to remove ${label} from DRSM"
 fi
 
 found="0"
@@ -147,19 +190,22 @@ if [ "${hostfile}" != "" ]; then
     do_remove "${hostfile}"
 fi
 
-if [ "${keep}" == "0" ] && [ "${REPORTdir}" != "" ] && [ -d "${REPORTdir}/systems/${host}" ]; then
-    echo "Reports, $(find "${REPORTdir}/systems/${host}" -type f | wc -l) files:"
-    do_remove "${REPORTdir}/systems/${host}"
+if [ "${keep}" == "0" ] && [ "${REPORTdir}" != "" ] && [ -d "${hostreports}/${host}" ]; then
+    echo "Reports, $(find "${hostreports}/${host}" -type f | wc -l) files:"
+    do_remove "${hostreports}/${host}"
 fi
 
-# Setup from before host files
-if [ "${CONFIGdir}" != "" ] && [ -f "${CONFIGdir}/${host}_profile.sh" ]; then
+# Setup from before host files, only in the default site
+if [ "${site}" != "${DRSM_LEGACY_SITE}" ]; then
+    :
+elif [ "${CONFIGdir}" != "" ] && [ -f "${CONFIGdir}/${host}_profile.sh" ]; then
     echo "Old profile:"
     do_backup "${CONFIGdir}/${host}_profile.sh"
     do_remove "${CONFIGdir}/${host}_profile.sh"
 fi
 for dat in "${CONFIGdir}"/systems.dat "${CONFIGdir}"/*_systems.dat; do
     [ -f "${dat}" ] || continue
+    if [ "${site}" != "${DRSM_LEGACY_SITE}" ]; then continue; fi
     if grep -q "^${host}," "${dat}"; then
 	found="1"
 	echo "Line in ${dat}:"
@@ -190,7 +236,7 @@ if [ "${remote}" == "1" ]; then
 fi
 
 if [ "${found}" == "0" ]; then
-    echo "ERROR - Nothing found for ${name} in ${HOSTSdir} or ${REPORTdir}/systems"
+    echo "ERROR - Nothing found for ${name} in ${HOSTSdir} or ${hostreports}"
     exit 1
 fi
 if [ "${WEBSYNC_DEST}" != "" ]; then

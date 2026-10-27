@@ -166,6 +166,17 @@ function drsm_list_sites()
     } | sort -u
 }
 
+function drsm_dir_has_hosts()
+{
+    # True when report folder $1 has a host folder
+    local d
+    for d in "${1}"/*/; do
+	d=$(basename "${d}")
+	if [[ "${d}" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]]; then return 0; fi
+    done
+    return 1
+}
+
 function drsm_json_str()
 {
     # JSON string for $1, with the quotes
@@ -223,9 +234,10 @@ function drsm_write_site_json()
     # Write site.json for site $1 in its report directory: the site, the
     # collector that wrote it and the state of every host reporting there
     local site="${1}" root d h st t g sep="" tmp
-    local -A sc=() n=([ok]=0 [warning]=0 [error]=0 [stale]=0)
+    local -A sc=() oc=() n=([ok]=0 [warning]=0 [error]=0 [stale]=0)
     local hosts=""
     drsm_read_site "${site}" sc
+    if [ -f "$(drsm_org_file "${site%%/*}")" ]; then drsm_read_conf "$(drsm_org_file "${site%%/*}")" oc; fi
     local stale="${sc[STALE_MINUTES]:-60}"
     if [[ ! "${stale}" =~ ^[0-9]+$ ]]; then stale=60; fi
     root=$(drsm_site_root "${site}")
@@ -251,6 +263,8 @@ function drsm_write_site_json()
     {
 	printf '{"org":%s,"site":%s,' "$(drsm_json_str "${site%%/*}")" "$(drsm_json_str "${site#*/}")"
 	printf '"name":%s,"location":%s,' "$(drsm_json_str "${sc[NAME]:-${site#*/}}")" "$(drsm_json_str "${sc[LOCATION]}")"
+	# The org name too, for dashboards that only get this site's folder
+	printf '"org_name":%s,"org_contact":%s,' "$(drsm_json_str "${oc[NAME]:-${site%%/*}}")" "$(drsm_json_str "${oc[CONTACT]}")"
 	printf '"collector":%s,"time":%s,"stale_minutes":%s,' "$(drsm_json_str "$(drsm_collector_id)")" "$(date +%s)" "${stale}"
 	printf '"counts":{"ok":%s,"warning":%s,"error":%s,"stale":%s},' "${n[ok]}" "${n[warning]}" "${n[error]}" "${n[stale]}"
 	printf '"hosts":[%s]}\n' "${hosts}"

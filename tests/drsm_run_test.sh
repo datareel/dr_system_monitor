@@ -388,6 +388,69 @@ expect "migrated host runs in its site" "${R}/orgs/acme/new/systems/legacy1/lega
 if [ ! -e "${R}/systems/legacy1" ]; then pass "migrated host no longer in the default site"; else fail "migrated host written to the default site"; fi
 if migrate --apply default/default; then fail "migrate to default/default accepted"; else pass "migrate to default/default refused"; fi
 
+echo "== sites: web sync, collectors, remove"
+D="${T}/dash"
+function websync() { HOME="${T}/home" bash "${TOPdir}/utils/drsm_web_sync.sh" -d "${D}" "$@" > "${T}/sync.log" 2>&1; }
+websync
+rc=$?
+if [ ${rc} -eq 0 ]; then pass "web sync dry run to a new dashboard exit 0"; else fail "web sync dry run exit ${rc}: $(grep -m 2 'ERROR\|rsync' "${T}/sync.log")"; fi
+if [ ! -e "${D}/orgs" ]; then pass "web sync dry run copies nothing"; else fail "web sync dry run wrote ${D}"; fi
+mkdir -p "${D}/orgs/other/x" "${D}/orgs/acme/hq" "${D}/orgs/acme/zz"
+echo '{}' > "${D}/orgs/other/x/site.json"
+echo '{}' > "${D}/orgs/acme/zz/site.json"
+echo old > "${D}/orgs/acme/hq/junk.txt"
+echo old > "${D}/system_health_report.txt"
+websync --apply
+rc=$?
+if [ ${rc} -eq 0 ]; then pass "web sync exit 0"; else fail "web sync exit ${rc}: $(tail -3 "${T}/sync.log")"; fi
+expect "site copied" "${D}/orgs/acme/hq/systems/web/web_report.txt" "SITE:acme/hq"
+expect "new site folder created" "${D}/orgs/acme/new/site.json" '"site":"new"'
+expect "org.json copied" "${D}/orgs/acme/org.json" '"name":"Acme Corp"'
+if [ ! -e "${D}/orgs/acme/hq/junk.txt" ]; then pass "files gone from the site are deleted"; else fail "old file left in the site copy"; fi
+if [ -f "${D}/orgs/other/x/site.json" ] && [ -f "${D}/orgs/acme/zz/site.json" ]; then pass "other monitor hosts' sites are kept"; else fail "web sync deleted another site"; fi
+if [ ! -e "${D}/orgs/beta/lab" ]; then pass "another collector's site is not copied"; else fail "beta/lab copied"; fi
+expect "skip names the other collector's site" "${T}/sync.log" "Skipping beta/lab"
+if [ -f "${D}/system_health_report.txt" ]; then pass "default site files kept with no default site hosts here"; else fail "default site files deleted"; fi
+WEBSYNC_RRSYNC=1 websync
+expect "rrsync mode needs one site" "${T}/sync.log" "WEBSYNC_RRSYNC=1 copies one site"
+
+ssh-keygen -q -t ed25519 -N "" -C "drsm@mon2" -f "${T}/key" > /dev/null 2>&1
+function addcol() { HOME="${T}/home" bash "${TOPdir}/utils/drsm_add_collector.sh" "$@" > "${T}/add.log" 2>&1; }
+addcol -u dash@web.example -r /srv/dash/reports -k "${T}/key.pub" -c mon2 acme/hq
+expect "rrsync key line" "${T}/add.log" "command=\"/usr/bin/rrsync /srv/dash/reports/orgs/acme/hq\",restrict ssh-ed25519 "
+expect "collector settings" "${T}/add.log" "export WEBSYNC_RRSYNC=1"
+expect "site file setting" "${T}/add.log" "COLLECTOR_ID=mon2"
+if addcol -u dash@web.example -r 'reports",no-pty' acme/hq; then fail "unsafe reports folder accepted"; else pass "unsafe reports folder refused"; fi
+printf 'ssh-ed25519 AAAA x",command="sh\n' > "${T}/bad.pub"
+addcol -u dash@web.example -r /srv/dash/reports -k "${T}/bad.pub" acme/hq
+if grep -q 'command="sh' "${T}/add.log"; then fail "key with options copied into the line"; else pass "key with options refused"; fi
+
+if remove web; then fail "ambiguous host removed"; else pass "ambiguous host name refused"; fi
+expect "ambiguous remove lists the sites" "${T}/remove.log" "acme/branch/web"
+remove acme/branch/web
+expect "site host dry run lists its reports" "${T}/remove.log" "remove ${R}/orgs/acme/branch/systems/web"
+expect "site host dry run lists its host file" "${T}/remove.log" "remove ${T}/hosts/web_branch.conf"
+remove --apply acme/branch/web
+if [ ! -e "${R}/orgs/acme/branch/systems/web" ] && [ ! -e "${T}/hosts/web_branch.conf" ]; then pass "site host removed"; else fail "site host not removed"; fi
+if [ -d "${R}/orgs/acme/hq/systems/web" ]; then pass "same name in another site kept"; else fail "removed web from the wrong site"; fi
+
+function rmsite() { HOME="${T}/home" bash "${TOPdir}/utils/drsm_remove_site.sh" "$@" > "${T}/rmsite.log" 2>&1; }
+rmsite acme/hq
+expect "remove site dry run lists the site file" "${T}/rmsite.log" "remove ${T}/sites/acme/hq.site"
+expect "remove site dry run lists the reports" "${T}/rmsite.log" "remove ${R}/orgs/acme/hq"
+expect "remove site dry run lists the hosts" "${T}/rmsite.log" "Host web:"
+if [ -f "${T}/sites/acme/hq.site" ] && [ -d "${R}/orgs/acme/hq" ] && [ -f "${T}/hosts/web_hq.conf" ]; then pass "remove site dry run changes nothing"; else fail "remove site dry run changed files"; fi
+rmsite --apply acme/hq
+if [ ! -e "${T}/sites/acme/hq.site" ] && ls "${T}/sites/removed/acme_hq.site."* > /dev/null 2>&1; then pass "site file removed and saved"; else fail "site file not removed or not saved"; fi
+if [ ! -e "${R}/orgs/acme/hq" ] && [ ! -e "${T}/hosts/web_hq.conf" ]; then pass "site hosts and reports removed"; else fail "site hosts or reports left"; fi
+if [ -f "${R}/orgs/acme/org.json" ]; then pass "org kept while it has other sites"; else fail "org.json removed with sites left"; fi
+if rmsite default/default; then fail "default site removal accepted"; else pass "default site removal refused"; fi
+
+HOME="${T}/home" bash "${TOPdir}/utils/wra_hosts.sh" --apply -s beta/lab -d "${T}/wra" > "${T}/wra.log" 2>&1
+expect "wra_hosts.sh -s names the site" "${T}/hosts/beta_lab_good1.conf" "SITE=beta/lab"
+HOME="${T}/home" bash "${TOPdir}/bin/drsm_run.sh" -l > "${T}/list.log" 2>&1
+expect "Windows host lists in its site" "${T}/list.log" "site:    beta/lab"
+
 echo ""
 if [ ${failures} -eq 0 ]; then echo "All tests passed"; exit 0; fi
 echo "${failures} test(s) failed"

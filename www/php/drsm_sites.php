@@ -122,8 +122,10 @@ function drsm_site_record($id, $js, $org)
     "time" => (is_array($js) && isset($js["time"])) ? drsm_demo_time((int)$js["time"]) : 0,
     "posted" => is_array($js),
     "stale_minutes" => $stale,
-    "orgname" => (is_array($org) && isset($org["name"]) && $org["name"] != "") ? (string)$org["name"] : ($legacy ? "Default" : $o),
-    "contact" => (is_array($org) && isset($org["contact"])) ? (string)$org["contact"] : ""
+    "orgname" => (is_array($org) && isset($org["name"]) && $org["name"] != "") ? (string)$org["name"]
+                 : ((is_array($js) && isset($js["org_name"]) && $js["org_name"] != "") ? (string)$js["org_name"] : ($legacy ? "Default" : $o)),
+    "contact" => (is_array($org) && isset($org["contact"])) ? (string)$org["contact"]
+                 : ((is_array($js) && isset($js["org_contact"])) ? (string)$js["org_contact"] : "")
   );
 }
 
