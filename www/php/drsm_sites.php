@@ -125,8 +125,108 @@ function drsm_site_record($id, $js, $org)
     "orgname" => (is_array($org) && isset($org["name"]) && $org["name"] != "") ? (string)$org["name"]
                  : ((is_array($js) && isset($js["org_name"]) && $js["org_name"] != "") ? (string)$js["org_name"] : ($legacy ? "Default" : $o)),
     "contact" => (is_array($org) && isset($org["contact"])) ? (string)$org["contact"]
-                 : ((is_array($js) && isset($js["org_contact"])) ? (string)$js["org_contact"] : "")
+                 : ((is_array($js) && isset($js["org_contact"])) ? (string)$js["org_contact"] : ""),
+    "links" => drsm_clean_links((is_array($js) && isset($js["links"])) ? $js["links"] : null),
+    "org_links" => drsm_clean_links((is_array($js) && isset($js["org_links"])) ? $js["org_links"] : null)
   );
+}
+
+/*
+Site links: LINK="Menu/Submenu/Name|https://url|tier" lines in site
+and org files, carried in site.json as links and org_links. Checked
+again here: only http and https URLs, every menu level named, an
+optional tier ID.
+*/
+function drsm_link_url_ok($url)
+{
+  if(!is_string($url) || strlen($url) > 2000) return false;
+  if(!preg_match('#^https?://[^\s"<>\\\\`]+$#i', $url)) return false;
+  $scheme = strtolower((string)parse_url($url, PHP_URL_SCHEME));
+  $host = parse_url($url, PHP_URL_HOST);
+  return ($scheme == "http" || $scheme == "https") && is_string($host) && $host != "";
+}
+
+function drsm_clean_links($links)
+{
+  $out = array();
+  if(!is_array($links)) return $out;
+  foreach($links as $l) {
+    if(!is_array($l) || !isset($l["path"]) || !isset($l["url"]) || !is_string($l["path"])) continue;
+    if(!drsm_link_url_ok($l["url"])) continue;
+    $parts = array();
+    foreach(explode("/", $l["path"]) as $seg) {
+      $seg = trim($seg);
+      if($seg == "") { $parts = array(); break; }
+      $parts[] = $seg;
+    }
+    if(count($parts) == 0 || count($parts) > 6) continue;
+    $tier = (isset($l["tier"]) && is_string($l["tier"])) ? strtolower(trim($l["tier"])) : "";
+    if($tier == "production") $tier = "ops";
+    if($tier != "" && !drsm_valid_id($tier)) continue;
+    $out[] = array("path" => $parts, "url" => $l["url"], "tier" => $tier);
+  }
+  return $out;
+}
+
+// Links for tier $tier ("" is All) as a tree: each item is a link
+// (name, url) or a menu (name, items), in file order
+function drsm_link_tree($links, $tier)
+{
+  $tree = array();
+  foreach($links as $l) {
+    if($tier != "" && $l["tier"] != "" && $l["tier"] != $tier) continue;
+    $node = &$tree;
+    $last = count($l["path"]) - 1;
+    foreach($l["path"] as $i => $name) {
+      if($i == $last) { $node[] = array("name" => $name, "url" => $l["url"]); break; }
+      $found = null;
+      foreach($node as $k => $item) {
+        if(isset($item["items"]) && $item["name"] == $name) { $found = $k; break; }
+      }
+      if($found === null) { $node[] = array("name" => $name, "items" => array()); $found = count($node) - 1; }
+      $node = &$node[$found]["items"];
+    }
+    unset($node);
+  }
+  return $tree;
+}
+
+function drsm_link_tree_html($tree, $depth = 0)
+{
+  $out = "<ul class=\"menu-tree\">";
+  foreach($tree as $item) {
+    if(isset($item["items"])) {
+      $out .= "<li><details class=\"menu-sub\"><summary>" . h($item["name"]) . drsm_icon("chevron") . "</summary>"
+        . drsm_link_tree_html($item["items"], $depth + 1) . "</details></li>";
+    }
+    else {
+      $out .= "<li><a href=\"" . h($item["url"]) . "\" target=\"_blank\" rel=\"noopener noreferrer\">" . h($item["name"])
+        . drsm_icon("external") . "<span class=\"sr\"> (opens in a new tab)</span></a></li>";
+    }
+  }
+  return $out . "</ul>";
+}
+
+/*
+The Site links menu for site $id: its links, then its org's links,
+those for tier $tier ("" shows every link). Empty when there are none.
+$class is "links-menu" in the top bar, "card-links" on site cards.
+*/
+function drsm_links_menu($id, $tier, $class = "links-menu")
+{
+  $sites = drsm_sites();
+  if(!isset($sites[$id])) return "";
+  $s = $sites[$id];
+  $mine = drsm_link_tree($s["links"], $tier);
+  $org = drsm_link_tree($s["org_links"], $tier);
+  if(count($mine) == 0 && count($org) == 0) return "";
+  $label = ($class == "links-menu") ? "Site links" : "Links";
+  $out = "<details class=\"menu " . h($class) . "\" data-menu><summary class=\"" . ($class == "links-menu" ? "tool" : "menu-btn") . "\" title=\"" . h("Links for " . $s["name"]) . "\">"
+    . drsm_icon("link") . "<span class=\"menu-label\">" . h($label) . "</span>" . drsm_icon("chevron") . "</summary>"
+    . "<div class=\"menu-panel\">";
+  if(count($mine) > 0) $out .= "<nav aria-label=\"" . h($s["name"] . " links") . "\"><p class=\"menu-head\">" . h($s["name"]) . "</p>" . drsm_link_tree_html($mine) . "</nav>";
+  if(count($org) > 0) $out .= "<nav aria-label=\"" . h($s["orgname"] . " links") . "\"><p class=\"menu-head\">Org links &middot; " . h($s["orgname"]) . "</p>" . drsm_link_tree_html($org) . "</nav>";
+  return $out . "</div></details>";
 }
 
 // Every site with reports, before access checks. The default site is

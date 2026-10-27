@@ -837,6 +837,11 @@ ALERT_EMAIL_QA and ALERT_EMAIL_OPS in a site file send each tier's
 alerts to its own addresses, else ALERT_EMAIL is used. The
 Organizations, Heat map and Hosts pages filter by tier.
 
+Site links: LINK="Menu/Submenu/Name|https://url|tier" lines in a site
+or org file fill the dashboard's Site links menu. Each / in the name
+makes a submenu, the tier is optional, and only http and https links
+are kept. Org file links show for every site of the organization.
+
 To limit dashboard users to their own organizations or sites, see
 $AUTHscopes and $AUTHnetworkscopes in php/drsm_auth.php. PLUGINS.md
 has the full list of site settings and tools.

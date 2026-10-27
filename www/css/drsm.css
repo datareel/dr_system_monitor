@@ -665,6 +665,48 @@ pre.report span { display: inline-block; min-width: 100%; padding: 0 6px; margin
 .site-counts li { display: inline-flex; align-items: center; gap: 5px; }
 .site-counts li[class] { color: var(--tone-ink); font-weight: 600; }
 .site-counts li.ok { color: var(--text-2); font-weight: 500; }
+/* Menus: <details> drop downs with nested <details> submenus, so they
+   open by click, tap or keyboard without the script */
+.menu { position: relative; }
+.menu > summary { list-style: none; cursor: pointer; user-select: none; }
+.menu > summary::-webkit-details-marker, .menu-sub > summary::-webkit-details-marker { display: none; }
+.menu > summary .icon:last-child { width: 14px; height: 14px; transition: transform .15s ease; }
+.menu[open] > summary .icon:last-child { transform: rotate(180deg); }
+.menu-panel {
+  position: absolute; z-index: 30; top: calc(100% + 6px); right: 0;
+  min-width: 230px; max-width: min(340px, calc(100vw - 2 * var(--gutter))); max-height: min(70vh, 560px); overflow: auto;
+  padding: 6px; border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+  background: var(--surface); box-shadow: var(--shadow);
+}
+.menu-head { margin: 6px 8px 4px; color: var(--muted); font-size: .7rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.menu-panel nav + nav { margin-top: 6px; padding-top: 4px; border-top: 1px solid var(--border); }
+.menu-tree { list-style: none; margin: 0; padding: 0; }
+.menu-tree .menu-tree { margin-left: 10px; padding-left: 8px; border-left: 1px solid var(--border); }
+.menu-tree a, .menu-sub > summary {
+  display: flex; align-items: center; gap: 8px; padding: 7px 8px; border-radius: 7px;
+  color: var(--text); font-size: .88rem; font-weight: 500; overflow-wrap: anywhere;
+}
+.menu-tree a:hover, .menu-sub > summary:hover { background: var(--surface-2); text-decoration: none; }
+.menu-tree a:focus-visible, .menu summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.menu-tree a .icon { width: 13px; height: 13px; margin-left: auto; flex: none; color: var(--muted); }
+.menu-sub > summary { list-style: none; cursor: pointer; font-weight: 600; }
+.menu-sub > summary .icon { width: 14px; height: 14px; margin-left: auto; flex: none; color: var(--muted); transform: rotate(-90deg); transition: transform .15s ease; }
+.menu-sub[open] > summary .icon { transform: none; }
+/* Site cards: the menu opens inside the card */
+.card-links > summary.menu-btn { display: inline-flex; align-items: center; gap: 6px; color: var(--accent); font-size: .8rem; font-weight: 600; }
+.card-links > summary .icon { width: 15px; height: 15px; }
+.card-links .menu-panel { position: static; max-width: none; min-width: 0; max-height: none; margin-top: 6px; box-shadow: none; background: var(--surface-2); }
+/* Main menu items with views */
+.nav-item { display: inline-flex; align-items: center; border-radius: 10px; }
+.nav-item > a { padding-right: 6px; }
+.nav-item.active { background: var(--surface-3); box-shadow: inset 0 0 0 1px var(--border-strong); }
+.nav-item.active > a.active { background: none; box-shadow: none; }
+.nav-menu > summary { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 34px; margin-right: 2px; border-radius: 8px; color: var(--muted); }
+.nav-menu > summary:hover { background: var(--surface-2); color: var(--text); }
+.nav-menu .menu-panel { left: -120px; right: auto; min-width: 200px; }
+.nav .menu-tree a { white-space: normal; color: var(--text); }
+.tools .tool { white-space: nowrap; flex: none; }
+
 /* Tiers: outlined so they never read as a host state */
 .tier { display: inline-block; margin-left: 6px; padding: 0 5px; border: 1px solid currentColor; border-radius: 5px; color: var(--text-2); font-size: .66rem; font-weight: 700; letter-spacing: .04em; line-height: 1.45; vertical-align: 1px; }
 .tier.tier-dev { color: var(--accent-2); }
@@ -696,17 +738,43 @@ td > .tier:first-child { margin-left: 0; }
 
 /* ---------- Responsive ---------- */
 
+@media (max-width: 1640px) {
+  .links-menu .menu-label { display: none; }
+  .site-picker select { max-width: 180px; }
+}
+@media (max-width: 1320px) {
+  .nav-menu > summary { width: 18px; }
+  .nav a { padding-left: 9px; padding-right: 9px; }
+}
+/* Icons only: the labels stay for screen readers */
+@media (max-width: 1440px) and (min-width: 721px) {
+  .nav a span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .nav a { padding: 8px 10px; }
+}
+@media (max-width: 1000px) and (min-width: 721px) {
+  .site-picker select { max-width: 150px; }
+  .tools .refresh-label { display: none; }
+  .topbar-inner { gap: 12px; }
+}
+@media (max-width: 880px) and (min-width: 721px) {
+  .brand-text, .nav-menu { display: none; }
+}
 @media (max-width: 1200px) {
   .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 @media (max-width: 1000px) {
   .split, .detail-grid { grid-template-columns: minmax(0, 1fr); }
-  .nav a span { display: none; }
-  .nav a { padding: 8px 10px; }
   .hide-md { display: none; }
   .show-md-inline { display: inline; }
 }
 @media (max-width: 720px) {
+  .nav-menu { display: none; }
+  .nav-item { flex: 1 1 0; }
+  .nav-item > a { flex: 1 1 auto; padding-right: 4px; }
+  .nav-item.active { background: none; box-shadow: none; }
+  .nav-item.active > a.active { background: var(--surface-3); box-shadow: inset 0 0 0 1px var(--border-strong); }
+  .links-menu .menu-label { display: none; }
+  .links-menu .menu-panel { position: fixed; top: auto; left: var(--gutter); right: var(--gutter); max-width: none; margin-top: 6px; }
   body { font-size: 14px; }
   .topbar-inner { flex-wrap: wrap; gap: 10px; padding-top: 8px; padding-bottom: 8px; }
   .brand { flex: 1 1 auto; }

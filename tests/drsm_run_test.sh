@@ -477,6 +477,21 @@ expect "qa group report name" "${QA}/system_health_report_qa.txt" "Start of qa1"
 expect "qa in site.json" "${QA}/site.json" '"host":"qa1","group":"qa"'
 run -n -g ops
 expect "-g ops is the production run" "${QA}/system_health_report.txt" "Start of ops1"
+echo "== site links"
+cat >> "${T}/sites/acme/qa.site" <<'LINKS'
+LINK="Wiki|https://wiki.acme.test/qa"
+LINK="Apps / OSA / Admin|https://osa.acme.test/admin|QA"
+LINK="Bad|javascript:alert(1)"
+LINK="Apps//Empty|https://x.acme.test/"
+LINKS
+printf 'LINK="Help desk|https://help.acme.test/"\n' >> "${T}/sites/acme.org"
+run -n -g qa
+expect "site links in site.json" "${QA}/site.json" '"links":[{"path":"Wiki","url":"https://wiki.acme.test/qa","tier":""},{"path":"Apps/OSA/Admin","url":"https://osa.acme.test/admin","tier":"qa"}]'
+expect "org links in site.json" "${QA}/site.json" '"org_links":[{"path":"Help desk","url":"https://help.acme.test/","tier":""}]'
+expect "non http link reported" "${T}/run.log" "LINK Bad is not an http or https URL, skipped"
+expect "empty menu level reported" "${T}/run.log" "Menu/Name with no empty level, skipped"
+if ! grep -q "javascript" "${QA}/site.json"; then pass "javascript link left out"; else fail "javascript link in site.json"; fi
+
 out=$(cd "${TOPdir}" && bash -c 'source lib/drsm_conf.sh; source lib/drsm_sites.sh
   declare -A S=([ALERT_EMAIL]="all@x" [ALERT_EMAIL_DEV]="dev@x" [ALERT_EMAIL_OPS]="ops@x")
   echo "$(drsm_group_tier Production) $(drsm_group_tier ops) $(drsm_group_tier qa) $(drsm_group_canon OPS)"

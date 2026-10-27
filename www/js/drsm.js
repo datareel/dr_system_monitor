@@ -28,6 +28,42 @@
 
   function $all(sel, el) { return Array.prototype.slice.call((el || document).querySelectorAll(sel)); }
 
+  // Drop down menus are <details data-menu>: one open at a time, closed
+  // by a click elsewhere, Escape, or picking a link. Escape in a
+  // submenu closes just that submenu.
+  function setupMenus() {
+    var menus = $all("details[data-menu]");
+    if (!menus.length) return;
+    function closeAll(except) {
+      menus.forEach(function (m) {
+        if (m !== except && m.open) {
+          m.open = false;
+          $all("details[open]", m).forEach(function (d) { d.open = false; });
+        }
+      });
+    }
+    menus.forEach(function (m) {
+      m.addEventListener("toggle", function () { if (m.open) closeAll(m); });
+      m.addEventListener("click", function (e) {
+        var a = e.target.closest ? e.target.closest("a") : null;
+        if (a && m.contains(a)) setTimeout(function () { closeAll(null); }, 0);
+      });
+    });
+    document.addEventListener("click", function (e) {
+      menus.forEach(function (m) { if (m.open && !m.contains(e.target)) closeAll(null); });
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key !== "Escape") return;
+      var el = document.activeElement;
+      var sub = el && el.closest ? el.closest("details[open]") : null;
+      if (!sub) return;
+      sub.open = false;
+      var s = sub.querySelector("summary");
+      if (s) s.focus();
+      e.stopPropagation();
+    });
+  }
+
   // ---------- Relative times ----------
 
   function ago(epoch) {
@@ -317,6 +353,7 @@
     $all("[data-filter-scope]").forEach(setupFilters);
     $all("table.sortable").forEach(setupSort);
     $all("[data-trend]").forEach(setupTrend);
+    setupMenus();
     $all("select[data-autosubmit]").forEach(function (sel) {
       sel.addEventListener("change", function () { sel.form.submit(); });
     });

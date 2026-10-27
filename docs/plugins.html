@@ -70,6 +70,7 @@ etc/sites/acme/hq.site        <span class="c"># the hq site of acme</span></code
 <tr><td><code>NAME</code>, <code>LOCATION</code></td><td>Shown on the Organizations page</td></tr>
 <tr><td><code>TZ</code></td><td>Time zone for the site's report times</td></tr>
 <tr><td><code>ALERT_EMAIL</code></td><td>Alert addresses for the site, in place of <code>alert.email.list</code></td></tr>
+<tr><td><code>LINK</code></td><td>A <a href="#links">Site links</a> menu entry, <code>LINK="Menu/Submenu/Name|https://url|tier"</code>. Also in org files</td></tr>
 <tr><td><code>ALERT_EMAIL_&lt;TIER&gt;</code></td><td>Alert addresses for one <a href="#tiers">tier</a> at the site, for example <code>ALERT_EMAIL_DEV</code>, else <code>ALERT_EMAIL</code></td></tr>
 <tr><td><code>STALE_MINUTES</code></td><td>When a host, or the site's monitor host, counts as not reporting, default 60</td></tr>
 <tr><td><code>COLLECTOR_ID</code></td><td>The monitor host that runs the site. Others skip it. Unset, any monitor host runs it</td></tr>
@@ -89,6 +90,14 @@ etc/sites/acme/hq.site        <span class="c"># the hq site of acme</span></code
 55 09-16 * * mon-fri ~/drsm/bin/drsm_run.sh -g dev &amp;&gt; /dev/null
 55 09-16 * * mon-fri ~/drsm/bin/drsm_run.sh -g qa &amp;&gt; /dev/null</code></pre>
 <p>DEV and QA alerts never send texts. A site file can send each tier's alerts to its own addresses with <code>ALERT_EMAIL_DEV</code>, <code>ALERT_EMAIL_QA</code> and <code>ALERT_EMAIL_OPS</code>. A tier without one uses <code>ALERT_EMAIL</code>, then <code>alert.email.list</code>. Other group names still work and show as their own tier, in upper case.</p>
+
+<h2 id="links">Site links</h2>
+<p>Site and org files can list links for the dashboard's <a href="dashboard.html#links">Site links menu</a>, one <code>LINK</code> line each:</p>
+<pre><code>LINK="Wiki|https://wiki.example.com/"
+LINK="Grafana/Database|https://grafana.example.com/d/db"
+LINK="Apps/OSA/Admin|https://osa.example.com/admin|ops"</code></pre>
+<p>The first field is the name, and each <code>/</code> in it makes a submenu, up to six levels. The second is the URL: only <code>http</code> and <code>https</code> links are kept, others are reported by <code>drsm_run.sh</code> and skipped, and the dashboard checks them again. The optional third field is a <a href="#tiers">tier</a>: the link shows only when the tier filter is All or that tier. Links in <code>&lt;org&gt;.org</code> show for every site of the organization, in an Org links section of the same menu.</p>
+<p><code>drsm_run.sh</code> puts the links in <code>site.json</code>, so <code>drsm_web_sync.sh</code> takes them to a hosted dashboard, and users only see the links of sites they may see.</p>
 
 <h2 id="windows">Windows hosts</h2>
 <p>Windows hosts run the Windows Reporting Agent, a small Windows service from the agent distribution. Every 45 minutes it sends a text report (installed programs, Windows Defender events, Windows Update history, hotfixes, users, IP addresses) to the monitor side by signed HTTPS upload, a CIFS share, or SCP. DRSM never connects to the Windows host: the <code>wra</code> collector runs the <code>windows/*</code> plugins on the monitor host against each host's last report, <code>$WRA_REPORTS_DIR/&lt;host&gt;_windows_report_agent.txt</code>.</p>
