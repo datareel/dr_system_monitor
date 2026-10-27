@@ -2,7 +2,11 @@
 
 All notable changes to the DataReel System Monitor (DRSM) are listed here.
 
-## Unreleased
+## 1.32-beta1 - 2026-10-26
+
+Beta release of 1.32: organizations and sites, tiers and site links,
+trends, Windows hosts and the fixes below. Release 1.31 stays the
+stable release until 1.32 is final.
 
 ### Organizations and sites
 
