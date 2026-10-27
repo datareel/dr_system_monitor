@@ -49,7 +49,17 @@ $kind = (isset($_GET['r']) && $_GET['r'] == "health") ? "health" : "check";
 $group = isset($_GET['g']) ? CleanQueryAsString($_GET['g'], 64) : "production";
 if(!preg_match('/^[A-Za-z0-9-]+$/', $group)) $group = "production";
 
-$fname = drsm_group_report_file($kind, $group);
+// The site whose group reports are shown: site= when it names a site
+// this visitor may see, else the first site in the picked scope. The
+// choice here does not change the picked scope.
+$visible = drsm_sites();
+$scopesites = drsm_scope_sites(drsm_scope());
+$site = (isset($_GET['site']) && is_string($_GET['site'])) ? strtolower($_GET['site']) : "";
+if(!drsm_valid_site($site) || !isset($visible[$site])) $site = (string)key($scopesites);
+if(!isset($scopesites[$site]) && isset($visible[$site])) $scopesites[$site] = $visible[$site];
+$sitearg = ($site != DRSM_LEGACY_SITE) ? array("site" => $site) : array();
+
+$fname = drsm_group_report_file($kind, $group, $site);
 $rep = drsm_parse_report($fname);
 $state = $rep["exists"] ? $rep["state"] : "ERROR";
 $title = ($kind == "check") ? "Connectivity tests" : "Health checks";
@@ -65,7 +75,7 @@ foreach($rep["messages"] as $msg) {
 
 // Every group with a report of this kind, for the switcher
 $tabs = array();
-foreach(drsm_group_reports() as $gr) {
+foreach(drsm_site_group_reports($site) as $gr) {
   if($gr["kind"] == $kind) $tabs[$gr["group"]] = $gr["state"];
 }
 
@@ -95,21 +105,34 @@ drsm_page_start($title, ($kind == "check") ? "checks" : "overview", $state);
 <section class="page-head">
   <div>
     <h1><?php echo h($title); ?></h1>
-    <p class="muted"><?php echo h(ucfirst($group)); ?> group<?php if($rep["exists"]) { ?> &middot; posted <?php echo drsm_time_html($rep["mtime"]); ?><?php } ?></p>
+    <p class="muted"><?php if(drsm_multi_site()) echo h(drsm_site_label($site)) . " &middot; "; ?><?php echo h(ucfirst($group)); ?> group<?php if($rep["exists"]) { ?> &middot; posted <?php echo drsm_time_html($rep["mtime"]); ?><?php } ?></p>
   </div>
   <div class="head-actions">
     <div class="seg" role="group" aria-label="Report">
-      <a href="<?php echo h(drsm_url("checks.php", array("g" => $group))); ?>"<?php if($kind == "check") echo ' class="active"'; ?>>Connectivity</a>
-      <a href="<?php echo h(drsm_url("checks.php", array("r" => "health", "g" => $group))); ?>"<?php if($kind == "health") echo ' class="active"'; ?>>Health</a>
+      <a href="<?php echo h(drsm_url("checks.php", array("g" => $group) + $sitearg)); ?>"<?php if($kind == "check") echo ' class="active"'; ?>>Connectivity</a>
+      <a href="<?php echo h(drsm_url("checks.php", array("r" => "health", "g" => $group) + $sitearg)); ?>"<?php if($kind == "health") echo ' class="active"'; ?>>Health</a>
     </div>
+<?php if(count($scopesites) > 1) { ?>
+    <form class="host-pick select" method="get" action="<?php echo h(drsm_url("checks.php")); ?>">
+      <input type="hidden" name="r" value="<?php echo h($kind); ?>">
+      <input type="hidden" name="g" value="<?php echo h($group); ?>">
+      <label class="sr" for="check-site">Site</label>
+      <select id="check-site" name="site" data-autosubmit>
+<?php   foreach($scopesites as $sid => $st) { ?>
+        <option value="<?php echo h($sid); ?>"<?php if($sid == $site) echo " selected"; ?>><?php echo h(drsm_site_label($sid)); ?></option>
+<?php   } ?>
+      </select>
+      <noscript><button class="button" type="submit">Show</button></noscript>
+    </form>
+<?php } ?>
 <?php if(count($tabs) > 1) { ?>
     <div class="seg" role="group" aria-label="Group">
 <?php   foreach($tabs as $g => $st) { ?>
-      <a href="<?php echo h(drsm_url("checks.php", array("r" => $kind, "g" => $g))); ?>"<?php if($g == $group) echo ' class="active"'; ?>><span class="dot <?php echo h(drsm_state_class($st)); ?>"></span><?php echo h(ucfirst($g)); ?></a>
+      <a href="<?php echo h(drsm_url("checks.php", array("r" => $kind, "g" => $g) + $sitearg)); ?>"<?php if($g == $group) echo ' class="active"'; ?>><span class="dot <?php echo h(drsm_state_class($st)); ?>"></span><?php echo h(ucfirst($g)); ?></a>
 <?php   } ?>
     </div>
 <?php } ?>
-    <a class="button ghost" href="<?php echo h(drsm_archive_url("", $archprefix)); ?>" title="Archived reports start with <?php echo h($archprefix); ?>"><?php echo drsm_icon("archive"); ?>Archived reports</a>
+    <a class="button ghost" href="<?php echo h(drsm_archive_url("", $archprefix, $site)); ?>" title="Archived reports start with <?php echo h($archprefix); ?>"><?php echo drsm_icon("archive"); ?>Archived reports</a>
   </div>
 </section>
 

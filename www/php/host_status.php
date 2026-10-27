@@ -38,11 +38,13 @@ see whether a cluster node is still reporting before taking over its
 resources. Needs the same login as the other pages, so a server that
 reads it must be listed in $AUTHnetworks.
 
-  php/host_status.php?n=<host>
+  php/host_status.php?n=<host>[&site=<org>/<site>]
 
-  {"host":"drworkstation2","time":1792982895,"age_secs":61,"state":"OK","stale":false}
+  {"host":"drworkstation2","site":"default/default","time":1792982895,"age_secs":61,"state":"OK","stale":false}
 
-Unknown hosts get a 404 with {"error":"not found"}.
+n can also be <org>/<site>/<host>. Unknown hosts get a 404 with
+{"error":"not found"}. A plain name found in more than one site gets a
+409 with {"error":"ambiguous","sites":["<org>/<site>",...]}.
 */
 // ----------------------------------------------------------- //
 // SCRIPT CONTENT STARTS BELOW.
@@ -57,17 +59,28 @@ header("Content-Type: application/json");
 header("Cache-Control: no-store");
 
 $n = isset($_GET['n']) ? CleanQueryAsString($_GET['n'], 255) : "";
+$site = (isset($_GET['site']) && is_string($_GET['site'])) ? $_GET['site'] : "";
 
-// Only accept a plain host name, this blocks ../ path traversal
-if(!drsm_valid_host($n) || !file_exists("{$REPORTdir}/systems/{$n}/{$n}_report.txt")) {
+// Only plain host and site names are accepted, this blocks ../ path
+// traversal, and only in the sites this visitor may see
+$res = drsm_resolve_host($n, $site);
+if($res["status"] == "ambiguous") {
+  http_response_code(409);
+  echo json_encode(array("error" => "ambiguous", "sites" => $res["matches"])) . "\n";
+  exit;
+}
+$n = $res["name"];
+$site = $res["site"];
+if($n == "" || !file_exists(drsm_site_dir($site) . "/systems/{$n}/{$n}_report.txt")) {
   http_response_code(404);
   echo json_encode(array("error" => "not found")) . "\n";
   exit;
 }
 
-$hst = drsm_load_host($n);
+$hst = drsm_load_host($n, $site);
 echo json_encode(array(
   "host" => $n,
+  "site" => $site,
   "time" => (int)$hst["time"],
   "age_secs" => time() - (int)$hst["time"],
   "state" => (string)$hst["state"],

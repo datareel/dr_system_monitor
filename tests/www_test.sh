@@ -61,6 +61,7 @@ export TEMPdir=${T}/tmp
 export LOGdir=\${TEMPdir}/logs
 export VARdir=\${TEMPdir}/var
 export HOSTSdir=${T}/hosts
+export SITESdir=${T}/sites
 export SYSADMIN_USERNAME=\$(whoami)
 CONF
 printf 'PLUGINS="core/load core/memory storage/disk"\nPROBES=""\nCOLLECTOR=local\n' > "${T}/hosts/_defaults.conf"
@@ -103,6 +104,8 @@ function reject() {
 
 render index.php ""
 expect "overview headline" "need attention"
+reject "no Organizations page with one site" "orgs.php"
+reject "no site picker with one site" 'name="site"' 
 expect "error host listed" ">db1</strong>"
 expect "links use the sub path" 'href="/drsm/dashboard/php/readreport.php?n=db1"'
 expect "styles linked" '/drsm/dashboard/css/drsm.css'
@@ -200,6 +203,106 @@ render trends.php "h=../../etc"
 expect "bad host falls back to all hosts" "Capacity by host"
 render trends.php "h=old1&r=bogus"
 expect "no history message" "utils/drsm_metrics_backfill.sh --apply"
+
+echo "== Organizations and sites"
+mkdir -p "${T}/sites/acme" "${T}/sites/beta"
+printf 'NAME="Acme Corp"\nCONTACT="ops@acme.test"\n' > "${T}/sites/acme.org"
+printf 'NAME="Head office"\nLOCATION="Springfield"\n' > "${T}/sites/acme/hq.site"
+printf 'NAME="Branch"\n' > "${T}/sites/acme/branch.site"
+printf 'NAME="Beta Labs"\n' > "${T}/sites/beta.org"
+printf 'NAME="Lab"\nSTALE_MINUTES=30\n' > "${T}/sites/beta/lab.site"
+printf 'HOST=web1\nSITE=acme/hq\nDESCRIPTION="HQ web"\n' > "${T}/hosts/hq_web1.conf"
+printf 'SITE=acme/branch\ncore_load_CRIT=-1\n' > "${T}/hosts/app1.conf"
+printf 'SITE=beta/lab\n' > "${T}/hosts/lab1.conf"
+HOME="${T}/home" bash "${TOPdir}/bin/drsm_run.sh" -n >> "${T}/run.log" 2>&1
+# The lab collector stopped an hour ago
+old=$(( $(date +%s) - 3600 ))
+sed -i "s/\"time\":[0-9]*,\"stale_minutes\"/\"time\":${old},\"stale_minutes\"/" "${W}/reports/orgs/beta/lab/site.json"
+for f in "${W}"/reports/orgs/beta/lab/systems/lab1/*_report.txt; do sed -i "s/^ETIME:.*/ETIME:${old}/" "${f}"; done
+sed -i "s/\"time\":[0-9]*,\"plugins\"/\"time\":${old},\"plugins\"/" "${W}/reports/orgs/beta/lab/systems/lab1/status.json"
+
+render orgs.php ""
+expect "organization heading" "Acme Corp"
+expect "second organization" "Beta Labs"
+expect "site card" 'data-site="acme/hq"'
+expect "default site shown with the others" 'data-site="default/default"'
+expect "site location" "Springfield"
+expect "tile links to the host in its site" 'readreport.php?n=app1&amp;site=acme%2Fbranch'
+expect "stale collector banner" "Collector not reporting"
+expect "Organizations in the menu" 'href="/drsm/dashboard/php/orgs.php"'
+expect "site picker" '<option value="acme/hq">Head office</option>'
+expect "org scope in the picker" '<option value="acme">Acme Corp, all sites</option>'
+render orgs.php "mode=metrics"
+expect "metric tiles" 'class="matrix tiles metric"'
+render orgs.php "site=beta"
+expect "org scope shows its sites" 'data-site="beta/lab"'
+reject "org scope hides other orgs" 'data-site="acme/hq"'
+
+render index.php ""
+expect "per site table" 'id="site-table"'
+expect "site host card tagged" 'Acme Corp / Head office'
+expect "brand goes to Organizations" 'class="brand" href="/drsm/dashboard/php/orgs.php"'
+render index.php "site=acme/hq"
+expect "site scope shows its host" "HQ web"
+reject "site scope hides other sites" ">app1</h3>"
+reject "no site table for one site" 'id="site-table"'
+
+render reports.php ""
+expect "organization column" ">Organization</th>"
+expect "site host link" 'readreport.php?n=web1&amp;site=acme%2Fhq'
+expect "default site host link unchanged" 'readreport.php?n=db1"'
+
+render heatmap.php "by=site"
+expect "heat map by site" 'class="heat-site"'
+expect "heat map site heading" "Acme Corp / Branch"
+render heatmap.php ""
+expect "heat map rows name the site" '<span class="site-tag">Acme Corp / Head office</span>'
+
+render readreport.php "n=web1"
+expect "same name in two sites asks for the site" "web1 is in more than one site"
+expect "choice links name the site" 'readreport.php?n=web1&amp;site=acme%2Fhq'
+render readreport.php "n=web1&site=acme/hq"
+expect "host in its site" "SITE:acme/hq"
+expect "site in the details" "<dt>Site</dt><dd>Acme Corp / Head office</dd>"
+render readreport.php "n=acme/hq/web1"
+expect "org/site/host name" "SITE:acme/hq"
+render readreport.php "n=app1"
+expect "unique name needs no site" "SITE:acme/branch"
+render readreport.php "n=app1&site=acme/hq"
+expect "host not in that site" "Host not found"
+render readreport.php "n=web1&site=../../etc"
+expect "bad site refused" "Host not found"
+render readreport.php "n=web1&site=default/default"
+reject "default site host by site" "SITE:"
+expect "default site host by site" "Web &lt;one&gt;"
+
+render host_status.php "n=web1"
+expect "ambiguous host status" '"error":"ambiguous"'
+expect "ambiguous host status lists sites" '"sites":["default\/default","acme\/hq"]'
+render host_status.php "n=web1&site=acme/hq"
+expect "host status with site" '"site":"acme\/hq"'
+render host_status.php "n=lab1"
+expect "host status of a stale site" '"stale":true'
+
+render archive.php "h=app1"
+expect "site host archive" "app1_report_"
+render archive.php "site=acme/branch"
+expect "site group archive" "system_check_report_"
+render archive.php "h=web1&site=acme/hq"
+expect "archive back link keeps the site" 'readreport.php?n=web1&amp;site=acme%2Fhq'
+
+render checks.php "site=acme/branch"
+expect "site connectivity report" "Acme Corp / Branch"
+expect "site health report link" 'checks.php?r=health&amp;g=production&amp;site=acme%2Fbranch'
+render checks.php "r=health&site=acme/branch"
+expect "site health report" "Start of app1"
+
+render trends.php "h=app1"
+expect "site host trends" "app1 trends"
+render trends.php "h=acme/branch/app1&r=7d"
+expect "org/site/host trends" "app1 trends"
+render trends.php "h=web1"
+expect "ambiguous trends host" "web1 is in more than one site"
 
 echo "== Web only demo package"
 bash "${TOPdir}/utils/make_web_demo.sh" -s -o "${T}/demo" > "${T}/demo.log" 2>&1
