@@ -51,6 +51,7 @@ utils/wra_hosts.sh         creates host files for Windows agent hosts
 | `windows/defender` | agent report | Defender threats, protection turned off, old definitions |
 | `windows/patches` | agent report | Age of the newest Windows patch |
 | `windows/apps` | agent report | Required and forbidden installed programs |
+| `windows/resources` | agent report | CPU, memory, commit charge, disk space and network use, agent 3.3 and later |
 
 `storage/diskio` and `cloud/aws` never alert. They add numbers to the
 trends page, so they are not in the default plugin list: add them to
@@ -169,7 +170,7 @@ HOST=laptop1
 PLATFORM=windows
 COLLECTOR=wra
 PROBES=""
-PLUGINS="windows/checkin windows/defender windows/patches windows/apps"
+PLUGINS="windows/checkin windows/defender windows/patches windows/apps windows/resources"
 ```
 
 `PROBES=""` turns off the ping probe, laptops move between networks.
@@ -203,6 +204,20 @@ $ ~/drsm/utils/wra_hosts.sh -d /var/www/html/windows/reports --apply
 | `windows/apps` | `REQUIRED` | NONE | Programs that must be installed |
 | | `FORBIDDEN` | NONE | Programs that are errors |
 | | `WARN` | NONE | Programs that are warnings |
+| `windows/resources` | `CPU_WARN`, `CPU_CRIT` | 85, 95 | CPU used percent, a 5 second sample |
+| | `MIN_AVAIL_MB` | 256 | Available memory at or below this is an error |
+| | `COMMIT_WARN` | 90 | Commit charge (memory plus page file) percent of the limit |
+| | `DISK_WARN`, `DISK_CRIT` | 90, 99 | Space used percent on each fixed drive |
+| | `DISK_SKIP` | | Drives to skip, for example `"D: E:"` |
+| | `UPTIME_WARN_DAYS` | 0 | Days without a restart before a warning, 0 to skip |
+| | `MAX_AGE_HOURS` | 2 | Older reports are not checked, `windows/checkin` reports them |
+
+`windows/resources` uses the metric names of the Linux plugins
+(`cpu_used_pct`, `mem_available_mb`, `disk_used_pct{mount="C:"}`,
+`nic_rx_bytes{nic="Wi-Fi"}` and so on), so Windows hosts get the same
+gauges and trends. Its `sample_etime` metric is the time the agent
+read the counters: the trends page times network rates by the
+reports, and counts a report that two runs saw only once.
 
 The `windows/apps` lists are case insensitive regular expressions
 separated by semicolons, because program names have spaces:

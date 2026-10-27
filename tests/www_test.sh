@@ -173,6 +173,23 @@ expect "hourly baseline" "normal by hour of day"
 expect "spike flagged" "Above normal"
 expect "chart drawn" 'class="trend-plot"'
 reject "no cloud panel without aws plugin" "AWS: what you pay for"
+# Windows agent history: drsm_run.sh every 15 minutes, the agent
+# every 30, so each report is seen twice. 1 MB/s in, timed by report.
+WHIST="${W}/reports/systems/win1/metrics_history.tsv"
+mkdir -p "$(dirname "${WHIST}")"
+awk -v now="$(date +%s)" 'BEGIN {
+    start = now - 3 * 86400
+    for (t = start; t < now; t += 900) {
+        st = start + int((t - start) / 1800) * 1800 - 300
+        printf "%d\tsample_etime=%d\tcpu_used_pct=10\tcpu_count=4\tmem_total_mb=16000\tmem_available_mb=12000", t, st
+        printf "\tnic_rx_bytes{nic=\"Wi-Fi\"}=%d\tnic_tx_bytes{nic=\"Wi-Fi\"}=%d\n", (st - start) * 1048576, (st - start) * 1024
+    }
+}' > "${WHIST}"
+(cd "${W}/php" && php -d error_reporting=-1 -r 'require_once("../config/drsm.php");
+    require_once("{$WWWdir}/php/drsm_lib.php"); require_once("{$WWWdir}/php/trends_lib.php");
+    $d = drsm_trend_load("win1", 0); $rx = $d["series"]["rx"]["v"];
+    printf("%d %d %d\n", count($rx), min($rx), max($rx));' > "${T}/win.txt" 2>&1)
+if [ "$(cat "${T}/win.txt")" == "143 1048576 1048576" ]; then pass "Windows rates timed by report"; else fail "Windows rates timed by report: $(head -3 "${T}/win.txt")"; fi
 render trends.php "h=../../etc"
 expect "bad host falls back to all hosts" "Capacity by host"
 render trends.php "h=old1&r=bogus"

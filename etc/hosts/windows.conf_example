@@ -21,7 +21,7 @@ WRA_REPORTS_DIR=/var/www/html/windows/reports
 # Laptops move between networks, so no ping probe. Servers that
 # always answer can keep PROBES="network/ping".
 PROBES=""
-PLUGINS="windows/checkin windows/defender windows/patches windows/apps"
+PLUGINS="windows/checkin windows/defender windows/patches windows/apps windows/resources"
 
 # Plugin settings, see plugins/windows/*/plugin.conf
 windows_checkin_WARN_HOURS=48
@@ -29,6 +29,8 @@ windows_checkin_CRIT_DAYS=15
 # windows_checkin_MIN_VERSION=3.2
 # windows_defender_LOOKBACK_DAYS=7
 # windows_patches_WARN_DAYS=45
+# windows_resources_DISK_WARN=90
+# windows_resources_UPTIME_WARN_DAYS=30
 # Semicolon separated, case insensitive regular expressions
 # windows_apps_REQUIRED="Microsoft Defender;Mozilla Firefox"
 # windows_apps_FORBIDDEN="uTorrent;TeamViewer"

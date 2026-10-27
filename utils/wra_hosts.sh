@@ -110,7 +110,7 @@ PLATFORM=windows
 COLLECTOR=wra
 # Laptops move between networks, so no ping probe
 PROBES=""
-PLUGINS="windows/checkin windows/defender windows/patches windows/apps"
+PLUGINS="windows/checkin windows/defender windows/patches windows/apps windows/resources"
 HOST
 done
 shopt -u nullglob

@@ -163,6 +163,27 @@ HOSTNAME: ${1}
 ETIME: ${2}
 DATETIME: $(date -d "@${2}")
 
+PERFORMANCE:
+cpu_count=4
+cpu_used_pct=12.5
+cpu_sample_seconds=5
+mem_total_mb=16000
+mem_available_mb=9000
+mem_used_pct=43.8
+commit_limit_mb=20000
+commit_used_mb=8000
+process_count=180
+thread_count=2000
+uptime_seconds=90000
+END PERFORMANCE
+DISK USAGE:
+drive=C: size_mb=500000 used_mb=475000 free_mb=25000 used_pct=95.0
+drive=D: size_mb=100000 used_mb=10000 free_mb=90000 used_pct=10.0
+END DISK USAGE
+NETWORK:
+adapter="Wi-Fi \\"Office\\"" if_index=12 speed_mbps=866 rx_bytes=123456789 tx_bytes=2345678 rx_packets=1000 tx_packets=900 rx_errors=0 tx_errors=0 rx_discards=3 tx_discards=0
+END NETWORK
+
 ALL INSTALLED PROGRAMS:
 --- 64-bit / Default Hive ---
 Name: 7-Zip 25.01 (x64) | Version: 25.01
@@ -217,6 +238,12 @@ expect "threat is an error" "${O}" "Defender threat detected ${today}T02:00:00Z 
 expect "protection off alerts past the 7 day window" "${O}" "Defender real-time protection turned off ${old_day}T03:00:00Z"
 if ! grep -q "Old:Win32/Fixture" "${O}"; then pass "threats older than 7 days do not alert"; else fail "old threat alerted"; fi
 expect "old patches are an error" "${O}" "=== windows/patches [ERROR]"
+expect "resources from the report" "${G}" "=== windows/resources [WARNING]"
+expect "full drive warns" "${G}" "WARNING - good1:C: is at 95.0% capacity."
+expect "linux disk metric name" "${G}" 'METRIC disk_used_pct{mount="D:"}=10.0'
+expect "quoted adapter name" "${G}" "METRIC nic_rx_bytes{nic=\"Wi-Fi 'Office'\"}=123456789"
+expect "sample time for rates" "${G}" "METRIC sample_etime="
+expect "old report values not checked" "${O}" "resource use not checked"
 expect "host with no report" "${R}/systems/never1/never1_report.txt" "never1 has never sent a Windows agent report"
 
 echo "== metrics history"
