@@ -44,7 +44,9 @@ require_once("../config/drsm.php");
 require_once("{$WWWdir}/php/query_post_validation.php");
 require_once("{$WWWdir}/php/drsm_lib.php");
 
-$hosts = drsm_load_hosts();
+$scope = drsm_scope_from_request();
+$multi = (count(drsm_scope_sites($scope)) > 1);
+$hosts = drsm_load_hosts($scope);
 $groups = drsm_groups($hosts);
 $overall = "OK";
 foreach($hosts as $hst) $overall = drsm_worst($overall, $hst["state"]);
@@ -54,7 +56,7 @@ drsm_page_start("Hosts", "hosts", $overall);
 <section class="page-head">
   <div>
     <h1>System health check reports</h1>
-    <p class="muted"><?php echo count($hosts); ?> host<?php echo count($hosts) == 1 ? "" : "s"; ?>. Select a column to sort, select a host for its full report.</p>
+    <p class="muted"><?php echo count($hosts); ?> host<?php echo count($hosts) == 1 ? "" : "s"; ?><?php if(drsm_multi_site()) echo " in " . h(drsm_scope_label($scope)); ?>. Select a column to sort, select a host for its full report.</p>
   </div>
   <div class="head-actions filters" data-filter-scope="host-table">
     <label class="search"><?php echo drsm_icon("search"); ?><span class="sr">Search hosts</span><input type="search" placeholder="Search hosts" data-filter-text autocomplete="off"></label>
@@ -81,6 +83,10 @@ drsm_page_start("Hosts", "hosts", $overall);
         <tr>
           <th scope="col" data-sort="text">Host</th>
           <th scope="col" data-sort="num" class="sorted-desc">State</th>
+<?php if($multi) { ?>
+          <th scope="col" data-sort="text" class="hide-md">Organization</th>
+          <th scope="col" data-sort="text" class="hide-sm">Site</th>
+<?php } ?>
           <th scope="col" data-sort="text" class="hide-sm">Description</th>
           <th scope="col" data-sort="text" class="hide-md">Group</th>
           <th scope="col" data-sort="num" class="hide-sm">Checks</th>
@@ -98,9 +104,15 @@ drsm_page_start("Hosts", "hosts", $overall);
             else if($p["state"] == "WARNING") $nwarn++;
             else $nok++;
           } ?>
-        <tr class="row-<?php echo h(drsm_state_class($hst["state"])); ?>" data-state="<?php echo h($hst["state"]); ?>" data-group="<?php echo h($hst["group"]); ?>" data-text="<?php echo h(strtolower($hst["name"] . " " . $hst["description"] . " " . $hst["group"])); ?>">
-          <td data-v="<?php echo h($hst["name"]); ?>"><a class="strong" href="<?php echo h(drsm_url("readreport.php", array("n" => $hst["name"]))); ?>"><?php echo h($hst["name"]); ?></a><div class="show-sm muted small"><?php echo h($hst["description"]); ?></div></td>
+        <tr class="row-<?php echo h(drsm_state_class($hst["state"])); ?>" data-state="<?php echo h($hst["state"]); ?>" data-group="<?php echo h($hst["group"]); ?>" data-text="<?php echo h(strtolower($hst["name"] . " " . $hst["description"] . " " . $hst["group"] . ($multi ? " " . $hst["site"] . " " . drsm_site_label($hst["site"]) : ""))); ?>">
+          <td data-v="<?php echo h($hst["name"]); ?>"><a class="strong" href="<?php echo h(drsm_host_url("readreport.php", $hst)); ?>"><?php echo h($hst["name"]); ?></a><div class="show-sm muted small"><?php echo h(implode(" - ", array_filter(array($multi ? drsm_site_label($hst["site"]) : "", $hst["description"]), "strlen"))); ?></div></td>
           <td data-v="<?php echo drsm_state_rank($hst["state"]); ?>"><?php echo drsm_badge($hst["state"]); ?></td>
+<?php     if($multi) {
+            $st = drsm_all_sites();
+            $st = isset($st[$hst["site"]]) ? $st[$hst["site"]] : array("orgname" => "", "name" => $hst["site"]); ?>
+          <td class="hide-md" data-v="<?php echo h($st["orgname"]); ?>"><?php echo h($st["orgname"]); ?></td>
+          <td class="hide-sm" data-v="<?php echo h($st["name"]); ?>"><a href="<?php echo h(drsm_url("reports.php", array("site" => $hst["site"]))); ?>"><?php echo h($st["name"]); ?></a></td>
+<?php     } ?>
           <td class="hide-sm" data-v="<?php echo h($hst["description"]); ?>"><?php echo h($hst["description"]); ?><?php if($hst["note"] != "") echo "<div class=\"small muted\">" . h($hst["note"]) . "</div>"; ?></td>
           <td class="hide-md" data-v="<?php echo h($hst["group"]); ?>"><span class="tag"><?php echo h($hst["group"]); ?></span></td>
           <td class="hide-sm" data-v="<?php echo $nerr * 10000 + $nwarn * 100 + $nok; ?>">

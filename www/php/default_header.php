@@ -6,7 +6,11 @@
 
 $drsm_title = (isset($PAGEtitle) && $PAGEtitle != "") ? "{$PAGEtitle} - {$SITEtitle}" : $SITEtitle;
 $drsm_state = (isset($PAGEstate) && $PAGEstate != "") ? $PAGEstate : "";
-$drsm_nav = array(
+$drsm_sites = drsm_sites();
+$drsm_nav = array();
+// The Organizations page leads when there is more than one site
+if(count($drsm_sites) > 1) $drsm_nav["orgs"] = array("Organizations", "orgs.php", "building");
+$drsm_nav += array(
   "overview" => array("Overview", "index.php", "grid"),
   "heatmap" => array("Heat map", "heatmap.php", "heat"),
   "hosts" => array("Hosts", "reports.php", "list"),
@@ -31,7 +35,7 @@ $drsm_nav = array(
 <a class="skip" href="#main">Skip to content</a>
 <header class="topbar">
   <div class="topbar-inner">
-    <a class="brand" href="<?php echo h(drsm_url("index.php")); ?>">
+    <a class="brand" href="<?php echo h(drsm_url(count($drsm_sites) > 1 ? "orgs.php" : "index.php")); ?>">
       <span class="brand-mark <?php echo h(drsm_state_class($drsm_state != "" ? $drsm_state : "OK")); ?>" aria-hidden="true"><span></span><span></span><span></span></span>
       <span class="brand-text"><?php echo h($SITEtitle); ?></span>
     </a>
@@ -41,6 +45,27 @@ $drsm_nav = array(
 <?php } ?>
     </nav>
     <div class="tools">
+<?php if(count($drsm_sites) > 1) {
+        $drsm_scope = drsm_scope();
+        $drsm_pick = isset($drsm_nav[$PAGEactive]) ? $drsm_nav[$PAGEactive][1] : "index.php"; ?>
+      <form class="site-picker select" method="get" action="<?php echo h(drsm_url($drsm_pick)); ?>">
+        <label class="sr" for="site-pick">Site</label>
+        <select id="site-pick" name="site" data-autosubmit title="Organizations and sites shown">
+          <option value="">All sites</option>
+<?php   foreach(drsm_orgs($drsm_sites) as $o) { ?>
+          <optgroup label="<?php echo h($o["name"]); ?>">
+<?php     if(count($o["sites"]) > 1) { ?>
+            <option value="<?php echo h($o["id"]); ?>"<?php if($drsm_scope == $o["id"]) echo " selected"; ?>><?php echo h($o["name"]); ?>, all sites</option>
+<?php     } ?>
+<?php     foreach($o["sites"] as $sid => $st) { ?>
+            <option value="<?php echo h($sid); ?>"<?php if($drsm_scope == $sid) echo " selected"; ?>><?php echo h($st["name"]); ?></option>
+<?php     } ?>
+          </optgroup>
+<?php   } ?>
+        </select>
+        <noscript><button class="tool" type="submit">Show</button></noscript>
+      </form>
+<?php } ?>
       <button type="button" class="tool" data-action="refresh" title="Auto refresh" aria-pressed="true">
         <svg class="ring" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle class="ring-fill" cx="12" cy="12" r="9"/></svg>
         <span class="refresh-label">Live</span>

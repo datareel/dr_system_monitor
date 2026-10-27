@@ -43,8 +43,10 @@
 #   -o  Output directory, default ./drsm_web
 #   -t  Title in the page header, default "DRSM Live Demo" with -s,
 #       otherwise "DR System Monitor"
-#   -s  Add sample reports for made up hosts. Nothing from the machine
-#       running this script goes into them.
+#   -s  Add sample reports for made up hosts in two made up
+#       organizations with two sites each, one of them with a monitor
+#       host that stopped reporting. Nothing from the machine running
+#       this script goes into them.
 #   -a  Turn on login for access from outside the internal networks,
 #       and block the report folder so raw reports are only read
 #       through the pages. Add accounts to config/drsm.php with
@@ -173,6 +175,10 @@ fi
 # ------------------------------------------------------------
 
 R="${D}/reports"
+# Reports of the site being filled, see sample_site
+SR="${R}"
+# Seconds added to the report age, for a site whose monitor host stopped
+SITEAGE=0
 
 # Report sections, same format as bin/drsm_run.sh
 function section() {
@@ -190,14 +196,14 @@ function host_report() {
     # $7 disk%, $8 load*100, $9 cpus, ${10} swap%, ${11} web probes yes/no,
     # ${12} extra problem: none, nicerr, user, https, down
     local h="$1" desc="$2" impact="$3" group="$4" cpu="$5" mem="$6" disk="$7" load="$8" cpus="$9" swap="${10}" web="${11}" extra="${12}"
-    local et=$((NOW - (RANDOM % 240) - 30))
+    local et=$((NOW - (RANDOM % 240) - 30 - SITEAGE))
     local total=$((8192 * (cpus / 2 + 1)))
     local avail=$((total * (100 - mem) / 100))
     local swaptotal=4096
     local swapused=$((swaptotal * swap / 100))
     local la
     la=$(printf '%d.%02d' $((load / 100)) $((load % 100)))
-    local hd="${R}/systems/${h}"
+    local hd="${SR}/systems/${h}"
     local probes="network/ping" plugins="core/cpu core/load core/memory storage/disk network/nics core/users"
     local st
     PL=()
@@ -213,6 +219,7 @@ function host_report() {
 	echo "GROUP:${group}"
 	echo "PLATFORM:linux"
 	echo "COLLECTOR:ssh"
+	if [ "${SR}" != "${R}" ]; then echo "SITE:${SR#"${R}/orgs/"}"; fi
 	echo "PROBES:${probes}"
 	echo "PLUGINS:${plugins}"
 	echo ""
@@ -295,10 +302,75 @@ function sample_history() {
 	    printf "\tnic_rx_bytes{nic=\"eth0\"}=%d\tnic_tx_bytes{nic=\"eth0\"}=%d", rx, tx
 	    printf "\tdiskio_read_ops{dev=\"sda\"}=%d\tdiskio_write_ops{dev=\"sda\"}=%d\tdiskio_read_bytes{dev=\"sda\"}=%d\tdiskio_write_bytes{dev=\"sda\"}=%d\n", ops / 3, ops - int(ops / 3), byt / 3, byt - int(byt / 3)
 	}
-    }' > "${R}/systems/${1}/metrics_history.tsv"
+    }' > "${SR}/systems/${1}/metrics_history.tsv"
+}
+
+function sample_site() {
+    # Start filling site $1 (org/site): $2 org name, $3 site name,
+    # $4 location, $5 monitor host, $6 minutes since it last reported
+    SR="${R}/orgs/${1}"
+    SITEAGE=$(( ${6} * 60 ))
+    mkdir -p "${SR}/systems" "${SR}/archive"
+    printf '{"org":"%s","name":"%s","contact":"","sites":[]}\n' "${1%%/*}" "${2}" > "${R}/orgs/${1%%/*}/org.json"
+    SITEINFO+=("${1}|${2}|${3}|${4}|${5}|${6}")
+}
+
+function sample_site_files() {
+    # site.json for each sample site, and the group reports as
+    # drsm_run.sh writes them
+    local info site oname sname loc mon mins st t g hosts sep
+    for info in "${SITEINFO[@]}"; do
+	IFS="|" read -r site oname sname loc mon mins <<< "${info}"
+	SR="${R}/orgs/${site}"
+	hosts=""
+	sep=""
+	for d in "${SR}"/systems/*/; do
+	    read -r st t g <<< "$(drsm_host_state "${d%/}" 0)"
+	    hosts+="${sep}{\"host\":\"$(basename "${d}")\",\"group\":\"${g}\",\"state\":\"${st}\",\"time\":${t}}"
+	    sep=","
+	done
+	printf '{"org":"%s","site":"%s","name":"%s","location":"%s","org_name":"%s","org_contact":"","collector":"%s","time":%s,"stale_minutes":30,"counts":{},"hosts":[%s]}\n' \
+	    "${site%%/*}" "${site#*/}" "${sname}" "${loc}" "${oname}" "${mon}" "$((NOW - mins * 60 - 60))" "${hosts}" > "${SR}/site.json"
+	group_reports
+    done
+}
+
+function group_reports() {
+    # Group reports from the host reports of the site in ${SR}
+    local g hp cp_ f
+    for g in production dev; do
+	if ! grep -qs "^GROUP:${g}\$" "${SR}"/systems/*/*_report.txt; then continue; fi
+	if [ "${g}" == "production" ]; then hp="system_health_report"; cp_="system_check_report"; else hp="system_health_report_${g}"; cp_="system_check_${g}_report"; fi
+	{
+	    echo "DRSM health check report, $(date -u)"
+	    echo "Our report type is set to: ${g^^}"
+	    for f in "${SR}"/systems/*/*_report.txt; do
+		if grep -q "^GROUP:${g}\$" "${f}"; then cat "${f}"; fi
+	    done
+	} > "${SR}/${hp}.txt"
+	grep "ERROR - \|WARNING - " "${SR}/${hp}.txt" > "${SR}/${hp}_errors.txt"
+	{
+	    echo "DRSM status report, $(date -u)"
+	    echo "Our report type is set to: ${g^^}"
+	    for f in "${SR}"/systems/*/*_report.txt; do
+		if ! grep -q "^GROUP:${g}\$" "${f}"; then continue; fi
+		awk '/^=== network\// { p = 1 } /^=== / && !/^=== network\/(ping|https)/ { p = 0 } p' "${f}"
+	    done
+	} > "${SR}/${cp_}.txt"
+	mkdir -p "${SR}/archive"
+	cp "${SR}/${hp}.txt" "${SR}/archive/${hp}_$(date -u +%Y%m%d_%H%M%S).txt"
+	cp "${SR}/${cp_}.txt" "${SR}/archive/${cp_}_$(date -u +%Y%m%d_%H%M%S).txt"
+    done
 }
 
 if [ "${sample}" == "1" ]; then
+    # shellcheck source=lib/drsm_sites.sh
+    source "${TOPdir}/lib/drsm_sites.sh"
+    SITEINFO=()
+    rmdir "${R}/systems" "${R}/archive" 2> /dev/null
+    # Two made up organizations with two sites each. The annex monitor
+    # host stopped reporting two hours ago.
+    sample_site northwind/hq "Northwind Traders" "Head office" "Chicago, IL" mon1 1
     #          host     description                  impact                     group       cpu mem disk load cpus swap web extra
     host_report www1    "Public web server 1"        "Website is degraded"      production  34  58  61  120  4   3  yes none
     host_report www2    "Public web server 2"        "Website is degraded"      production  88  71  64  410  4   9  yes none
@@ -308,45 +380,36 @@ if [ "${sample}" == "1" ]; then
     host_report app1    "Order API node 1"           "Orders are delayed"       production  27  49  44  110  4   0  no  none
     host_report app2    "Order API node 2"           "Orders are delayed"       production  31  52  45  130  4   0  no  nicerr
     host_report cache1  "Redis cache"                "Pages load slowly"        production   6  81  33   20  2   0  no  none
-    host_report mail1   "Mail relay"                 "Email is not delivered"   production   4  37  97   15  2   1  no  none
-    host_report files1  "File and backup server"     "Backups stop"             production   9  41  86   40  4   2  no  none
-    host_report vpn1    "Site to site VPN gateway"   "Branch offices offline"   production   2  18  29    5  2   0  no  down
-    host_report mon1    "DRSM monitor host"          "Monitoring stops"         production   7  33  41   30  2   0  no  none
-    host_report build1  "CI build server"            "Builds stop"              dev         73  66  58  350  8  12  no  user
-    host_report dev1    "Development web server"     "Developers blocked"       dev         15  40  49   45  4   0  yes none
-    host_report test1   "QA test server"             "Testing is blocked"       dev         11  35  38   25  4   0  no  none
-
     sample_history www1 34 58 61 4 no
     sample_history www2 70 71 64 4 yes
     sample_history db1 46 88 78 8 no
     sample_history db2 12 63 80 8 no
     sample_history app1 27 49 44 4 no
     sample_history cache1 6 81 33 2 no
+
+    sample_site northwind/warehouse "Northwind Traders" "Warehouse" "Joliet, IL" mon2 2
+    host_report mail1   "Mail relay"                 "Email is not delivered"   production   4  37  97   15  2   1  no  none
+    host_report files1  "File and backup server"     "Backups stop"             production   9  41  86   40  4   2  no  none
+    host_report vpn1    "Site to site VPN gateway"   "Branch offices offline"   production   2  18  29    5  2   0  no  down
+    host_report mon2    "DRSM monitor host"          "Monitoring stops"         production   7  33  41   30  2   0  no  none
     sample_history files1 9 41 86 4 no
+
+    sample_site blueridge/main "Blue Ridge Clinics" "Main clinic" "Asheville, NC" mon3 1
+    host_report ehr1    "Patient records server"     "Charts unavailable"       production  38  67  72  160  8   5  yes none
+    host_report pacs1   "Imaging archive"            "Scans unavailable"        production  22  54  88   70  8   2  no  none
+    host_report build1  "CI build server"            "Builds stop"              dev         73  66  58  350  8  12  no  user
+    host_report dev1    "Development web server"     "Developers blocked"       dev         15  40  49   45  4   0  yes none
+    host_report test1   "QA test server"             "Testing is blocked"       dev         11  35  38   25  4   0  no  none
+    sample_history ehr1 38 67 72 8 no
     sample_history build1 60 66 58 8 no
 
-    # Group reports from the same host reports, as drsm_run.sh writes them
-    for g in production dev; do
-	if [ "${g}" == "production" ]; then hp="system_health_report"; cp_="system_check_report"; else hp="system_health_report_${g}"; cp_="system_check_${g}_report"; fi
-	{
-	    echo "DRSM health check report, $(date -u)"
-	    echo "Our report type is set to: ${g^^}"
-	    for f in "${R}"/systems/*/*_report.txt; do
-		if grep -q "^GROUP:${g}\$" "${f}"; then cat "${f}"; fi
-	    done
-	} > "${R}/${hp}.txt"
-	grep "ERROR - \|WARNING - " "${R}/${hp}.txt" > "${R}/${hp}_errors.txt"
-	{
-	    echo "DRSM status report, $(date -u)"
-	    echo "Our report type is set to: ${g^^}"
-	    for f in "${R}"/systems/*/*_report.txt; do
-		if ! grep -q "^GROUP:${g}\$" "${f}"; then continue; fi
-		awk '/^=== network\// { p = 1 } /^=== / && !/^=== network\/(ping|https)/ { p = 0 } p' "${f}"
-	    done
-	} > "${R}/${cp_}.txt"
-	cp "${R}/${hp}.txt" "${R}/archive/${hp}_$(date -u +%Y%m%d_%H%M%S).txt"
-	cp "${R}/${cp_}.txt" "${R}/archive/${cp_}_$(date -u +%Y%m%d_%H%M%S).txt"
-    done
+    sample_site blueridge/annex "Blue Ridge Clinics" "North annex" "Weaverville, NC" mon4 120
+    host_report fw1     "Firewall"                   "Annex offline"            production   3  22  19   10  2   0  no  none
+    host_report nas1    "Annex file share"           "Shared files unavailable" production   5  31  57   20  2   0  no  none
+    SITEAGE=0
+
+    sample_site_files
+
 fi
 
 if command -v zip > /dev/null 2>&1; then

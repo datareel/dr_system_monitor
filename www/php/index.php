@@ -44,10 +44,14 @@ require_once("../config/drsm.php");
 require_once("{$WWWdir}/php/query_post_validation.php");
 require_once("{$WWWdir}/php/drsm_lib.php");
 
-$hosts = drsm_load_hosts();
+$scope = drsm_scope_from_request();
+$sites = drsm_scope_sites($scope);
+$multi = (count($sites) > 1);
+$hosts = drsm_load_hosts($scope);
 $counts = drsm_host_counts($hosts);
-$groupreports = drsm_group_reports();
+$groupreports = drsm_group_reports($scope);
 $groups = drsm_groups($hosts);
+$bysite = drsm_hosts_by_site($hosts, $sites);
 
 $overall = "OK";
 foreach($hosts as $hst) $overall = drsm_worst($overall, $hst["state"]);
@@ -105,6 +109,9 @@ $metriccols = drsm_metric_columns();
 
 drsm_page_start("Overview", "overview", $overall);
 ?>
+<?php if(drsm_multi_site()) { ?>
+<p class="scope-line muted"><?php echo drsm_icon("building"); ?><?php echo h(drsm_scope_label($scope)); ?></p>
+<?php } ?>
 <section class="hero <?php echo h(drsm_state_class($overall)); ?>">
   <div class="hero-status">
     <span class="pulse" aria-hidden="true"></span>
@@ -128,6 +135,41 @@ drsm_page_start("Overview", "overview", $overall);
   <a class="kpi" href="<?php echo h(drsm_url("heatmap.php")); ?>"><span class="kpi-label">Checks failing</span><span class="kpi-value"><?php echo (int)$counts["checks_bad"]; ?></span><span class="kpi-sub">of <?php echo (int)$counts["checks"]; ?> plugin checks</span></a>
 </section>
 
+<?php if($multi) { ?>
+<section class="panel flush" aria-label="Sites">
+  <div class="panel-head pad"><h2><?php echo drsm_icon("building"); ?>Sites</h2><a class="link" href="<?php echo h(drsm_url("orgs.php")); ?>">Organizations</a></div>
+  <div class="table-wrap">
+    <table class="table sortable" id="site-table">
+      <thead>
+        <tr>
+          <th scope="col" data-sort="text">Site</th>
+          <th scope="col" data-sort="num" class="sorted-desc">State</th>
+          <th scope="col" data-sort="text" class="hide-sm">Organization</th>
+          <th scope="col" data-sort="num" class="num">Hosts</th>
+          <th scope="col" data-sort="num" class="hide-sm">Problems</th>
+          <th scope="col" data-sort="text" class="hide-md">Collector</th>
+          <th scope="col" data-sort="num">Last report</th>
+        </tr>
+      </thead>
+      <tbody>
+<?php   foreach($sites as $id => $s) {
+          $sm = drsm_site_summary($s, $bysite[$id]); ?>
+        <tr class="row-<?php echo h(drsm_state_class($sm["state"])); ?>">
+          <td data-v="<?php echo h($s["name"]); ?>"><a class="strong" href="<?php echo h(drsm_url("index.php", array("site" => $id))); ?>"><?php echo h($s["name"]); ?></a><?php if($s["location"] != "") { ?><div class="small muted"><?php echo h($s["location"]); ?></div><?php } ?></td>
+          <td data-v="<?php echo drsm_state_rank($sm["state"]); ?>"><?php echo drsm_badge($sm["state"]); ?><?php if($sm["down"]) { ?><div class="small muted">Collector not reporting</div><?php } ?></td>
+          <td class="hide-sm" data-v="<?php echo h($s["orgname"]); ?>"><?php echo h($s["orgname"]); ?></td>
+          <td class="num" data-v="<?php echo (int)$sm["total"]; ?>"><?php echo (int)$sm["total"]; ?></td>
+          <td class="hide-sm" data-v="<?php echo $sm["counts"]["ERROR"] * 10000 + $sm["counts"]["WARNING"] * 100 + $sm["counts"]["STALE"]; ?>"><span class="tally"><?php if($sm["counts"]["ERROR"]) echo "<span class=\"err\">" . (int)$sm["counts"]["ERROR"] . "</span>"; ?><?php if($sm["counts"]["WARNING"]) echo "<span class=\"warn\">" . (int)$sm["counts"]["WARNING"] . "</span>"; ?><?php if($sm["counts"]["STALE"]) echo "<span class=\"stale\">" . (int)$sm["counts"]["STALE"] . "</span>"; ?><?php if(!$sm["counts"]["ERROR"] && !$sm["counts"]["WARNING"] && !$sm["counts"]["STALE"]) echo "<span class=\"ok\">0</span>"; ?></span></td>
+          <td class="hide-md" data-v="<?php echo h($s["collector"]); ?>"><?php echo $s["collector"] != "" ? h($s["collector"]) : "<span class=\"muted\">&ndash;</span>"; ?></td>
+          <td data-v="<?php echo (int)$sm["seen"]; ?>"><?php echo drsm_time_html($sm["seen"]); ?></td>
+        </tr>
+<?php   } ?>
+      </tbody>
+    </table>
+  </div>
+</section>
+<?php } ?>
+
 <div class="split">
   <section class="panel">
     <div class="panel-head">
@@ -142,18 +184,18 @@ drsm_page_start("Overview", "overview", $overall);
           $hst = $pr["host"];
           $shown = array_slice($pr["msgs"], 0, 4); ?>
       <li class="alert <?php echo h(drsm_state_class($hst["state"])); ?>">
-        <a class="alert-host" href="<?php echo h(drsm_url("readreport.php", array("n" => $hst["name"]))); ?>">
+        <a class="alert-host" href="<?php echo h(drsm_host_url("readreport.php", $hst)); ?>">
           <?php echo drsm_badge($hst["state"]); ?>
           <strong><?php echo h($hst["name"]); ?></strong>
-          <span class="muted truncate"><?php echo h($hst["description"]); ?></span>
+          <span class="muted truncate"><?php echo h(implode(" - ", array_filter(array($multi ? drsm_site_label($hst["site"]) : "", $hst["description"]), "strlen"))); ?></span>
         </a>
         <ul class="alert-lines">
 <?php     foreach($shown as $msg) {
-            $link = drsm_url("readreport.php", array("n" => $hst["name"])) . ($msg["plugin"] != "" ? "#" . drsm_plugin_anchor($msg["plugin"]) : ""); ?>
+            $link = drsm_host_url("readreport.php", $hst) . ($msg["plugin"] != "" ? "#" . drsm_plugin_anchor($msg["plugin"]) : ""); ?>
           <li class="<?php echo h(drsm_state_class($msg["level"])); ?>"><a href="<?php echo h($link); ?>"><?php if($msg["plugin"] != "") { ?><span class="chip-id"><?php echo h($msg["plugin"]); ?></span><?php } ?><?php echo h(preg_replace('/^(ERROR|WARNING) - /', "", $msg["text"])); ?></a></li>
 <?php     } ?>
 <?php     if(count($pr["msgs"]) > count($shown)) { ?>
-          <li class="more"><a href="<?php echo h(drsm_url("readreport.php", array("n" => $hst["name"]))); ?>"><?php echo count($pr["msgs"]) - count($shown); ?> more</a></li>
+          <li class="more"><a href="<?php echo h(drsm_host_url("readreport.php", $hst)); ?>"><?php echo count($pr["msgs"]) - count($shown); ?> more</a></li>
 <?php     } ?>
         </ul>
       </li>
@@ -168,12 +210,13 @@ drsm_page_start("Overview", "overview", $overall);
       <ul class="group-list">
 <?php foreach($groupreports as $gr) {
         $label = ($gr["kind"] == "check") ? "Connectivity" : "Health checks";
-        $url = ($gr["kind"] == "check") ? drsm_url("checks.php", $gr["group"] == "production" ? array() : array("g" => $gr["group"]))
-                                        : drsm_url("checks.php", array("r" => "health", "g" => $gr["group"])); ?>
+        $sitearg = ($gr["site"] != DRSM_LEGACY_SITE) ? array("site" => $gr["site"]) : array();
+        $url = ($gr["kind"] == "check") ? drsm_url("checks.php", ($gr["group"] == "production" ? array() : array("g" => $gr["group"])) + $sitearg)
+                                        : drsm_url("checks.php", array("r" => "health", "g" => $gr["group"]) + $sitearg); ?>
         <li>
           <a href="<?php echo h($url); ?>">
             <span class="dot-lg <?php echo h(drsm_state_class($gr["state"])); ?>" aria-hidden="true"></span>
-            <span class="grow"><strong><?php echo h($label); ?></strong><span class="muted"><?php echo h(ucfirst($gr["group"])); ?> &middot; <?php echo $gr["exists"] ? drsm_time_html($gr["time"]) : "not posted"; ?></span></span>
+            <span class="grow"><strong><?php echo h($label); ?></strong><span class="muted"><?php if($multi) echo h(drsm_site_label($gr["site"])) . " &middot; "; ?><?php echo h(ucfirst($gr["group"])); ?> &middot; <?php echo $gr["exists"] ? drsm_time_html($gr["time"]) : "not posted"; ?></span></span>
             <?php echo drsm_badge($gr["state"]); ?>
           </a>
         </li>
@@ -185,7 +228,7 @@ drsm_page_start("Overview", "overview", $overall);
       <div class="panel-head"><h2><?php echo drsm_icon("heat"); ?>Host matrix</h2><a class="link" href="<?php echo h(drsm_url("heatmap.php")); ?>">Heat map</a></div>
       <div class="matrix" role="list">
 <?php foreach($hosts as $hst) { ?>
-        <a role="listitem" class="cell <?php echo h(drsm_state_class($hst["state"])); ?>" href="<?php echo h(drsm_url("readreport.php", array("n" => $hst["name"]))); ?>" title="<?php echo h($hst["name"] . " - " . drsm_state_label($hst["state"]) . ($hst["description"] != "" ? " - " . $hst["description"] : "")); ?>"><span class="sr"><?php echo h($hst["name"]); ?></span></a>
+        <a role="listitem" class="cell <?php echo h(drsm_state_class($hst["state"])); ?>" href="<?php echo h(drsm_host_url("readreport.php", $hst)); ?>" title="<?php echo h($hst["name"] . ($multi ? " (" . drsm_site_label($hst["site"]) . ")" : "") . " - " . drsm_state_label($hst["state"]) . ($hst["description"] != "" ? " - " . $hst["description"] : "")); ?>"><span class="sr"><?php echo h($hst["name"]); ?></span></a>
 <?php } ?>
       </div>
       <div class="legend">
@@ -224,10 +267,10 @@ drsm_page_start("Overview", "overview", $overall);
 <?php } ?>
   <div class="cards" id="host-cards">
 <?php foreach($cards as $hst) { ?>
-    <article class="card <?php echo h(drsm_state_class($hst["state"])); ?>" data-state="<?php echo h($hst["state"]); ?>" data-group="<?php echo h($hst["group"]); ?>" data-text="<?php echo h(strtolower($hst["name"] . " " . $hst["description"] . " " . $hst["group"] . " " . implode(" ", array_keys($hst["plugins"])))); ?>">
-      <a class="card-link" href="<?php echo h(drsm_url("readreport.php", array("n" => $hst["name"]))); ?>">
+    <article class="card <?php echo h(drsm_state_class($hst["state"])); ?>" data-state="<?php echo h($hst["state"]); ?>" data-group="<?php echo h($hst["group"]); ?>" data-text="<?php echo h(strtolower($hst["name"] . " " . $hst["description"] . " " . $hst["group"] . " " . implode(" ", array_keys($hst["plugins"])) . ($multi ? " " . $hst["site"] . " " . drsm_site_label($hst["site"]) : ""))); ?>">
+      <a class="card-link" href="<?php echo h(drsm_host_url("readreport.php", $hst)); ?>">
         <header>
-          <h3><?php echo h($hst["name"]); ?></h3>
+          <h3><?php echo h($hst["name"]); ?><?php if($multi) { ?><span class="site-tag"><?php echo h(drsm_site_label($hst["site"])); ?></span><?php } ?></h3>
           <?php echo drsm_badge($hst["state"]); ?>
         </header>
         <p class="desc"><?php echo $hst["description"] != "" ? h($hst["description"]) : "<span class=\"muted\">No description</span>"; ?></p>

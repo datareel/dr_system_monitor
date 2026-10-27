@@ -47,20 +47,39 @@ require_once("{$WWWdir}/php/query_post_validation.php");
 require_once("{$WWWdir}/php/drsm_lib.php");
 
 $host = isset($_GET['h']) ? CleanQueryAsString($_GET['h'], 255) : "";
-if(!drsm_valid_host($host)) $host = "";
+$site = (isset($_GET['site']) && is_string($_GET['site'])) ? strtolower($_GET['site']) : "";
+if($host != "") {
+  // A host's archive: only plain names, in a site this visitor may see
+  $res = drsm_resolve_host($host, $site);
+  if($res["status"] == "ambiguous") {
+    drsm_ambiguous_page($res, "archive.php", "h");
+    exit;
+  }
+  $host = $res["name"];
+  $site = $res["site"];
+}
+else {
+  // The group archive of one site
+  $visible = drsm_sites();
+  if(!drsm_valid_site($site) || !isset($visible[$site])) $site = isset($visible[DRSM_LEGACY_SITE]) ? DRSM_LEGACY_SITE : (string)key($visible);
+}
 $prefix = isset($_GET['p']) ? CleanQueryAsString($_GET['p'], 128) : "";
 if(!preg_match('/^[A-Za-z0-9_-]+$/', $prefix)) $prefix = "";
 $file = isset($_GET['f']) ? CleanQueryAsString($_GET['f'], 255) : "";
 // A plain file name in the archive folder, nothing with a path
 if(!preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]*\.txt$/', $file) || strpos($file, "..") !== false) $file = "";
 
-$dir = ($host != "") ? "{$REPORTdir}/systems/{$host}/archive" : $REPORTarchive;
+$sitearg = ($site != DRSM_LEGACY_SITE) ? array("site" => $site) : array();
+if($site == "") $dir = "";
+else if($host != "") $dir = drsm_site_dir($site) . "/systems/{$host}/archive";
+else $dir = ($site == DRSM_LEGACY_SITE) ? $REPORTarchive : drsm_site_dir($site) . "/archive";
 $title = ($host != "") ? "{$host} archived reports" : "Archived reports";
-$back = ($host != "") ? drsm_url("readreport.php", array("n" => $host)) : drsm_url("checks.php");
+if($host == "" && $site != DRSM_LEGACY_SITE && $site != "") $title = drsm_site_label($site) . " archived reports";
+$back = ($host != "") ? drsm_url("readreport.php", array("n" => $host) + $sitearg) : drsm_url("checks.php", $sitearg);
 $backlabel = ($host != "") ? $host : "Connectivity";
 
 $files = array();
-if(is_dir($dir)) {
+if($dir != "" && is_dir($dir)) {
   foreach(scandir($dir) ?: array() as $name) {
     if(!preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]*\.txt$/', $name)) continue;
     if($prefix != "" && strpos($name, $prefix) !== 0) continue;
@@ -78,7 +97,7 @@ if($file != "") {
   $lines = drsm_read_lines("{$dir}/{$file}");
   drsm_page_start($file, ($host != "") ? "hosts" : "checks");
 ?>
-<nav class="crumbs" aria-label="Breadcrumb"><a href="<?php echo h(drsm_url("archive.php", array_filter(array("h" => $host, "p" => $prefix)))); ?>"><?php echo drsm_icon("back"); ?><?php echo h($title); ?></a></nav>
+<nav class="crumbs" aria-label="Breadcrumb"><a href="<?php echo h(drsm_url("archive.php", array_filter(array("h" => $host, "p" => $prefix)) + $sitearg)); ?>"><?php echo drsm_icon("back"); ?><?php echo h($title); ?></a></nav>
 <section class="page-head">
   <div>
     <h1 class="truncate"><?php echo h($file); ?></h1>
@@ -104,7 +123,7 @@ drsm_page_start($title, ($host != "") ? "hosts" : "checks");
 <section class="page-head">
   <div>
     <h1><?php echo h($title); ?></h1>
-    <p class="muted"><?php echo count($files); ?> file<?php echo count($files) == 1 ? "" : "s"; ?><?php if($prefix != "") { ?> starting with <code><?php echo h($prefix); ?></code> &middot; <a href="<?php echo h(drsm_url("archive.php", array_filter(array("h" => $host)))); ?>">show all</a><?php } ?></p>
+    <p class="muted"><?php echo count($files); ?> file<?php echo count($files) == 1 ? "" : "s"; ?><?php if($prefix != "") { ?> starting with <code><?php echo h($prefix); ?></code> &middot; <a href="<?php echo h(drsm_url("archive.php", array_filter(array("h" => $host)) + $sitearg)); ?>">show all</a><?php } ?></p>
   </div>
 </section>
 <section class="panel flush">
@@ -117,7 +136,7 @@ drsm_page_start($title, ($host != "") ? "hosts" : "checks");
       <tbody>
 <?php   foreach(array_slice($files, 0, 1000, true) as $name => $mtime) { ?>
         <tr>
-          <td><a href="<?php echo h(drsm_url("archive.php", array_filter(array("h" => $host, "p" => $prefix, "f" => $name)))); ?>"><?php echo h($name); ?></a></td>
+          <td><a href="<?php echo h(drsm_url("archive.php", array_filter(array("h" => $host, "p" => $prefix, "f" => $name)) + $sitearg)); ?>"><?php echo h($name); ?></a></td>
           <td><?php echo drsm_time_html(drsm_demo_time($mtime)); ?></td>
         </tr>
 <?php   } ?>

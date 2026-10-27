@@ -59,7 +59,7 @@ fi
 # Age off report files
 if [ -d ${REPORTdir} ]; then
     echo "Purging ${REPORTdir}"
-    find ${REPORTdir} -type f -mtime +${REPORTSfile_age} ! -name metrics_history.tsv -print -delete &> ${LOGdir}/reports_purge.log
+    find ${REPORTdir} -type f -mtime +${REPORTSfile_age} ! -name metrics_history.tsv ! -name site.json ! -name org.json -print -delete &> ${LOGdir}/reports_purge.log
 fi
 
 # Age off files in our offline report archive

@@ -38,12 +38,14 @@
 # Lines already in a history file are kept; a report time that is
 # already there is not added again.
 #
-# Usage: utils/drsm_metrics_backfill.sh [--apply] [--no-offline] [host ...]
+# Usage: utils/drsm_metrics_backfill.sh [--apply] [--no-offline] [-s org/site] [host ...]
 #
 #   --apply       Write the history files. Without it the script only
 #                 lists how many report lines it would add (dry run).
 #   --no-offline  Skip the offline .tar.gz archives
-#   host          Only these hosts, default every host in ${REPORTdir}/systems
+#   -s            Hosts of this site, in ${REPORTdir}/orgs/<org>/<site>,
+#                 default the hosts in no site
+#   host          Only these hosts, default every host in the site
 #
 # -----------------------------------------------------------
 if [ "${BASEdir}" == "" ]; then export BASEdir="${HOME}/drsm"; fi
@@ -61,27 +63,44 @@ fi
 
 source ${CONFIG_FILE}
 source ${DRSMHOME}/lib/drsm_history.sh
+# shellcheck source=lib/drsm_conf.sh
+source "${DRSMHOME}/lib/drsm_conf.sh"
+# shellcheck source=lib/drsm_sites.sh
+source "${DRSMHOME}/lib/drsm_sites.sh"
 
 apply="0"
 offline="1"
 hosts=()
+site="${DRSM_LEGACY_SITE}"
 while [ $# -gt 0 ]
 do
     case ${1} in
 	--apply) apply="1" ;;
 	--no-offline) offline="0" ;;
-	-*) echo "Usage: $0 [--apply] [--no-offline] [host ...]"; exit 1 ;;
+	-s) site="${2,,}"; shift ;;
+	-*) echo "Usage: $0 [--apply] [--no-offline] [-s org/site] [host ...]"; exit 1 ;;
 	*) hosts+=("${1}") ;;
     esac
     shift
 done
 
-if [ ! -d "${REPORTdir}/systems" ]; then
-    echo "ERROR - Missing report directory ${REPORTdir}/systems"
+if ! drsm_valid_site "${site}"; then
+    echo "ERROR - Site ${site} is not org/site"
+    exit 1
+fi
+# Host folders of the site, and the same folders inside the archives
+SYSdir="$(drsm_site_root "${site}")/systems"
+if [ "${site}" == "${DRSM_LEGACY_SITE}" ]; then
+    archpath="*/systems"
+else
+    archpath="*/orgs/${site}/systems"
+fi
+if [ ! -d "${SYSdir}" ]; then
+    echo "ERROR - Missing report directory ${SYSdir}"
     exit 1
 fi
 if [ ${#hosts[@]} -eq 0 ]; then
-    for d in "${REPORTdir}"/systems/*/; do
+    for d in "${SYSdir}"/*/; do
 	[ -d "${d}" ] && hosts+=("$(basename "${d}")")
     done
 fi
@@ -109,13 +128,19 @@ do
 	echo "WARNING - Skipping bad host name ${host}"
 	continue
     fi
-    hist="${REPORTdir}/systems/${host}/${DRSM_HISTORY_FILE}"
+    hist="${SYSdir}/${host}/${DRSM_HISTORY_FILE}"
     new="${work}/${host}.new"
     : > "${new}"
     while read -r f
     do
 	drsm_history_line "${f}" >> "${new}"
-    done < <(find "${REPORTdir}/systems/${host}/archive" "${work}/offline" -path "*/systems/${host}/archive/${host}_report_*.txt" -type f 2> /dev/null)
+    done < <(
+	# The default site's hosts are the ones outside orgs/
+	if [ "${site}" == "${DRSM_LEGACY_SITE}" ]; then
+	    find "${SYSdir}/${host}/archive" "${work}/offline" -path "${archpath}/${host}/archive/${host}_report_*.txt" ! -path "*/orgs/*" -type f 2> /dev/null
+	else
+	    find "${SYSdir}/${host}/archive" "${work}/offline" -path "${archpath}/${host}/archive/${host}_report_*.txt" -type f 2> /dev/null
+	fi)
 
     # Merge, one line per report time, oldest first. Existing lines win.
     touch "${work}/${host}.old"

@@ -102,10 +102,9 @@ function drsm_trend_series_info($key)
   return isset($info[$base]) ? $info[$base] : array("label" => $key, "unit" => "", "max" => 0, "min_delta" => 0);
 }
 
-function drsm_history_path($host)
+function drsm_history_path($host, $site = DRSM_LEGACY_SITE)
 {
-  global $REPORTdir;
-  return "{$REPORTdir}/systems/{$host}/" . DRSM_HISTORY_FILE;
+  return drsm_site_dir($site) . "/systems/{$host}/" . DRSM_HISTORY_FILE;
 }
 
 // Move $fh to the first line at or after $since. The lines are in time
@@ -152,12 +151,12 @@ Load one host's history from $since (0 for all of it). Returns:
   totals  bytes sent and received, and seconds the counters covered
   first, last, count
 */
-function drsm_trend_load($host, $since)
+function drsm_trend_load($host, $since, $site = DRSM_LEGACY_SITE)
 {
   $d = array("series" => array(), "sizes" => array("disk" => array(), "ebs" => array()),
              "totals" => array("tx" => 0, "rx" => 0, "net_secs" => 0, "io" => array()),
              "first" => 0, "last" => 0, "count" => 0, "exists" => false);
-  $fname = drsm_history_path($host);
+  $fname = drsm_history_path($host, $site);
   if(!drsm_valid_host($host) || !is_readable($fname)) return $d;
   $fh = @fopen($fname, "r");
   if($fh === false) return $d;

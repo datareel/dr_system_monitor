@@ -45,13 +45,18 @@ require_once("{$WWWdir}/php/query_post_validation.php");
 require_once("{$WWWdir}/php/drsm_lib.php");
 
 $n = isset($_GET['n']) ? CleanQueryAsString($_GET['n'], 255) : "";
+$site = (isset($_GET['site']) && is_string($_GET['site'])) ? $_GET['site'] : "";
 
-// Only accept a plain host name, this blocks ../ path traversal
-if(!drsm_valid_host($n)) {
-  $n = "";
+// Only plain host and site names are accepted, this blocks ../ path
+// traversal, and only in the sites this visitor may see
+$res = drsm_resolve_host($n, $site);
+if($res["status"] == "ambiguous") {
+  drsm_ambiguous_page($res, "readreport.php");
+  exit;
 }
-
-$fname = "{$REPORTdir}/systems/{$n}/{$n}_report.txt";
+$n = $res["name"];
+$site = $res["site"];
+$fname = ($n != "") ? drsm_site_dir($site) . "/systems/{$n}/{$n}_report.txt" : "";
 
 if(($n == "") || !file_exists("{$fname}")) {
   http_response_code(404);
@@ -69,7 +74,7 @@ if(($n == "") || !file_exists("{$fname}")) {
   exit;
 }
 
-$hst = drsm_load_host($n);
+$hst = drsm_load_host($n, $site);
 $rep = $hst["report"];
 $metriccols = drsm_metric_columns();
 
@@ -101,6 +106,7 @@ uksort($sections, function($a, $b) use ($order) {
 });
 
 $meta = array(
+  "Site" => drsm_multi_site() ? drsm_site_label($site) : "",
   "Description" => $hst["description"],
   "Impact" => $hst["impact"],
   "Group" => $hst["group"],
@@ -123,7 +129,8 @@ drsm_page_start($hst["name"], "hosts", $hst["state"]);
   <div class="hero-meta">
     <?php echo drsm_badge($hst["state"]); ?>
     <span class="muted">Reported <?php echo drsm_time_html($hst["time"]); ?></span>
-    <a class="button ghost" href="<?php echo h(drsm_archive_url($hst["name"])); ?>"><?php echo drsm_icon("archive"); ?>Archived reports</a>
+    <a class="button ghost" href="<?php echo h(drsm_host_url("trends.php", $hst)); ?>"><?php echo drsm_icon("trend"); ?>Trends</a>
+    <a class="button ghost" href="<?php echo h(drsm_archive_url($hst["name"], "", $site)); ?>"><?php echo drsm_icon("archive"); ?>Archived reports</a>
   </div>
 </section>
 

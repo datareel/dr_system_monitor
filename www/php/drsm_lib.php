@@ -91,16 +91,19 @@ function drsm_url($page, $args = array())
 
 // Archived reports. With login on they are read through archive.php,
 // since the report folder itself is not covered by the login.
-function drsm_archive_url($host = "", $prefix = "")
+function drsm_archive_url($host = "", $prefix = "", $site = DRSM_LEGACY_SITE)
 {
   global $REPORTvpath, $REPORTarchivevpath, $AUTHenable;
-  if(!empty($AUTHenable)) {
+  // Login, or visitors limited to some sites: the folders are not covered
+  if(!empty($AUTHenable) || drsm_auth_scoped()) {
     $args = array();
     if($host != "") $args["h"] = $host;
     if($prefix != "") $args["p"] = $prefix;
+    if($site != DRSM_LEGACY_SITE) $args["site"] = $site;
     return drsm_url("archive.php", $args);
   }
-  if($host != "") return "{$REPORTvpath}/systems/" . rawurlencode($host) . "/archive/";
+  if($host != "") return drsm_site_vpath($site) . "/systems/" . rawurlencode($host) . "/archive/";
+  if($site != DRSM_LEGACY_SITE) return drsm_site_vpath($site) . "/archive/";
   return "{$REPORTarchivevpath}/";
 }
 
@@ -303,18 +306,22 @@ function drsm_valid_host($n)
 }
 
 /*
-Load one host from ${REPORTdir}/systems/<host>. Plugin states come
-from status.json when drsm_run.sh wrote one, otherwise from the
-report text.
+Load one host from <site reports>/systems/<host>, ${REPORTdir}/systems
+for the default site. Plugin states come from status.json when
+drsm_run.sh wrote one, otherwise from the report text.
 */
-function drsm_load_host($hostdir)
+function drsm_load_host($hostdir, $site = DRSM_LEGACY_SITE)
 {
-  global $REPORTdir, $STALEminutes;
-  $dir = "{$REPORTdir}/systems/{$hostdir}";
+  global $STALEminutes;
+  $dir = drsm_site_dir($site) . "/systems/{$hostdir}";
   $rep = drsm_parse_report("{$dir}/{$hostdir}_report.txt");
   $f = $rep["fields"];
+  $sites = drsm_all_sites();
+  $stale = isset($sites[$site]) ? $sites[$site]["stale_minutes"] : $STALEminutes;
   $host = array(
     "name" => $hostdir,
+    "site" => $site,
+    "key" => drsm_host_key($hostdir, $site),
     "description" => isset($f["DESCRIPTION"]) ? $f["DESCRIPTION"] : "",
     "impact" => isset($f["IMPACT"]) ? $f["IMPACT"] : "",
     "group" => (isset($f["GROUP"]) && $f["GROUP"] != "") ? $f["GROUP"] : "production",
@@ -361,31 +368,50 @@ function drsm_load_host($hostdir)
     }
   }
 
-  if($STALEminutes > 0 && $host["time"] > 0 && (time() - $host["time"]) > ($STALEminutes * 60)) {
+  if($stale > 0 && $host["time"] > 0 && (time() - $host["time"]) > ($stale * 60)) {
     $host["stale"] = true;
     $host["state"] = drsm_worst($host["state"], "STALE");
-    $host["note"] = "Last report is over " . drsm_age_text($STALEminutes * 60) . " old";
+    $host["note"] = "Last report is over " . drsm_age_text($stale * 60) . " old";
   }
   $host["metrics"] = drsm_host_metrics($rep);
   return $host;
 }
 
-function drsm_load_hosts()
+/*
+Every host in a scope, keyed by drsm_host_key(): "" for every visible
+site, an organization, or org/site. With no argument, the scope picked
+in the page header.
+*/
+function drsm_load_hosts($scope = null)
 {
-  global $REPORTdir;
+  if($scope === null) $scope = drsm_scope();
   $hosts = array();
-  $dir = "{$REPORTdir}/systems";
-  if(!is_dir($dir)) return $hosts;
-  $names = scandir($dir);
-  if($names === false) return $hosts;
-  sort($names);
-  foreach($names as $name) {
-    // Skip hidden files and anything that is not a host directory
-    if(substr($name, 0, 1) == ".") continue;
-    if(!drsm_valid_host($name) || !is_dir("{$dir}/{$name}")) continue;
-    $hosts[$name] = drsm_load_host($name);
+  foreach(drsm_scope_sites($scope) as $site => $s) {
+    $dir = drsm_site_dir($site) . "/systems";
+    if(!is_dir($dir)) continue;
+    $names = scandir($dir);
+    if($names === false) continue;
+    foreach($names as $name) {
+      // Skip hidden files and anything that is not a host directory
+      if(substr($name, 0, 1) == ".") continue;
+      if(!drsm_valid_host($name) || !is_dir("{$dir}/{$name}")) continue;
+      $hosts[drsm_host_key($name, $site)] = drsm_load_host($name, $site);
+    }
   }
+  uasort($hosts, function($a, $b) {
+    $d = strcmp($a["name"], $b["name"]);
+    return ($d != 0) ? $d : strcmp($a["site"], $b["site"]);
+  });
   return $hosts;
+}
+
+// Hosts split by site, in site order
+function drsm_hosts_by_site($hosts, $sites)
+{
+  $out = array();
+  foreach($sites as $id => $s) $out[$id] = array();
+  foreach($hosts as $key => $hst) $out[$hst["site"]][$key] = $hst;
+  return $out;
 }
 
 function drsm_host_counts($hosts)
@@ -416,21 +442,32 @@ Group reports written by system_check.sh, system_report.sh and
 drsm_run.sh. Production has no suffix, other groups add _<group>:
 system_check_<group>_report.txt and system_health_report_<group>.txt
 */
-function drsm_group_report_file($kind, $group)
+function drsm_group_report_file($kind, $group, $site = DRSM_LEGACY_SITE)
 {
-  global $REPORTdir;
+  $dir = drsm_site_dir($site);
   if($kind == "check") {
-    return ($group == "production") ? "{$REPORTdir}/system_check_report.txt" : "{$REPORTdir}/system_check_{$group}_report.txt";
+    return ($group == "production") ? "{$dir}/system_check_report.txt" : "{$dir}/system_check_{$group}_report.txt";
   }
-  return ($group == "production") ? "{$REPORTdir}/system_health_report.txt" : "{$REPORTdir}/system_health_report_{$group}.txt";
+  return ($group == "production") ? "{$dir}/system_health_report.txt" : "{$dir}/system_health_report_{$group}.txt";
 }
 
-function drsm_group_reports()
+// Group reports of every site in a scope, default the picked scope
+function drsm_group_reports($scope = null)
 {
-  global $REPORTdir;
+  if($scope === null) $scope = drsm_scope();
+  $out = array();
+  foreach(drsm_scope_sites($scope) as $site => $s) {
+    foreach(drsm_site_group_reports($site) as $gr) $out[] = $gr;
+  }
+  return $out;
+}
+
+function drsm_site_group_reports($site)
+{
+  $dir = drsm_site_dir($site);
   $groups = array("production" => true);
   foreach(array("system_check_*_report.txt", "system_health_report_*.txt") as $pat) {
-    $found = glob("{$REPORTdir}/{$pat}");
+    $found = glob("{$dir}/{$pat}");
     if(!is_array($found)) continue;
     foreach($found as $f) {
       $b = basename($f);
@@ -441,11 +478,11 @@ function drsm_group_reports()
   $out = array();
   foreach(array_keys($groups) as $g) {
     foreach(array("check", "health") as $kind) {
-      $fname = drsm_group_report_file($kind, $g);
+      $fname = drsm_group_report_file($kind, $g, $site);
       if($g != "production" && !file_exists($fname)) continue;
       $rep = drsm_parse_report($fname);
       $state = $rep["exists"] ? $rep["state"] : "ERROR";
-      $out[] = array("group" => $g, "kind" => $kind, "state" => $state, "exists" => $rep["exists"],
+      $out[] = array("group" => $g, "kind" => $kind, "state" => $state, "exists" => $rep["exists"], "site" => $site,
                      "time" => $rep["mtime"], "errors" => count($rep["messages"]));
     }
   }
@@ -501,6 +538,7 @@ function drsm_icon($name)
     "check" => '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
     "lock" => '<rect x="4.5" y="10.5" width="15" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/>',
     "trend" => '<path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/>',
+    "building" => '<path d="M4 21V5a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v16M15 9h4a1 1 0 0 1 1 1v11M2.5 21h19M8 8h3M8 12h3M8 16h3"/>',
     "cloud" => '<path d="M7 18a4.5 4.5 0 0 1-.6-9 6 6 0 0 1 11.5 1.5A3.75 3.75 0 0 1 17.5 18z"/>',
     "logout" => '<path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 16l-4-4 4-4M6 12h10"/>'
   );
@@ -562,6 +600,9 @@ function drsm_page_end()
     include_once("{$WWWdir}/php/default_footer.php");
   }
 }
+
+// Organizations and sites
+require_once("{$WWWdir}/php/drsm_sites.php");
 
 // Optional login for requests from outside the internal networks,
 // see drsm_auth.php. login.php does its own checks.

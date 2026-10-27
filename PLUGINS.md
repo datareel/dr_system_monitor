@@ -134,6 +134,7 @@ core_cpu_TIMEOUT=60
 | --- | --- |
 | `HOST` | Name or address for SSH and probes, default is the file name |
 | `DESCRIPTION`, `IMPACT` | Shown in reports and alerts |
+| `SITE` | Organization and site, `<org>/<site>`, see [Organizations and sites](#organizations-and-sites) |
 | `GROUP` | Host group, selected with `drsm_run.sh -g` |
 | `PLATFORM` | `linux` or `windows` |
 | `COLLECTOR` | `ssh`, `local` for the monitor host itself, `wra` for Windows Reporting Agent hosts, `none` for probes only |
@@ -151,6 +152,66 @@ The host file is saved to `etc/hosts/removed` first.
 
 If `network/ping` fails, the host is reported down and its remote
 plugins are skipped, as the old `system_report.sh` did.
+
+## Organizations and sites
+
+Hosts can be grouped into organizations and sites, for example one
+organization per customer and one site per office or data center:
+organization > site > group > host. Each site has its own reports,
+alerts and dashboard card, and two sites may have a host with the same
+name. Hosts with no site are in the `default/default` site, which keeps
+the reports where they have always been, so nothing changes until you
+add a site.
+
+Site files live in `etc/sites` (`SITESdir` in `~/.drsm.sh`):
+
+```
+etc/sites/acme.org            NAME="Acme Corp", CONTACT="..."
+etc/sites/acme/hq.site        the hq site of acme
+```
+
+| Site key | Meaning |
+| --- | --- |
+| `NAME`, `LOCATION` | Shown on the Organizations page |
+| `TZ` | Time zone for the site's report times |
+| `ALERT_EMAIL` | Alert addresses for the site, replace `alert.email.list` |
+| `STALE_MINUTES` | When a host report or the site's monitor host counts as not reporting, default 60 |
+| `COLLECTOR_ID` | The monitor host that runs the site, see below |
+
+Any host key or plugin setting in a site file is a default for the
+site's hosts, read after `_defaults.conf` and before the host file, for
+example `PROBES` or `WRA_REPORTS_DIR`. Examples are in
+`etc/sites/example.org_example` and
+`etc/sites/example/example.site_example`.
+
+A host joins a site with `SITE=<org>/<site>` in its host file. Hosts
+without one use `DRSM_SITE` from `~/.drsm.sh`, so a monitor host that
+only watches one site can set it once. IDs use `a-z`, `0-9`, `_` and
+`-`.
+
+`drsm_run.sh` runs each site in turn, with its own lock, log, alert
+throttle and alert subject (`[!ALERT!] DRSM acme/hq Health Checks ...`).
+`-s org/site` runs one site. `-H` takes a host name, or
+`org/site/host` when two sites have a host with that name. Reports go
+to `${REPORTdir}/orgs/<org>/<site>`, with the same layout as before
+inside, plus `site.json` (the site, its monitor host and host states)
+and `${REPORTdir}/orgs/<org>/org.json`.
+
+Several monitor hosts can feed one dashboard, for example one at each
+customer. Each sets `DRSM_COLLECTOR_ID` (default its short host name)
+and each site file names its `COLLECTOR_ID`. A monitor host skips sites
+that name another collector; sites with no `COLLECTOR_ID` run on any.
+`utils/drsm_web_sync.sh` copies each site to its own folder on the
+dashboard, and `utils/drsm_add_collector.sh org/site` prints an SSH key
+line that limits a monitor host to its site's folder with `rrsync`.
+
+| Tool | Does |
+| --- | --- |
+| `utils/drsm_migrate_sites.sh org/site [host ...]` | Moves hosts and their reports from the default site into a site, dry run unless `--apply` |
+| `utils/drsm_remove_site.sh org/site` | Removes a site's hosts, site file and reports, dry run unless `--apply` |
+| `utils/drsm_remove_host.sh org/site/host` | Removes one host of a site |
+| `utils/wra_hosts.sh -s org/site` | Windows host files for a site |
+| `utils/drsm_metrics_backfill.sh -s org/site` | History for a site's hosts |
 
 ## Windows hosts
 
@@ -308,6 +369,15 @@ drsm_exit
 
 Any other output is printed in the report as is.
 
+Every plugin also gets these, for messages or settings that depend on
+where the host is:
+
+| Variable | Value |
+| --- | --- |
+| `DRSM_TARGET` | the host name from the host file |
+| `DRSM_HOST_DESCRIPTION`, `DRSM_HOST_IMPACT` | from the host file |
+| `DRSM_ORG`, `DRSM_SITE` | the host's organization and site IDs, `default` and `default` for hosts in no site |
+
 Exit codes follow the Nagios plugin convention: 0 OK, 1 WARNING,
 2 ERROR, 3 UNKNOWN. The runner also counts an `ERROR - ` or
 `WARNING - ` line in the output, so a plugin that prints the message
@@ -341,7 +411,8 @@ WARNING - cloud1:/var is at 92% capacity.
 METRIC disk_used_pct{mount="/var"}=92
 ```
 
-The runner writes:
+The runner writes, for the default site (sites other than
+default/default write the same files under `${REPORTdir}/orgs/<org>/<site>`):
 
 | File | Same as |
 | --- | --- |

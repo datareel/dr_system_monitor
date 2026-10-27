@@ -36,9 +36,12 @@
 # host's collector, and writes the same report files the web pages
 # and alerts already use.
 #
-# Usage: drsm_run.sh [-g group] [-H host] [-m all|probes] [-e] [-n] [-l] [-v]
+# Usage: drsm_run.sh [-s org/site] [-g group] [-H host] [-m all|probes] [-e] [-n] [-l] [-v]
+#   -s  Site to run, default every site this collector runs, one
+#       after the other
 #   -g  Host group to run, default production
-#   -H  Run a single host, for testing
+#   -H  Run a single host, for testing: host, or org/site/host when
+#       two sites have a host with that name
 #   -m  all (default) runs probes and plugins and writes the health
 #       reports, probes runs connectivity probes only
 #   -e  Email a status report even when every check passes
@@ -68,6 +71,8 @@ source "${DRSMHOME}/bin/system_functions.sh"
 source "${DRSMHOME}/lib/drsm_conf.sh"
 # shellcheck source=lib/drsm_history.sh
 source "${DRSMHOME}/lib/drsm_history.sh"
+# shellcheck source=lib/drsm_sites.sh
+source "${DRSMHOME}/lib/drsm_sites.sh"
 
 if [ "${HOSTSdir}" == "" ]; then HOSTSdir="${DRSMHOME}/etc/hosts"; fi
 if [ "${PLUGINSdir}" == "" ]; then PLUGINSdir="${DRSMHOME}/plugins"; fi
@@ -77,17 +82,20 @@ if [ "${DRSM_DEFAULT_PLUGINS}" == "" ]; then
     DRSM_DEFAULT_PLUGINS="storage/disk storage/raid core/cpu core/load core/memory network/nics core/users"
 fi
 
+ORIGARGS=("$@")
 group="production"
 singletesthost=""
+runsite=""
 mode="all"
 emailstatusreport="NO"
 sendalerts="1"
 listonly="0"
 verbose="0"
 
-while getopts "g:H:m:enlvh" opt
+while getopts "s:g:H:m:enlvh" opt
 do
     case "${opt}" in
+	s) runsite="${OPTARG,,}" ;;
 	g) group="${OPTARG,,}" ;;
 	H) singletesthost="${OPTARG}" ;;
 	m) mode="${OPTARG,,}" ;;
@@ -104,27 +112,7 @@ if [ "${mode}" != "all" ] && [ "${mode}" != "probes" ]; then
     exit 1
 fi
 
-# Report file names. Production keeps the names the web pages and
-# older cron jobs use, other groups add the group name.
-sfx=""
-if [ "${group}" != "production" ]; then sfx="_${group}"; fi
-reportprefix="system_health_report${sfx}"
-checkprefix="system_check${sfx}"
-
-OUTPUTdir="${VARdir}/drsm_run${sfx}_${mode}.tmp"
-LOCKfile="${VARdir}/drsm_run${sfx}_${mode}.lck"
-logfile="${LOGdir}/drsm_run${sfx}_${mode}.log"
-statusfile="${OUTPUTdir}/status.txt"
-errorfile="${OUTPUTdir}/errors.txt"
-checkfile="${OUTPUTdir}/check_status.txt"
-checkerrors="${OUTPUTdir}/check_errors.txt"
-PROGRAMname="$0"
-MINold="30"
-has_errors="0"
-has_warning="0"
-check_errors="0"
-
-function log() { echo "$*" | tee -a "${logfile}"; }
+function log() { if [ "${logfile}" != "" ]; then echo "$*" | tee -a "${logfile}"; else echo "$*"; fi; }
 function vlog() { if [ "${verbose}" == "1" ]; then echo "$*"; fi; }
 
 # ------------------------------------------------------------
@@ -136,9 +124,18 @@ declare -A HCONF
 function load_host_file()
 {
     # Merge _defaults.conf and a host file into HCONF
+    # then the host's site file, then the host file
+    local site k
+    local -A sconf=()
     HCONF=()
+    site=$(drsm_host_file_site "${1}")
     if [ -f "${HOSTSdir}/_defaults.conf" ]; then drsm_read_conf "${HOSTSdir}/_defaults.conf" HCONF; fi
+    drsm_read_site "${site}" sconf
+    for k in "${!sconf[@]}"; do
+	if ! drsm_is_site_key "${k}"; then HCONF[${k}]="${sconf[${k}]}"; fi
+    done
     drsm_read_conf "${1}" HCONF
+    HCONF[SITE]="${site}"
     if [ "${HCONF[HOST]}" == "" ]; then HCONF[HOST]=$(basename "${1}" .conf); fi
     if [ "${HCONF[GROUP]}" == "" ]; then HCONF[GROUP]="production"; fi
     if [ "${HCONF[PLATFORM]}" == "" ]; then HCONF[PLATFORM]="linux"; fi
@@ -170,6 +167,7 @@ function load_host_entry()
     HCONF[PLUGINS]="${HCONF[PLUGINS]:-${DRSM_DEFAULT_PLUGINS}}"
     # Cluster addresses move between hosts, only probe them
     if [ "${is_cluser_ip}" == "YES" ]; then HCONF[PLUGINS]=""; fi
+    HCONF[SITE]=$(drsm_default_site)
     HCONF[SOURCE]="${dbfile}"
 }
 
@@ -202,6 +200,59 @@ function load_host()
 	dat:*) load_host_entry "${1#dat:}" ;;
     esac
 }
+
+# ------------------------------------------------------------
+# Sites
+# ------------------------------------------------------------
+
+if [ "${runsite}" != "" ] && ! drsm_valid_site "${runsite}"; then
+    echo "ERROR - Site ${runsite} is not org/site, IDs use a-z, 0-9, _ and -"
+    exit 1
+fi
+
+# -H org/site/host names the site as well
+if [[ "${singletesthost}" == */*/* ]]; then
+    hs="${singletesthost%/*}"
+    hs="${hs,,}"
+    if [ "${runsite}" != "" ] && [ "${runsite}" != "${hs}" ]; then
+	echo "ERROR - Host ${singletesthost} is not in site ${runsite}"
+	exit 1
+    fi
+    runsite="${hs}"
+    singletesthost="${singletesthost##*/}"
+fi
+
+# Sites with hosts in this group, and the hosts -H matches
+declare -A SITEHOSTS=()
+HOSTMATCHES=()
+for src in "${HOSTSOURCES[@]}"
+do
+    load_host "${src}"
+    if ! drsm_valid_site "${HCONF[SITE]}"; then
+	echo "WARNING - ${HCONF[SOURCE]} has SITE=${HCONF[SITE]}, not org/site, skipped" >&2
+	continue
+    fi
+    if [ "${HCONF[GROUP]}" != "${group}" ]; then continue; fi
+    if [ "${runsite}" != "" ] && [ "${HCONF[SITE]}" != "${runsite}" ]; then continue; fi
+    if [ "${singletesthost}" != "" ]; then
+	if [ "${HCONF[HOST]}" != "${singletesthost}" ]; then continue; fi
+	HOSTMATCHES+=("${HCONF[SITE]}/${HCONF[HOST]}")
+    fi
+    SITEHOSTS[${HCONF[SITE]}]=1
+done
+
+if [ "${singletesthost}" != "" ]; then
+    if [ ${#HOSTMATCHES[@]} -eq 0 ]; then
+	echo "ERROR - Host ${singletesthost} not found in group ${group}"
+	exit 1
+    fi
+    if [ ${#HOSTMATCHES[@]} -gt 1 ]; then
+	echo "ERROR - Host ${singletesthost} is in more than one site, use -H org/site/host:"
+	printf '  %s\n' "${HOSTMATCHES[@]}"
+	exit 1
+    fi
+    runsite="${HOSTMATCHES[0]%/*}"
+fi
 
 # ------------------------------------------------------------
 # Plugins
@@ -250,6 +301,7 @@ function job_line()
 	fi
     done
     args+=("DRSM_TARGET=${HCONF[HOST]}" "DRSM_HOST_DESCRIPTION=${HCONF[DESCRIPTION]}" "DRSM_HOST_IMPACT=${HCONF[IMPACT]}")
+    args+=("DRSM_ORG=${HCONF[SITE]%%/*}" "DRSM_SITE=${HCONF[SITE]#*/}")
     printf 'drsm_job_plugin %q %q %q %q' "${id}" "${t}" "${entry}" "${MANIFEST[REQUIRES]}"
     printf ' %q' "${args[@]}"
     echo ""
@@ -338,12 +390,17 @@ function write_status_json()
 
 function list_hosts()
 {
-    local src id
+    local src id owner
     for src in "${HOSTSOURCES[@]}"
     do
 	load_host "${src}"
 	if [ "${HCONF[GROUP]}" != "${group}" ]; then continue; fi
+	if [ "${runsite}" != "" ] && [ "${HCONF[SITE]}" != "${runsite}" ]; then continue; fi
+	if [ "${singletesthost}" != "" ] && [ "${HCONF[HOST]}" != "${singletesthost}" ]; then continue; fi
 	echo "${HCONF[HOST]} (${HCONF[PLATFORM]}, collector ${HCONF[COLLECTOR]}) from ${HCONF[SOURCE]}"
+	owner=""
+	if ! drsm_site_owned "${HCONF[SITE]}"; then owner=", run by another collector, not $(drsm_collector_id)"; fi
+	echo "  site:    ${HCONF[SITE]}${owner}"
 	echo "  probes:  ${HCONF[PROBES]:-none}"
 	echo "  plugins: ${HCONF[PLUGINS]:-none}"
 	for id in ${HCONF[PROBES]} ${HCONF[PLUGINS]}; do
@@ -354,11 +411,76 @@ function list_hosts()
 
 if [ "${listonly}" == "1" ]; then list_hosts; exit 0; fi
 
+# The sites to run: the one asked for, else every site with hosts in
+# this group that this collector runs
+SITES=()
+if [ "${runsite}" != "" ]; then
+    if ! drsm_site_owned "${runsite}"; then
+	sc=$(grep -m 1 '^COLLECTOR_ID=' "$(drsm_site_file "${runsite}")" | cut -d= -f2)
+	echo "ERROR - Site ${runsite} is run by collector ${sc}, this is $(drsm_collector_id), set DRSM_COLLECTOR_ID"
+	exit 1
+    fi
+    SITES=("${runsite}")
+else
+    for s in $(printf '%s\n' "${!SITEHOSTS[@]}" | sort); do
+	if drsm_site_owned "${s}"; then SITES+=("${s}"); else vlog "Skipping site ${s}, it is run by another collector"; fi
+    done
+    if [ ${#SITEHOSTS[@]} -eq 0 ]; then
+	# No hosts in this group: an empty run, as before sites
+	SITES=("$(drsm_default_site)")
+    elif [ ${#SITES[@]} -eq 0 ]; then
+	echo "INFO - No sites in group ${group} for collector $(drsm_collector_id)"
+	exit 0
+    fi
+fi
+
+if [ ${#SITES[@]} -gt 1 ]
+then
+    # One run per site, each with its own lock, log, reports and alerts
+    rv=0
+    for s in "${SITES[@]}"; do
+	bash "$0" "${ORIGARGS[@]}" -s "${s}"
+	rc=$?
+	if [ ${rc} -gt ${rv} ]; then rv=${rc}; fi
+    done
+    exit ${rv}
+fi
+runsite="${SITES[0]}"
+SITEROOT=$(drsm_site_root "${runsite}")
+declare -A SCONF=()
+drsm_read_site "${runsite}" SCONF
+if [ "${SCONF[TZ]}" != "" ]; then export TZ="${SCONF[TZ]}"; fi
+
+# Report file names. Production keeps the names the web pages and
+# older cron jobs use, other groups add the group name. Sites other
+# than default/default add _<org>_<site> to the work, lock, log and
+# alert files, and write their reports under ${REPORTdir}/orgs.
+gsfx=""
+if [ "${group}" != "production" ]; then gsfx="_${group}"; fi
+ssfx=""
+if [ "${runsite}" != "${DRSM_LEGACY_SITE}" ]; then ssfx="_${runsite%%/*}_${runsite#*/}"; fi
+sfx="${ssfx}${gsfx}"
+reportprefix="system_health_report${gsfx}"
+checkprefix="system_check${gsfx}"
+
+OUTPUTdir="${VARdir}/drsm_run${sfx}_${mode}.tmp"
+LOCKfile="${VARdir}/drsm_run${sfx}_${mode}.lck"
+logfile="${LOGdir}/drsm_run${sfx}_${mode}.log"
+statusfile="${OUTPUTdir}/status.txt"
+errorfile="${OUTPUTdir}/errors.txt"
+checkfile="${OUTPUTdir}/check_status.txt"
+checkerrors="${OUTPUTdir}/check_errors.txt"
+PROGRAMname="$0"
+MINold="30"
+has_errors="0"
+has_warning="0"
+check_errors="0"
+
 # ------------------------------------------------------------
 # Run
 # ------------------------------------------------------------
 
-mkdir -p "${VARdir}" "${LOGdir}" "${OUTPUTdir}" "${REPORTdir}/systems" "${REPORTdir}/archive"
+mkdir -p "${VARdir}" "${LOGdir}" "${OUTPUTdir}" "${SITEROOT}/systems" "${SITEROOT}/archive"
 # shellcheck source=bin/process_lock.sh
 source "${DRSMHOME}/bin/process_lock.sh"
 LockFileCheck ${MINold}
@@ -377,18 +499,18 @@ datetime=$(date)
 if [ "${mode}" == "all" ]; then
     echo "DRSM health check report, ${datetime}" | tee -a "${statusfile}"
     echo "Our report type is set to: ${group^^}" | tee -a "${statusfile}"
+    if [ "${ssfx}" != "" ]; then echo "Site: ${runsite} ${SCONF[NAME]}" | tee -a "${statusfile}"; fi
 fi
 echo "DRSM status report, ${datetime}" >> "${checkfile}"
 echo "Our report type is set to: ${group^^}" >> "${checkfile}"
+if [ "${ssfx}" != "" ]; then echo "Site: ${runsite} ${SCONF[NAME]}" >> "${checkfile}"; fi
 
-found_host="0"
 for src in "${HOSTSOURCES[@]}"
 do
     load_host "${src}"
-    if [ "${HCONF[GROUP]}" != "${group}" ]; then continue; fi
+    if [ "${HCONF[GROUP]}" != "${group}" ] || [ "${HCONF[SITE]}" != "${runsite}" ]; then continue; fi
     host="${HCONF[HOST]}"
     if [ "${singletesthost}" != "" ] && [ "${host}" != "${singletesthost}" ]; then continue; fi
-    found_host="1"
     if [ "${HCONF[ENABLED],,}" == "no" ]; then log "INFO - ${host} is disabled, skipping"; continue; fi
 
     log "Starting checks on ${host} ${HCONF[DESCRIPTION]}"
@@ -408,6 +530,7 @@ do
 	echo "GROUP:${HCONF[GROUP]}"
 	echo "PLATFORM:${HCONF[PLATFORM]}"
 	echo "COLLECTOR:${HCONF[COLLECTOR]}"
+	if [ "${ssfx}" != "" ]; then echo "SITE:${runsite}"; fi
 	echo "PROBES:${HCONF[PROBES]}"
 	echo "PLUGINS:${HCONF[PLUGINS]}"
 	echo ""
@@ -490,25 +613,22 @@ do
 	echo ""
     } >> "${report}"
 
-    mkdir -p "${REPORTdir}/systems/${host}/archive"
-    cat "${report}" > "${REPORTdir}/systems/${host}/${host}_report.txt"
-    cat "${report}" > "${REPORTdir}/systems/${host}/archive/${host}_report_${DATEEXT}.txt"
-    write_status_json "${REPORTdir}/systems/${host}/status.json"
-    drsm_history_append "${report}" "${REPORTdir}/systems/${host}/${DRSM_HISTORY_FILE}"
+    hostreports="${SITEROOT}/systems/${host}"
+    mkdir -p "${hostreports}/archive"
+    cat "${report}" > "${hostreports}/${host}_report.txt"
+    cat "${report}" > "${hostreports}/archive/${host}_report_${DATEEXT}.txt"
+    write_status_json "${hostreports}/status.json"
+    drsm_history_append "${report}" "${hostreports}/${DRSM_HISTORY_FILE}"
     cat "${report}" >> "${statusfile}"
     log "Checks complete on ${host}"
 done
 
-if [ "${singletesthost}" != "" ] && [ "${found_host}" == "0" ]; then
-    echo "ERROR - Host ${singletesthost} not found in group ${group}"
-fi
-
 # Connectivity reports, the same files system_check.sh writes
 if [ "${check_errors}" == "0" ]; then echo "System check did not report any ERRORS" > "${checkerrors}"; fi
-cat "${checkfile}" > "${REPORTdir}/${checkprefix}_report.txt"
-cat "${checkfile}" > "${REPORTdir}/archive/${checkprefix}_report_${DATEEXT}.txt"
-cat "${checkerrors}" > "${REPORTdir}/${checkprefix}_report_errors.txt"
-cat "${checkerrors}" > "${REPORTdir}/archive/${checkprefix}_report_errors_${DATEEXT}.txt"
+cat "${checkfile}" > "${SITEROOT}/${checkprefix}_report.txt"
+cat "${checkfile}" > "${SITEROOT}/archive/${checkprefix}_report_${DATEEXT}.txt"
+cat "${checkerrors}" > "${SITEROOT}/${checkprefix}_report_errors.txt"
+cat "${checkerrors}" > "${SITEROOT}/archive/${checkprefix}_report_errors_${DATEEXT}.txt"
 
 # Health reports, the same files system_report.sh writes
 if [ "${mode}" == "all" ]
@@ -518,14 +638,21 @@ then
     if [ "${has_errors}" == "0" ] && [ "${has_warning}" == "0" ]; then
 	echo "System health check did not report any WARNINGS or ERRORS" > "${errorfile}"
     fi
-    cat "${statusfile}" > "${REPORTdir}/${reportprefix}.txt"
-    cat "${statusfile}" > "${REPORTdir}/archive/${reportprefix}_${DATEEXT}.txt"
-    cat "${errorfile}" > "${REPORTdir}/${reportprefix}_errors.txt"
-    cat "${errorfile}" > "${REPORTdir}/archive/${reportprefix}_errors_${DATEEXT}.txt"
+    cat "${statusfile}" > "${SITEROOT}/${reportprefix}.txt"
+    cat "${statusfile}" > "${SITEROOT}/archive/${reportprefix}_${DATEEXT}.txt"
+    cat "${errorfile}" > "${SITEROOT}/${reportprefix}_errors.txt"
+    cat "${errorfile}" > "${SITEROOT}/archive/${reportprefix}_errors_${DATEEXT}.txt"
 else
     has_errors="${check_errors}"
     cat "${checkerrors}" > "${errorfile}"
     cat "${checkfile}" > "${statusfile}"
+fi
+
+# Site status for the Organizations page, written by every run so its
+# time shows the collector is still reporting
+if [ "${ssfx}" != "" ]; then
+    drsm_write_site_json "${runsite}"
+    drsm_write_org_json "${runsite%%/*}"
 fi
 
 function send_alert()
@@ -537,21 +664,24 @@ function send_alert()
     TIMESPAN="4"
     SENDEMAIL="TRUE"
     SENDTEXT="${3}"
-    if [ "${group}" != "production" ]; then
-	SENDTEXT="FALSE"
+    if [ "${group}" != "production" ]; then SENDTEXT="FALSE"; fi
+    if [ "${sfx}" != "" ]; then
 	TIMEFILE="${VARdir}/email_alert${sfx}.timefile"
 	INITFILE="${VARdir}/email_alert${sfx}.initfile"
     fi
     export SUBJECT BODY TIMESPAN SENDEMAIL SENDTEXT TIMEFILE INITFILE
     # shellcheck source=bin/text_email_alert.sh
     source "${DRSMHOME}/bin/text_email_alert.sh"
-    email_alert "${SUBJECT}" "${BODY}"
+    # A site's ALERT_EMAIL replaces the addresses in alert.email.list,
+    # texts still go to its TEXTlist
+    email_alert "${SUBJECT}" "${BODY}" "${SCONF[ALERT_EMAIL]}"
 }
 
 what="Health Checks"
 if [ "${mode}" == "probes" ]; then what="Connection Checks"; fi
 groupname=""
-if [ "${group}" != "production" ]; then groupname="${group^} Systems "; fi
+if [ "${ssfx}" != "" ]; then groupname="${runsite} "; fi
+if [ "${group}" != "production" ]; then groupname="${groupname}${group^} Systems "; fi
 message="${VARdir}/drsm_run_message.$$"
 { cat "${errorfile}"; echo ""; cat "${statusfile}"; } > "${message}"
 

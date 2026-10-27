@@ -48,10 +48,25 @@ require_once("{$WWWdir}/php/trends_lib.php");
 
 $ranges = drsm_trend_ranges();
 $range = (isset($_GET['r']) && isset($ranges[$_GET['r']])) ? $_GET['r'] : "30d";
-$hostname = (isset($_GET['h']) && drsm_valid_host($_GET['h'])) ? $_GET['h'] : "";
+$scope = isset($_GET['h']) ? drsm_scope() : drsm_scope_from_request();
+$hosts = drsm_load_hosts($scope);
 
-$hosts = drsm_load_hosts();
-if($hostname != "" && !isset($hosts[$hostname])) $hostname = "";
+// One host: h=<host> with site=<org>/<site>, or h=<org>/<site>/<host>
+$hostkey = "";
+$hostname = "";
+if(isset($_GET['h']) && $_GET['h'] != "") {
+  $res = drsm_resolve_host($_GET['h'], isset($_GET['site']) ? $_GET['site'] : "");
+  if($res["status"] == "ambiguous") {
+    drsm_ambiguous_page($res, "trends.php", "h");
+    exit;
+  }
+  if($res["status"] == "ok") {
+    $hostkey = drsm_host_key($res["name"], $res["site"]);
+    $hostname = $res["name"];
+    // A host outside the picked scope still opens from a link
+    if(!isset($hosts[$hostkey])) $hosts[$hostkey] = drsm_load_host($res["name"], $res["site"]);
+  }
+}
 $now = time();
 $since = ($ranges[$range]["secs"] > 0) ? $now - $ranges[$range]["secs"] : 0;
 
@@ -69,10 +84,37 @@ function drsm_verdict_html($v)
   return "<span class=\"badge " . h($x["cls"]) . "\" title=\"" . h($x["tip"]) . "\"><span class=\"dot\"></span>" . h($x["label"]) . "</span>";
 }
 
+// Have and need summed over a site's hosts. Shared hosting accounts
+// have no need, so they only add to what the site has.
+function drsm_trend_site_totals($rows)
+{
+  $t = array("hosts" => 0, "cpu_have" => 0, "cpu_need" => 0, "mem_have" => 0, "mem_need" => 0,
+             "disk_have" => 0, "disk_need" => 0, "tx" => 0, "recent" => 0);
+  foreach($rows as $row) {
+    $d = $row["d"];
+    if(!$d["exists"] || $d["count"] == 0) continue;
+    $t["hosts"]++;
+    $t["recent"] += $row["recent"];
+    $c = $row["cap"];
+    if(isset($d["sizes"]["cpu_count"])) $t["cpu_have"] += $d["sizes"]["cpu_count"];
+    if(isset($c["cpu"]) && $c["cpu"]["need_raw"] !== null) $t["cpu_need"] += $c["cpu"]["need_raw"];
+    if(isset($d["sizes"]["mem_total_mb"])) $t["mem_have"] += $d["sizes"]["mem_total_mb"];
+    if(isset($c["mem"]) && $c["mem"]["need_raw"] !== null) $t["mem_need"] += $c["mem"]["need_raw"];
+    foreach($d["sizes"]["disk"] as $mb) $t["disk_have"] += $mb;
+    foreach($row["disks"] as $dk) if($dk["need_raw"] !== null) $t["disk_need"] += $dk["need_raw"];
+    if($row["traffic"]["net"]) $t["tx"] += $row["traffic"]["net"]["tx_month"];
+  }
+  return $t;
+}
+
 function drsm_trend_link($host, $range)
 {
+  // $host is a host from drsm_load_hosts(), or "" for every host
   $args = array();
-  if($host != "") $args["h"] = $host;
+  if(is_array($host)) {
+    $args["h"] = $host["name"];
+    if($host["site"] != DRSM_LEGACY_SITE) $args["site"] = $host["site"];
+  }
   if($range != "30d") $args["r"] = $range;
   return drsm_url("trends.php", $args);
 }
@@ -102,7 +144,7 @@ drsm_page_start("Trends", "trends", $overall);
 <?php if($hostname != "") { ?>
     <div class="crumbs"><a href="<?php echo h(drsm_trend_link("", $range)); ?>"><?php echo drsm_icon("back"); ?>All hosts</a></div>
     <h1><?php echo h($hostname); ?> trends</h1>
-    <p class="muted"><?php echo h($hosts[$hostname]["description"] != "" ? $hosts[$hostname]["description"] : "Use over time, what this host needs, and what is normal for it."); ?></p>
+    <p class="muted"><?php if(drsm_multi_site()) echo h(drsm_site_label($hosts[$hostkey]["site"])) . " &middot; "; ?><?php echo h($hosts[$hostkey]["description"] != "" ? $hosts[$hostkey]["description"] : "Use over time, what this host needs, and what is normal for it."); ?></p>
 <?php } else { ?>
     <h1>Trends</h1>
     <p class="muted">Use over time for sizing hardware and cloud purchases, and the normal range of each host so unusual values stand out.</p>
@@ -111,7 +153,7 @@ drsm_page_start("Trends", "trends", $overall);
   <div class="head-actions">
     <div class="seg" role="group" aria-label="Time range">
 <?php foreach($ranges as $key => $rg) { ?>
-      <a href="<?php echo h(drsm_trend_link($hostname, $key)); ?>"<?php if($range == $key) echo ' class="active" aria-current="page"'; ?>><?php echo h($rg["label"]); ?></a>
+      <a href="<?php echo h(drsm_trend_link($hostkey != "" ? $hosts[$hostkey] : "", $key)); ?>"<?php if($range == $key) echo ' class="active" aria-current="page"'; ?>><?php echo h($rg["label"]); ?></a>
 <?php } ?>
     </div>
 <?php if(count($hosts) > 0) { ?>
@@ -121,7 +163,7 @@ drsm_page_start("Trends", "trends", $overall);
       <select id="trend-host" name="h" data-autosubmit>
         <option value="">All hosts</option>
 <?php   foreach($hosts as $hst) { ?>
-        <option value="<?php echo h($hst["name"]); ?>"<?php if($hst["name"] == $hostname) echo " selected"; ?>><?php echo h($hst["name"]); ?></option>
+        <option value="<?php echo h($hst["key"]); ?>"<?php if($hst["key"] == $hostkey) echo " selected"; ?>><?php echo h($hst["name"] . ($hst["site"] != DRSM_LEGACY_SITE && drsm_multi_site() ? " - " . drsm_site_label($hst["site"]) : "")); ?></option>
 <?php   } ?>
       </select>
       <noscript><button class="button" type="submit">Show</button></noscript>
@@ -133,10 +175,10 @@ drsm_page_start("Trends", "trends", $overall);
 // ---------------------------------------------------------------- //
 // All hosts: one capacity row each
 // ---------------------------------------------------------------- //
-if($hostname == "") {
+if($hostkey == "") {
   $rows = array();
   foreach($hosts as $hst) {
-    $d = drsm_trend_load($hst["name"], $since);
+    $d = drsm_trend_load($hst["name"], $since, $hst["site"]);
     $cap = array();
     foreach(drsm_trend_capacity($d, in_array($hst["name"], $TRENDshared)) as $c) $cap[$c["id"]] = $c;
     $disks = array();
@@ -148,6 +190,17 @@ if($hostname == "") {
     $aws = drsm_section_facts($hst["report"], "cloud/aws");
     $rows[] = array("host" => $hst, "d" => $d, "cap" => $cap, "disks" => $disks, "traffic" => $traffic, "recent" => $recent,
                     "anoms" => count($anoms), "type" => isset($aws["Instance type"]) ? $aws["Instance type"] : "");
+  }
+  // With more than one site, the hosts of each site together with the
+  // site's totals under them
+  $sites = drsm_scope_sites($scope);
+  $bysite = array();
+  if(count($sites) > 1) {
+    foreach($sites as $sid => $st) $bysite[$sid] = array();
+    foreach($rows as $row) $bysite[$row["host"]["site"]][] = $row;
+  }
+  else {
+    $bysite[""] = $rows;
   }
 ?>
 <section class="panel flush">
@@ -161,9 +214,14 @@ if($hostname == "") {
         <tr><th scope="col">Host</th><th scope="col">History</th><th scope="col">CPU p95</th><th scope="col">CPUs have / need</th><th scope="col">Memory peak</th><th scope="col">Memory have / need</th><th scope="col">Disk have / need</th><th scope="col">Network out / 30 days</th><th scope="col">Outside normal, 24h</th></tr>
       </thead>
       <tbody>
-<?php   foreach($rows as $row) {
+<?php   foreach($bysite as $sid => $siterows) {
+          if($sid != "") {
+            if(count($siterows) == 0) continue; ?>
+        <tr class="site-row"><th scope="rowgroup" colspan="9"><?php echo drsm_icon("building"); ?><?php echo h(drsm_site_label($sid)); ?></th></tr>
+<?php     }
+          foreach($siterows as $row) {
           $c = $row["cap"];
-          $url = drsm_trend_link($row["host"]["name"], $range); ?>
+          $url = drsm_trend_link($row["host"], $range); ?>
         <tr>
           <th scope="row"><a href="<?php echo h($url); ?>"><strong><?php echo h($row["host"]["name"]); ?></strong></a><?php if($row["type"] != "") { ?> <span class="tag"><?php echo h($row["type"]); ?></span><?php } ?><?php if(in_array($row["host"]["name"], $TRENDshared)) { ?> <span class="tag">shared</span><?php } ?></th>
 <?php     if(!$row["d"]["exists"] || $row["d"]["count"] == 0) { ?>
@@ -184,7 +242,22 @@ if($hostname == "") {
           <td class="num"><?php echo $row["traffic"]["net"] ? h(drsm_fmt_bytes($row["traffic"]["net"]["tx_month"])) : "-"; ?></td>
           <td class="num"><?php if($row["recent"] > 0) { ?><a class="badge warn" href="<?php echo h($url); ?>#outside"><span class="dot"></span><?php echo (int)$row["recent"]; ?></a><?php } else { ?><span class="badge ok"><span class="dot"></span>0</span><?php } ?></td>
         </tr>
-<?php   } ?>
+<?php     }
+          if($sid != "") {
+            $tot = drsm_trend_site_totals($siterows); ?>
+        <tr class="site-total">
+          <th scope="row"><?php echo h(drsm_site_label($sid)); ?> total<br><span class="muted small"><?php echo (int)$tot["hosts"]; ?> host<?php echo $tot["hosts"] == 1 ? "" : "s"; ?> with history</span></th>
+          <td></td>
+          <td></td>
+          <td><?php echo $tot["cpu_have"] > 0 ? h($tot["cpu_have"] . " / " . $tot["cpu_need"]) : "-"; ?></td>
+          <td></td>
+          <td><?php echo $tot["mem_have"] > 0 ? h(drsm_fmt_bytes($tot["mem_have"] * 1048576) . " / " . $tot["mem_need"] . " GB") : "-"; ?></td>
+          <td><?php echo $tot["disk_have"] > 0 ? h(drsm_fmt_bytes($tot["disk_have"] * 1048576, 0) . " / " . $tot["disk_need"] . " GB") : "-"; ?></td>
+          <td class="num"><?php echo $tot["tx"] > 0 ? h(drsm_fmt_bytes($tot["tx"])) : "-"; ?></td>
+          <td class="num"><?php echo (int)$tot["recent"]; ?></td>
+        </tr>
+<?php     }
+        } ?>
       </tbody>
     </table>
   </div>
@@ -209,8 +282,8 @@ if($hostname == "") {
 // ---------------------------------------------------------------- //
 // One host
 // ---------------------------------------------------------------- //
-$hst = $hosts[$hostname];
-$d = drsm_trend_load($hostname, $since);
+$hst = $hosts[$hostkey];
+$d = drsm_trend_load($hostname, $since, $hst["site"]);
 $from = ($since > 0) ? $since : $d["first"];
 $to = max($now, $d["last"]);
 if($since > 0 && $d["first"] > 0) $from = max($since, min($d["first"], $now - 86400));
