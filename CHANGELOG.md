@@ -2,6 +2,17 @@
 
 All notable changes to the DataReel System Monitor (DRSM) are listed here.
 
+## Unreleased
+
+### Dashboard
+
+#### Added
+
+- The top bar has an Org links menu when the site picker shows All
+  sites or a whole organization: the org links of each organization
+  the user may see, by tier. The Site links menu for one site is
+  unchanged.
+
 ## 1.32-beta2 - 2026-10-27
 
 Second 1.32 beta: complete Windows host pages. Release 1.31 stays the

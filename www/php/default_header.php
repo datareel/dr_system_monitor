@@ -87,8 +87,9 @@ $drsm_sub["checks"] = array(array("Connectivity tests", drsm_url("checks.php")),
         </select>
         <noscript><button class="tool" type="submit">Show</button></noscript>
       </form>
-<?php   // Site links, when the picker shows one site
+<?php   // Site links for one site, else the org links in the scope
         if(isset($drsm_sites[$drsm_scope])) echo drsm_links_menu($drsm_scope, drsm_tier_from_request(), "links-menu");
+        else echo drsm_org_links_menu($drsm_scope, drsm_tier_from_request());
       } ?>
       <button type="button" class="tool" data-action="refresh" title="Auto refresh" aria-pressed="true">
         <svg class="ring" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle class="ring-fill" cx="12" cy="12" r="9"/></svg>

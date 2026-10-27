@@ -311,7 +311,18 @@ expect "QA link with the QA filter" '>QA build<svg'
 reject "OPS link hidden with the QA filter" '>Admin<svg'
 expect "links without a tier always shown" '>Wiki &lt;b&gt;<svg'
 render index.php "site=&tier="
-reject "no Site links menu for all sites" 'class="menu links-menu"'
+expect "Org links menu for all sites" '<span class="menu-label">Org links</span>'
+expect "all sites menu names every org" 'title="Links for all organizations"'
+expect "all sites shows org links" 'href="https://help.acme.test/"'
+reject "all sites hides site links" 'href="https://wiki.acme.test/'
+reject "no section for an org without links" 'Org links &middot; Beta Labs'
+render index.php "site=acme&tier="
+expect "Org links menu for a whole org" 'title="Links for Acme Corp"'
+expect "whole org shows its org links" 'Org links &middot; Acme Corp'
+render index.php "site=beta&tier="
+reject "no links menu for an org without links" 'class="menu links-menu"'
+render orgs.php "site=&tier=" "drsm_site=acme/hq"
+expect "Organizations link shows the org links menu" '<span class="menu-label">Org links</span>'
 render orgs.php "site=&tier="
 expect "site card links menu" '<details class="menu card-links" data-menu>'
 expect "nav submenu for Organizations" '<li><a href="/drsm/dashboard/php/orgs.php?site=acme">Acme Corp</a></li>'

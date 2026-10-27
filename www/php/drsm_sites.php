@@ -217,15 +217,42 @@ function drsm_links_menu($id, $tier, $class = "links-menu")
   $sites = drsm_sites();
   if(!isset($sites[$id])) return "";
   $s = $sites[$id];
+  $navs = array();
   $mine = drsm_link_tree($s["links"], $tier);
+  if(count($mine) > 0) $navs[] = array($s["name"] . " links", h($s["name"]), $mine);
   $org = drsm_link_tree($s["org_links"], $tier);
-  if(count($mine) == 0 && count($org) == 0) return "";
-  $label = ($class == "links-menu") ? "Site links" : "Links";
-  $out = "<details class=\"menu " . h($class) . "\" data-menu><summary class=\"" . ($class == "links-menu" ? "tool" : "menu-btn") . "\" title=\"" . h("Links for " . $s["name"]) . "\">"
+  if(count($org) > 0) $navs[] = array($s["orgname"] . " links", "Org links &middot; " . h($s["orgname"]), $org);
+  return drsm_links_menu_html($navs, "Links for " . $s["name"], ($class == "links-menu") ? "Site links" : "Links", $class);
+}
+
+/*
+The top bar links menu when the picker shows all sites or a whole
+organization: the org links of each visible org in scope $scope, for
+tier $tier. Every site of an org carries the same org links, so the
+first site that has them is used. Empty when there are none.
+*/
+function drsm_org_links_menu($scope, $tier)
+{
+  $navs = array();
+  foreach(drsm_orgs(drsm_scope_sites($scope)) as $o) {
+    foreach($o["sites"] as $s) {
+      if(count($s["org_links"]) == 0) continue;
+      $org = drsm_link_tree($s["org_links"], $tier);
+      if(count($org) > 0) $navs[] = array($o["name"] . " links", "Org links &middot; " . h($o["name"]), $org);
+      break;
+    }
+  }
+  return drsm_links_menu_html($navs, ($scope == "") ? "Links for all organizations" : "Links for " . drsm_scope_label($scope), "Org links", "links-menu");
+}
+
+// Menu around $navs, each array(aria label, heading HTML, link tree)
+function drsm_links_menu_html($navs, $title, $label, $class)
+{
+  if(count($navs) == 0) return "";
+  $out = "<details class=\"menu " . h($class) . "\" data-menu><summary class=\"" . ($class == "links-menu" ? "tool" : "menu-btn") . "\" title=\"" . h($title) . "\">"
     . drsm_icon("link") . "<span class=\"menu-label\">" . h($label) . "</span>" . drsm_icon("chevron") . "</summary>"
     . "<div class=\"menu-panel\">";
-  if(count($mine) > 0) $out .= "<nav aria-label=\"" . h($s["name"] . " links") . "\"><p class=\"menu-head\">" . h($s["name"]) . "</p>" . drsm_link_tree_html($mine) . "</nav>";
-  if(count($org) > 0) $out .= "<nav aria-label=\"" . h($s["orgname"] . " links") . "\"><p class=\"menu-head\">Org links &middot; " . h($s["orgname"]) . "</p>" . drsm_link_tree_html($org) . "</nav>";
+  foreach($navs as $n) $out .= "<nav aria-label=\"" . h($n[0]) . "\"><p class=\"menu-head\">" . $n[1] . "</p>" . drsm_link_tree_html($n[2]) . "</nav>";
   return $out . "</div></details>";
 }
 

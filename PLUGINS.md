@@ -268,8 +268,10 @@ organization, in an Org links section of the same menu.
 `drsm_run.sh` puts the links in `site.json`, so `drsm_web_sync.sh`
 takes them to a hosted dashboard, and users only see the links of
 sites they may see. The menu is in the top bar when the site picker
-shows one site, and on each site card on the Organizations page. Links
-open in a new tab.
+shows one site, and on each site card on the Organizations page. When
+the picker shows All sites or a whole organization, the top bar has an
+Org links menu instead, with the org links of each organization shown.
+Links open in a new tab.
 
 ## Windows hosts
 

@@ -847,7 +847,9 @@ Organizations, Heat map and Hosts pages filter by tier.
 Site links: LINK="Menu/Submenu/Name|https://url|tier" lines in a site
 or org file fill the dashboard's Site links menu. Each / in the name
 makes a submenu, the tier is optional, and only http and https links
-are kept. Org file links show for every site of the organization.
+are kept. Org file links show for every site of the organization,
+and in the top bar's Org links menu on the All sites and whole
+organization views.
 
 To limit dashboard users to their own organizations or sites, see
 $AUTHscopes and $AUTHnetworkscopes in php/drsm_auth.php. PLUGINS.md
