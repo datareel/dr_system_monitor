@@ -8,8 +8,9 @@ $drsm_title = (isset($PAGEtitle) && $PAGEtitle != "") ? "{$PAGEtitle} - {$SITEti
 $drsm_state = (isset($PAGEstate) && $PAGEstate != "") ? $PAGEstate : "";
 $drsm_sites = drsm_sites();
 $drsm_nav = array();
-// The Organizations page leads when there is more than one site
-if(count($drsm_sites) > 1) $drsm_nav["orgs"] = array("Organizations", "orgs.php", "building");
+// The Organizations page leads when there is more than one site. Its
+// links clear the site picker scope, so it always opens on every site.
+if(count($drsm_sites) > 1) $drsm_nav["orgs"] = array("Organizations", "orgs.php", "building", array("site" => ""));
 $drsm_nav += array(
   "overview" => array("Overview", "index.php", "grid"),
   "heatmap" => array("Heat map", "heatmap.php", "heat"),
@@ -35,13 +36,13 @@ $drsm_nav += array(
 <a class="skip" href="#main">Skip to content</a>
 <header class="topbar">
   <div class="topbar-inner">
-    <a class="brand" href="<?php echo h(drsm_url(count($drsm_sites) > 1 ? "orgs.php" : "index.php")); ?>">
+    <a class="brand" href="<?php echo h(count($drsm_sites) > 1 ? drsm_url("orgs.php", array("site" => "")) : drsm_url("index.php")); ?>">
       <span class="brand-mark <?php echo h(drsm_state_class($drsm_state != "" ? $drsm_state : "OK")); ?>" aria-hidden="true"><span></span><span></span><span></span></span>
       <span class="brand-text"><?php echo h($SITEtitle); ?></span>
     </a>
     <nav class="nav" aria-label="Main">
 <?php foreach($drsm_nav as $key => $item) { ?>
-      <a href="<?php echo h(drsm_url($item[1])); ?>"<?php if($PAGEactive == $key) echo ' class="active" aria-current="page"'; ?>><?php echo drsm_icon($item[2]); ?><span><?php echo h($item[0]); ?></span></a>
+      <a href="<?php echo h(drsm_url($item[1], isset($item[3]) ? $item[3] : array())); ?>"<?php if($PAGEactive == $key) echo ' class="active" aria-current="page"'; ?>><?php echo drsm_icon($item[2]); ?><span><?php echo h($item[0]); ?></span></a>
 <?php } ?>
     </nav>
     <div class="tools">

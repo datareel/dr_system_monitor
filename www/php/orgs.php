@@ -37,7 +37,8 @@ Each site card shows its worst state, host counts, a tile per host
 (check status, or resource use with mode=metrics), and its collector.
 A site whose collector has stopped writing site.json gets a "Collector
 not reporting" banner. The landing page when there is more than one
-site.
+site. The menu and brand links open it with site= to clear the site
+picker scope; a scoped view offers "Show all organizations".
 */
 // ----------------------------------------------------------- //
 // SCRIPT CONTENT STARTS BELOW.
@@ -84,11 +85,16 @@ uksort($orgs, function($a, $b) use ($orgstate, $orgs) {
   return ($d != 0) ? $d : strcmp($orgs[$a]["name"], $orgs[$b]["name"]);
 });
 
+// What a scoped view is limited to: an organization or one site
+$scopename = "";
+if($scope != "") $scopename = isset($orgs[$scope]) ? $orgs[$scope]["name"] : drsm_site_label($scope);
+
 function drsm_orgs_link($mode, $scope)
 {
   $args = array();
   if($mode != "status") $args["mode"] = $mode;
-  if($scope != "") $args["site"] = $scope;
+  // Always name the scope, so "" clears the site picker cookie
+  $args["site"] = $scope;
   return drsm_url("orgs.php", $args);
 }
 
@@ -98,6 +104,9 @@ drsm_page_start("Organizations", "orgs", $overall);
   <div>
     <h1>Organizations</h1>
     <p class="muted"><?php echo $mode == "status" ? "Every site at a glance. Each tile is one host, worst first. Select a tile for its report." : "Resource use on each host: the tile shows its busiest resource."; ?></p>
+<?php if($scope != "") { ?>
+    <p class="scope-note">Showing <strong><?php echo h($scopename); ?></strong> only. <a class="link" href="<?php echo h(drsm_orgs_link($mode, "")); ?>" data-show-all>Show all organizations</a></p>
+<?php } ?>
   </div>
   <div class="head-actions">
     <div class="seg" role="group" aria-label="Tile type">

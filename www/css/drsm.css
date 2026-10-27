@@ -247,6 +247,8 @@ code { font-family: var(--mono); font-size: .9em; background: var(--surface-3); 
 }
 .page-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 14px; }
 .page-head p { margin-top: 4px; }
+.scope-note { color: var(--muted); }
+.scope-note .link { margin-left: 6px; }
 .head-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .crumbs a { display: inline-flex; align-items: center; gap: 4px; color: var(--text-2); font-weight: 550; }
 
