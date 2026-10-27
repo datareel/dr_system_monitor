@@ -29,6 +29,10 @@ All notable changes to the DataReel System Monitor (DRSM) are listed here.
 - `DRSM_CONFIG` names the config file in place of `~/.drsm.sh`, so a
   second DRSM install can run from the same account, for example a new
   release beside an older one other scripts still source.
+  utils/install.sh keeps a config in `$DRSMHOME/etc/drsm.sh` that
+  `DRSM_CONFIG` names.
+- utils/wra_hosts.sh `-p` sets the plugins of the new host files, for
+  agents older than 3.3 that send no PERFORMANCE section.
 
 ## 1.32-beta2 - 2026-10-27
 

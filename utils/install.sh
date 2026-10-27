@@ -70,6 +70,14 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+# A config in ${DRSMHOME}/etc/drsm.sh named by DRSM_CONFIG is the live
+# config, keep it when etc is copied
+keepconf=""
+if [ -f "${DRSMHOME}/etc/drsm.sh" ] && [ "$(readlink -f "${CONFIG_FILE}")" == "$(readlink -f "${DRSMHOME}/etc/drsm.sh")" ]; then
+    keepconf=$(mktemp)
+    cp -p "${CONFIG_FILE}" "${keepconf}"
+fi
+
 dirs="bin etc lib collectors plugins mysql postgres utils www docs"
 for d in ${dirs}
 do
@@ -84,6 +92,12 @@ do
 	chown ${SYSADMIN_USERNAME}:${SYSADMIN_GROUPNAME} ${DRSMHOME}/${d}/*
     fi
 done 
+
+if [ "${keepconf}" != "" ]; then
+    cp -p "${keepconf}" "${DRSMHOME}/etc/drsm.sh"
+    rm -f "${keepconf}"
+    echo "INFO - Kept your config ${DRSMHOME}/etc/drsm.sh"
+fi
 
 find ${DRSMHOME} -name "*.sh" -exec chmod 755 {} +
 
