@@ -88,10 +88,12 @@ cat > "${W}/config/drsm.php" <<PHPCONF
 PHPCONF
 
 function render() {
-    # $1 == page, $2 == query string, output in ${T}/page.html
+    # $1 == page, $2 == query string, $3 == optional cookie string,
+    # output in ${T}/page.html
     (cd "${W}/php" && php -d error_reporting=-1 -d display_errors=stderr -r '
       parse_str($argv[2], $_GET);
-      include $argv[1];' "$1" "$2" > "${T}/page.html" 2> "${T}/page.err")
+      if(isset($argv[3])) parse_str($argv[3], $_COOKIE);
+      include $argv[1];' "$1" "$2" ${3:+"$3"} > "${T}/page.html" 2> "${T}/page.err")
     if [ -s "${T}/page.err" ]; then fail "$1?$2 PHP messages: $(head -3 "${T}/page.err")"; else pass "$1?$2 renders without PHP messages"; fi
 }
 function expect() {
@@ -229,7 +231,7 @@ expect "default site shown with the others" 'data-site="default/default"'
 expect "site location" "Springfield"
 expect "tile links to the host in its site" 'readreport.php?n=app1&amp;site=acme%2Fbranch'
 expect "stale collector banner" "Collector not reporting"
-expect "Organizations in the menu" 'href="/drsm/dashboard/php/orgs.php"'
+expect "Organizations in the menu" 'href="/drsm/dashboard/php/orgs.php?site=" class="active"'
 expect "site picker" '<option value="acme/hq">Head office</option>'
 expect "org scope in the picker" '<option value="acme">Acme Corp, all sites</option>'
 render orgs.php "mode=metrics"
@@ -237,11 +239,29 @@ expect "metric tiles" 'class="matrix tiles metric"'
 render orgs.php "site=beta"
 expect "org scope shows its sites" 'data-site="beta/lab"'
 reject "org scope hides other orgs" 'data-site="acme/hq"'
+expect "scoped view names its scope" 'Showing <strong>Beta Labs</strong> only.'
+expect "scoped view offers all organizations" 'href="/drsm/dashboard/php/orgs.php?site=" data-show-all>Show all organizations</a>'
+expect "mode switch keeps the scope" 'href="/drsm/dashboard/php/orgs.php?mode=metrics&amp;site=beta"'
+render orgs.php "" "drsm_site=acme/hq"
+expect "picker cookie scopes the page" 'data-site="acme/hq"'
+reject "picker cookie hides other sites" 'data-site="beta/lab"'
+expect "Organizations menu clears the scope" 'href="/drsm/dashboard/php/orgs.php?site=" class="active"'
+expect "brand clears the scope" 'class="brand" href="/drsm/dashboard/php/orgs.php?site="'
+render orgs.php "site=" "drsm_site=acme/hq"
+expect "Organizations link shows every org" 'data-site="beta/lab"'
+expect "Organizations link shows every site" 'data-site="acme/branch"'
+reject "no scope note on all organizations" 'data-show-all'
+expect "picker back to All sites" '<option value="acme/hq">Head office</option>'
+reject "no site selected in the picker" ' selected>'
+render heatmap.php "" "drsm_site=acme/hq"
+expect "Organizations menu clears the scope on other pages" 'href="/drsm/dashboard/php/orgs.php?site="><svg'
+render index.php ""
+expect "overview Organizations link clears the scope" 'href="/drsm/dashboard/php/orgs.php?site=">Organizations</a>'
 
 render index.php ""
 expect "per site table" 'id="site-table"'
 expect "site host card tagged" 'Acme Corp / Head office'
-expect "brand goes to Organizations" 'class="brand" href="/drsm/dashboard/php/orgs.php"'
+expect "brand goes to Organizations" 'class="brand" href="/drsm/dashboard/php/orgs.php?site="'
 render index.php "site=acme/hq"
 expect "site scope shows its host" "HQ web"
 reject "site scope hides other sites" ">app1</h3>"

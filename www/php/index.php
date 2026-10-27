@@ -137,7 +137,7 @@ drsm_page_start("Overview", "overview", $overall);
 
 <?php if($multi) { ?>
 <section class="panel flush" aria-label="Sites">
-  <div class="panel-head pad"><h2><?php echo drsm_icon("building"); ?>Sites</h2><a class="link" href="<?php echo h(drsm_url("orgs.php")); ?>">Organizations</a></div>
+  <div class="panel-head pad"><h2><?php echo drsm_icon("building"); ?>Sites</h2><a class="link" href="<?php echo h(drsm_url("orgs.php", array("site" => ""))); ?>">Organizations</a></div>
   <div class="table-wrap">
     <table class="table sortable" id="site-table">
       <thead>

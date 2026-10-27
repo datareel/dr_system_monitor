@@ -52,6 +52,12 @@ All notable changes to the DataReel System Monitor (DRSM) are listed here.
 - `drsm_remove_host.sh` takes `org/site/host`, `wra_hosts.sh` and
   `drsm_metrics_backfill.sh` take `-s org/site`.
 - `purge.sh` keeps `site.json` and `org.json`.
+- The Organizations menu item, the brand logo and the Overview
+  "Organizations" link now always open every organization and site,
+  and set the site picker back to "All sites". Before, a site picked in
+  the picker kept the Organizations page filtered. A filtered
+  Organizations page names its scope and has a "Show all
+  organizations" link.
 
 ### Trends and capacity planning
 
