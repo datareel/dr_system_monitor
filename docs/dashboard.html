@@ -118,7 +118,7 @@ PROD backups | /var/www/html/sysadmin/backup/prod_summary.txt | | 1440
 SSL certificates | /var/www/html/sysadmin/ssl/all_certs.txt | | 1440 | /var/www/html/sysadmin/ssl/errors.txt
 [consoles] Consoles
 Storage console | - | https://storage.example.com/</code></pre>
-<p>A report is <strong>Error</strong> when its file is missing or a line has ERROR or FAILED, <strong>Warning</strong> when a line has WARNING, and <strong>Stale</strong> when it is older than the max age (from its <code>ETIME:</code> line, else the file time). An empty link shows the file inside the dashboard; <code>-</code> as the file makes a plain link with no state. Only files listed there can be shown.</p>
+<p>A report is <strong>Error</strong> when its file is missing or a line has ERROR or FAILED, <strong>Warning</strong> when a line has WARNING, and <strong>Stale</strong> when it is older than the max age (from its <code>ETIME:</code> line, else the file time). An empty link shows the file inside the dashboard; <code>-</code> as the file makes a plain link with no state, and <code>-</code> as the status file shows the report with no state. Only files listed there can be shown.</p>
 <p>For colors and styles, edit <code>$WWWdir/site/custom.css</code>, which loads after the DRSM styles. Colors are CSS variables:</p>
 <pre><code>:root { --accent: #e11d48; }</code></pre>
 <p>To replace the header and footer, add <code>page_header.php</code> and <code>page_footer.php</code> to <code>$WWWdir/site</code>. The header must print <code>drsm_head_assets()</code> to keep the styles and scripts, and leave <code>&lt;main&gt;</code> open:</p>

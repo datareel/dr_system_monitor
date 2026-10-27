@@ -451,6 +451,7 @@ Blades | ${T}/ext_ok.txt | /blades/ | | ${T}/ext_err.txt
 [links] Links
 Missing | ${T}/ext_missing.txt
 Console | - | https://console.example.com/
+Scan | ${T}/ext_warn.txt | | | -
 EXT
 cp "${W}/config/drsm.php" "${T}/drsm.php.saved"
 sed -i '$d' "${W}/config/drsm.php"
@@ -485,6 +486,7 @@ expect "ext stale" "Report is older than 1 hour"
 expect "ext status file error links to its page" 'href="/blades/"'
 expect "ext missing file" "Report file is missing"
 expect "ext plain link" 'href="https://console.example.com/"'
+expect "ext no-state report" '<span class="muted">Report</span>'
 render extreports.php "s=links"
 reject "one section only" "Nightly backups"
 render extreports.php "v=backup-1"

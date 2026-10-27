@@ -50,7 +50,8 @@ report:
 - max age minutes: STALE when the report is older, 0 or empty is off.
   The time is the report's ETIME: line, else the file time.
 - status file: read for the state in place of the report file, for
-  scripts that write a separate errors file.
+  scripts that write a separate errors file. - shows the report with
+  no state.
 
 The state is ERROR when the file is missing or a line has ERROR or
 FAILED, WARNING when a line has WARNING, else OK, the same rule the
@@ -98,7 +99,7 @@ function drsm_ext_sections()
       "file" => ($f[1] == "-") ? "" : $f[1],
       "link" => $f[2],
       "maxage" => (int)$f[3],
-      "status" => ($f[4] != "") ? $f[4] : (($f[1] == "-") ? "" : $f[1])
+      "status" => ($f[4] == "-" || $f[1] == "-") ? "" : (($f[4] != "") ? $f[4] : $f[1])
     );
   }
   return $cache;
@@ -115,7 +116,11 @@ function drsm_ext_find($id)
 // State of one report: array("state", "time", "note")
 function drsm_ext_state($it)
 {
-  if($it["file"] == "" && $it["status"] == "") return array("state" => "", "time" => 0, "note" => "");
+  // No status: a plain link, or a file shown with its time only
+  if($it["status"] == "") {
+    $t = ($it["file"] != "" && is_file($it["file"])) ? drsm_demo_time((int)@filemtime($it["file"])) : 0;
+    return array("state" => "", "time" => $t, "note" => "");
+  }
   $files = array_unique(array_filter(array($it["file"], $it["status"]), "strlen"));
   foreach($files as $f) {
     if(!is_readable($f)) return array("state" => "ERROR", "time" => 0, "note" => "Report file is missing");

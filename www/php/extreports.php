@@ -150,7 +150,7 @@ drsm_page_start(($sid != "") ? $sections[$sid]["title"] : $EXTtitle, "ext", $ove
           $href = drsm_ext_href($it); ?>
         <tr<?php if($st["state"] != "") echo ' class="row-' . h(drsm_state_class($st["state"])) . '"'; ?>>
           <td><?php if($href != "") { ?><a class="strong" href="<?php echo h($href); ?>"><?php echo h($it["title"]); ?></a><?php } else { ?><span class="strong"><?php echo h($it["title"]); ?></span><?php } ?><?php if($st["note"] != "") { ?><div class="small muted"><?php echo h($st["note"]); ?></div><?php } ?></td>
-          <td><?php echo ($st["state"] != "") ? drsm_badge($st["state"]) : "<span class=\"muted\">Link</span>"; ?></td>
+          <td><?php echo ($st["state"] != "") ? drsm_badge($st["state"]) : "<span class=\"muted\">" . (($it["file"] != "") ? "Report" : "Link") . "</span>"; ?></td>
           <td class="hide-sm"><?php echo ($st["time"] > 0) ? drsm_time_html($st["time"]) : "<span class=\"muted\">&ndash;</span>"; ?></td>
         </tr>
 <?php   } ?>
