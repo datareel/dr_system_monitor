@@ -218,6 +218,7 @@ drsm_page_start("Organizations", "orgs", $overall);
         <a href="<?php echo h(drsm_url("reports.php", array("site" => $id))); ?>">Hosts</a>
         <a href="<?php echo h(drsm_url("checks.php", array("site" => $id))); ?>">Connectivity</a>
       </nav>
+      <?php echo drsm_links_menu($id, $tier, "card-links"); ?>
     </article>
 <?php   } ?>
   </div>

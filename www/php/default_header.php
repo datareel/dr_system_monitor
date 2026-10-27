@@ -18,6 +18,17 @@ $drsm_nav += array(
   "trends" => array("Trends", "trends.php", "trend"),
   "checks" => array("Connectivity", "checks.php", "net")
 );
+// Submenus: page views a menu item can open straight into
+$drsm_sub = array();
+if(isset($drsm_nav["orgs"])) {
+  $drsm_sub["orgs"] = array(array("All organizations", drsm_url("orgs.php", array("site" => ""))));
+  foreach(drsm_orgs($drsm_sites) as $o) $drsm_sub["orgs"][] = array($o["name"], drsm_url("orgs.php", array("site" => $o["id"])));
+}
+$drsm_sub["heatmap"] = array(array("Check status", drsm_url("heatmap.php", array("mode" => "status"))),
+                             array("Resource use", drsm_url("heatmap.php", array("mode" => "metrics"))));
+if(count(drsm_scope_sites(drsm_scope())) > 1) $drsm_sub["heatmap"][] = array("By site", drsm_url("heatmap.php", array("by" => "site")));
+$drsm_sub["checks"] = array(array("Connectivity tests", drsm_url("checks.php")),
+                            array("Health reports", drsm_url("checks.php", array("r" => "health"))));
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -41,8 +52,18 @@ $drsm_nav += array(
       <span class="brand-text"><?php echo h($SITEtitle); ?></span>
     </a>
     <nav class="nav" aria-label="Main">
-<?php foreach($drsm_nav as $key => $item) { ?>
-      <a href="<?php echo h(drsm_url($item[1], isset($item[3]) ? $item[3] : array())); ?>"<?php if($PAGEactive == $key) echo ' class="active" aria-current="page"'; ?>><?php echo drsm_icon($item[2]); ?><span><?php echo h($item[0]); ?></span></a>
+<?php foreach($drsm_nav as $key => $item) {
+        $drsm_link = '<a href="' . h(drsm_url($item[1], isset($item[3]) ? $item[3] : array())) . '" title="' . h($item[0]) . '"' . ($PAGEactive == $key ? ' class="active" aria-current="page"' : '') . '>' . drsm_icon($item[2]) . '<span>' . h($item[0]) . '</span></a>';
+        if(!isset($drsm_sub[$key])) { ?>
+      <?php echo $drsm_link; ?>
+
+<?php     continue;
+        } ?>
+      <div class="nav-item<?php if($PAGEactive == $key) echo " active"; ?>"><?php echo $drsm_link; ?><details class="menu nav-menu" data-menu><summary title="<?php echo h($item[0]); ?> views"><?php echo drsm_icon("chevron"); ?><span class="sr"><?php echo h($item[0]); ?> views</span></summary><div class="menu-panel"><ul class="menu-tree">
+<?php     foreach($drsm_sub[$key] as $sub) { ?>
+        <li><a href="<?php echo h($sub[1]); ?>"><?php echo h($sub[0]); ?></a></li>
+<?php     } ?>
+      </ul></div></details></div>
 <?php } ?>
     </nav>
     <div class="tools">
@@ -66,7 +87,9 @@ $drsm_nav += array(
         </select>
         <noscript><button class="tool" type="submit">Show</button></noscript>
       </form>
-<?php } ?>
+<?php   // Site links, when the picker shows one site
+        if(isset($drsm_sites[$drsm_scope])) echo drsm_links_menu($drsm_scope, drsm_tier_from_request(), "links-menu");
+      } ?>
       <button type="button" class="tool" data-action="refresh" title="Auto refresh" aria-pressed="true">
         <svg class="ring" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle class="ring-fill" cx="12" cy="12" r="9"/></svg>
         <span class="refresh-label">Live</span>

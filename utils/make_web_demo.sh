@@ -315,6 +315,27 @@ function sample_site() {
     SITEINFO+=("${1}|${2}|${3}|${4}|${5}|${6}")
 }
 
+function demo_links() {
+    # LINK lines for sample site $1, or org $1 with no /, put through
+    # drsm_links_json as a site file would be
+    local f
+    f=$(mktemp)
+    case "${1}" in
+	northwind) printf '%s\n' 'LINK="Help desk|https://help.example.com/"' 'LINK="Apps/Order portal|https://orders.example.com/"' \
+	    'LINK="Apps/Order portal admin|https://orders.example.com/admin|ops"' 'LINK="Apps/Staging/Order portal|https://staging.orders.example.com/|qa"' \
+	    'LINK="Runbooks/Database failover|https://wiki.example.com/runbooks/db-failover"' 'LINK="Runbooks/Network/VPN|https://wiki.example.com/runbooks/vpn"' > "${f}" ;;
+	northwind/hq) printf '%s\n' 'LINK="Web cluster status|https://status.example.com/"' 'LINK="Grafana/Web|https://grafana.example.com/d/web"' \
+	    'LINK="Grafana/Database|https://grafana.example.com/d/db"' 'LINK="Grafana/Cache/Redis|https://grafana.example.com/d/redis"' > "${f}" ;;
+	northwind/warehouse) printf '%s\n' 'LINK="Inventory system|https://inventory.example.com/"' 'LINK="Backups/Last night|https://backup.example.com/jobs/latest"' > "${f}" ;;
+	blueridge) printf '%s\n' 'LINK="Clinic intranet|https://intranet.example.org/"' 'LINK="Vendor support/EHR vendor|https://support.example.org/ehr"' > "${f}" ;;
+	blueridge/main) printf '%s\n' 'LINK="Patient records|https://ehr.example.org/"' 'LINK="CI builds|https://ci.example.org/|dev"' \
+	    'LINK="Test plans|https://qa.example.org/plans|qa"' > "${f}" ;;
+	*) : > "${f}" ;;
+    esac
+    drsm_links_json "${f}"
+    rm -f "${f}"
+}
+
 function sample_site_files() {
     # site.json for each sample site, and the group reports as
     # drsm_run.sh writes them
@@ -329,8 +350,9 @@ function sample_site_files() {
 	    hosts+="${sep}{\"host\":\"$(basename "${d}")\",\"group\":\"${g}\",\"state\":\"${st}\",\"time\":${t}}"
 	    sep=","
 	done
-	printf '{"org":"%s","site":"%s","name":"%s","location":"%s","org_name":"%s","org_contact":"","collector":"%s","time":%s,"stale_minutes":30,"counts":{},"hosts":[%s]}\n' \
-	    "${site%%/*}" "${site#*/}" "${sname}" "${loc}" "${oname}" "${mon}" "$((NOW - mins * 60 - 60))" "${hosts}" > "${SR}/site.json"
+	printf '{"org":"%s","site":"%s","name":"%s","location":"%s","org_name":"%s","org_contact":"","collector":"%s","time":%s,"stale_minutes":30,"counts":{},"links":%s,"org_links":%s,"hosts":[%s]}\n' \
+	    "${site%%/*}" "${site#*/}" "${sname}" "${loc}" "${oname}" "${mon}" "$((NOW - mins * 60 - 60))" \
+	    "$(demo_links "${site}")" "$(demo_links "${site%%/*}")" "${hosts}" > "${SR}/site.json"
 	group_reports
     done
 }

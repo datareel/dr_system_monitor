@@ -7,3 +7,8 @@
 NAME="Example Company"
 # Who to call about this organization's systems
 CONTACT="IT help desk, 555-0100, it@example.com"
+# Links for every site of the organization, in the Org links section
+# of the dashboard's Site links menu: Name|URL|tier, see the site
+# example.
+# LINK="Help desk|https://help.example.com/"
+# LINK="Runbooks/Network|https://wiki.example.com/runbooks/network"

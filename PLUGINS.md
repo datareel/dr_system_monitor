@@ -175,6 +175,7 @@ etc/sites/acme/hq.site        the hq site of acme
 | `NAME`, `LOCATION` | Shown on the Organizations page |
 | `TZ` | Time zone for the site's report times |
 | `ALERT_EMAIL` | Alert addresses for the site, replace `alert.email.list` |
+| `LINK` | A Site links menu entry, `LINK="Menu/Submenu/Name\|https://url\|tier"`, see [Site links](#site-links). Also in org files |
 | `ALERT_EMAIL_<TIER>` | Alert addresses for one tier at the site, for example `ALERT_EMAIL_DEV`, else `ALERT_EMAIL` |
 | `STALE_MINUTES` | When a host report or the site's monitor host counts as not reporting, default 60 |
 | `COLLECTOR_ID` | The monitor host that runs the site, see below |
@@ -239,6 +240,32 @@ alerts to its own addresses with `ALERT_EMAIL_DEV`, `ALERT_EMAIL_QA`
 and `ALERT_EMAIL_OPS`; a tier without one uses `ALERT_EMAIL`, then
 `alert.email.list`. Other group names still work and show as their own
 tier, in upper case.
+
+
+## Site links
+
+Site and org files can list links for the dashboard's Site links menu,
+one `LINK` line each:
+
+```
+LINK="Wiki|https://wiki.example.com/"
+LINK="Grafana/Database|https://grafana.example.com/d/db"
+LINK="Apps/OSA/Admin|https://osa.example.com/admin|ops"
+```
+
+The first field is the name, and each `/` in it makes a submenu, to any
+depth up to six levels. The second is the URL: only `http` and `https`
+links are kept, others are reported by `drsm_run.sh` and skipped, and
+the dashboard checks them again. The optional third field is a tier
+(`dev`, `qa`, `ops`): the link shows only when the tier filter is All
+or that tier. Links in `<org>.org` show for every site of the
+organization, in an Org links section of the same menu.
+
+`drsm_run.sh` puts the links in `site.json`, so `drsm_web_sync.sh`
+takes them to a hosted dashboard, and users only see the links of
+sites they may see. The menu is in the top bar when the site picker
+shows one site, and on each site card on the Organizations page. Links
+open in a new tab.
 
 ## Windows hosts
 

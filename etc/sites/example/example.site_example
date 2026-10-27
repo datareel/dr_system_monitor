@@ -27,6 +27,14 @@ STALE_MINUTES=60
 # the site. Leave unset for a site any monitor host may run.
 # COLLECTOR_ID=monitor1
 
+# Site links menu on the dashboard: Name|URL|tier, one LINK per line.
+# Each / in the name makes a submenu. Only http and https URLs. The
+# tier (dev, qa, ops) is optional: the link shows with the tier
+# filter on All or that tier.
+# LINK="Wiki|https://wiki.example.com/"
+# LINK="Grafana/Database|https://grafana.example.com/d/db"
+# LINK="Apps/Order portal/Admin|https://orders.example.com/admin|ops"
+
 # Any host key or plugin setting is a default for the site's hosts,
 # read after _defaults.conf and before each host file
 # GROUP=qa              # tier for every host of a QA or DEV site

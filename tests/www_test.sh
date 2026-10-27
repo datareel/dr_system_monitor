@@ -218,6 +218,13 @@ printf 'SITE=acme/branch\ncore_load_CRIT=-1\n' > "${T}/hosts/app1.conf"
 printf 'SITE=beta/lab\n' > "${T}/hosts/lab1.conf"
 # Tiers: a QA site that sets GROUP for its hosts, an OPS host
 printf 'NAME="QA lab"\nGROUP=qa\n' > "${T}/sites/acme/qa.site"
+# Site links: nested menus, a tier link, HTML in a name, org links
+cat >> "${T}/sites/acme/hq.site" <<'LINKS'
+LINK="Wiki <b>|https://wiki.acme.test/?a=1&b=2"
+LINK="Apps/OSA/Admin|https://osa.acme.test/admin|ops"
+LINK="Apps/OSA/QA build|https://qa.osa.acme.test/|qa"
+LINKS
+printf 'LINK="Help desk|https://help.acme.test/"\n' >> "${T}/sites/acme.org"
 printf 'SITE=acme/qa\n' > "${T}/hosts/qa1.conf"
 printf 'SITE=acme/hq\nGROUP=ops\n' > "${T}/hosts/ops1.conf"
 HOME="${T}/home" bash "${TOPdir}/bin/drsm_run.sh" -n >> "${T}/run.log" 2>&1
@@ -236,7 +243,7 @@ expect "default site shown with the others" 'data-site="default/default"'
 expect "site location" "Springfield"
 expect "tile links to the host in its site" 'readreport.php?n=app1&amp;site=acme%2Fbranch'
 expect "stale collector banner" "Collector not reporting"
-expect "Organizations in the menu" 'href="/drsm/dashboard/php/orgs.php?site=" class="active"'
+expect "Organizations in the menu" 'href="/drsm/dashboard/php/orgs.php?site=" title="Organizations" class="active"'
 expect "site picker" '<option value="acme/hq">Head office</option>'
 expect "org scope in the picker" '<option value="acme">Acme Corp, all sites</option>'
 render orgs.php "mode=metrics"
@@ -250,7 +257,7 @@ expect "mode switch keeps the scope" 'href="/drsm/dashboard/php/orgs.php?mode=me
 render orgs.php "" "drsm_site=acme/hq"
 expect "picker cookie scopes the page" 'data-site="acme/hq"'
 reject "picker cookie hides other sites" 'data-site="beta/lab"'
-expect "Organizations menu clears the scope" 'href="/drsm/dashboard/php/orgs.php?site=" class="active"'
+expect "Organizations menu clears the scope" 'href="/drsm/dashboard/php/orgs.php?site=" title="Organizations" class="active"'
 expect "brand clears the scope" 'class="brand" href="/drsm/dashboard/php/orgs.php?site="'
 render orgs.php "site=" "drsm_site=acme/hq"
 expect "Organizations link shows every org" 'data-site="beta/lab"'
@@ -259,9 +266,39 @@ reject "no scope note on all organizations" 'data-show-all'
 expect "picker back to All sites" '<option value="acme/hq">Head office</option>'
 reject "no site selected in the picker" ' selected>'
 render heatmap.php "" "drsm_site=acme/hq"
-expect "Organizations menu clears the scope on other pages" 'href="/drsm/dashboard/php/orgs.php?site="><svg'
+expect "Organizations menu clears the scope on other pages" 'href="/drsm/dashboard/php/orgs.php?site=" title="Organizations"><svg'
 render index.php ""
 expect "overview Organizations link clears the scope" 'href="/drsm/dashboard/php/orgs.php?site=">Organizations</a>'
+
+echo "== Site links and menus"
+# A bad URL put straight into site.json is dropped when shown
+sed -i 's#"links":\[#"links":[{"path":"Evil","url":"javascript:alert(1)","tier":""},{"path":"Evil2","url":"https://x.test/\\"onmouseover=\\"x","tier":""},#' "${W}/reports/orgs/acme/hq/site.json"
+render index.php "site=acme/hq&tier="
+expect "Site links menu for one site" '<details class="menu links-menu" data-menu>'
+expect "site links open in a new tab" 'href="https://osa.acme.test/admin" target="_blank" rel="noopener noreferrer">Admin'
+expect "link URL escaped" 'href="https://wiki.acme.test/?a=1&amp;b=2"'
+expect "link name escaped" '>Wiki &lt;b&gt;<svg'
+reject "link name not raw" 'Wiki <b>'
+expect "nested submenu" '<details class="menu-sub"><summary>Apps<svg'
+expect "second submenu level" '<details class="menu-sub"><summary>OSA<svg'
+expect "org links section" 'Org links &middot; Acme Corp'
+expect "org link" 'href="https://help.acme.test/"'
+expect "every tier with All" '>QA build<svg'
+reject "javascript URL dropped" "javascript:"
+reject "quote in URL dropped" "onmouseover"
+render index.php "site=acme/hq&tier=qa"
+expect "QA link with the QA filter" '>QA build<svg'
+reject "OPS link hidden with the QA filter" '>Admin<svg'
+expect "links without a tier always shown" '>Wiki &lt;b&gt;<svg'
+render index.php "site=&tier="
+reject "no Site links menu for all sites" 'class="menu links-menu"'
+render orgs.php "site=&tier="
+expect "site card links menu" '<details class="menu card-links" data-menu>'
+expect "nav submenu for Organizations" '<li><a href="/drsm/dashboard/php/orgs.php?site=acme">Acme Corp</a></li>'
+expect "nav submenu for the heat map" '<li><a href="/drsm/dashboard/php/heatmap.php?mode=metrics">Resource use</a></li>'
+expect "nav submenu for connectivity" '<li><a href="/drsm/dashboard/php/checks.php?r=health">Health reports</a></li>'
+render orgs.php "site=beta&tier="
+reject "no card links menu without links" 'class="menu card-links"'
 
 echo "== Tiers"
 render orgs.php ""

@@ -33,10 +33,10 @@
 # Organizations and sites. Every host belongs to one site, and every
 # site to one organization: org > site > group > host. Site files:
 #
-#   ${SITESdir}/<org>.org          NAME, CONTACT
+#   ${SITESdir}/<org>.org          NAME, CONTACT, LINK
 #   ${SITESdir}/<org>/<site>.site  NAME, LOCATION, TZ, ALERT_EMAIL,
 #                                  ALERT_EMAIL_<TIER>, STALE_MINUTES,
-#                                  COLLECTOR_ID, and any
+#                                  COLLECTOR_ID, LINK, and any
 #                                  host key or plugin setting as a
 #                                  default for the site's hosts
 #
@@ -50,7 +50,7 @@
 DRSM_LEGACY_SITE="default/default"
 # Keys that describe a site, every other key in a site file is a host
 # default
-DRSM_SITE_KEYS="NAME LOCATION TZ ALERT_EMAIL STALE_MINUTES COLLECTOR_ID"
+DRSM_SITE_KEYS="NAME LOCATION TZ ALERT_EMAIL STALE_MINUTES COLLECTOR_ID LINK"
 
 function drsm_sites_dir()
 {
@@ -264,6 +264,67 @@ function drsm_host_state()
     echo "${state} ${t} ${g}"
 }
 
+function drsm_links_json()
+{
+    # JSON array of the LINK lines in site or org file $1, for the
+    # dashboard's Site links menu. A line is
+    #   LINK="Menu/Submenu/Name|https://url|tier"
+    # where each / in the name makes a submenu and the tier (dev, qa,
+    # ops) is optional. Only http and https links are kept, others are
+    # reported and skipped.
+    local file="${1}" line val name url tier seg out="" sep="" n=0 ok
+    local -a parts segs
+    if [ ! -r "${file}" ]; then echo "[]"; return 0; fi
+    while IFS= read -r line || [ -n "${line}" ]
+    do
+	n=$((n + 1))
+	line="${line%$'\r'}"
+	line="${line#"${line%%[![:space:]]*}"}"
+	line="${line#export }"
+	if [[ ! "${line}" =~ ^LINK=(.*)$ ]]; then continue; fi
+	val="${BASH_REMATCH[1]}"
+	if [[ "${val}" =~ ^\"([^\"]*)\"[[:space:]]*(#.*)?$ ]]; then
+	    val="${BASH_REMATCH[1]}"
+	else
+	    val="${val%%[[:space:]]#*}"
+	fi
+	IFS='|' read -r -a parts <<< "${val}"
+	name="${parts[0]}"
+	url="${parts[1]}"
+	tier="${parts[2],,}"
+	url="${url#"${url%%[![:space:]]*}"}"
+	url="${url%"${url##*[![:space:]]}"}"
+	tier="${tier#"${tier%%[![:space:]]*}"}"
+	tier="${tier%"${tier##*[![:space:]]}"}"
+	if [ "${tier}" == "production" ]; then tier="ops"; fi
+	# Trim each menu level, none may be empty
+	ok=1
+	IFS='/' read -r -a segs <<< "${name}"
+	name=""
+	for seg in "${segs[@]}"; do
+	    seg="${seg#"${seg%%[![:space:]]*}"}"
+	    seg="${seg%"${seg##*[![:space:]]}"}"
+	    if [ "${seg}" == "" ]; then ok=0; fi
+	    name+="${name:+/}${seg}"
+	done
+	if [ "${ok}" == "0" ] || [ "${name}" == "" ] || [ ${#segs[@]} -gt 6 ] || [ ${#name} -gt 200 ]; then
+	    echo "WARNING - ${file} line ${n}: LINK needs a name, Menu/Name with no empty level, skipped" >&2
+	    continue
+	fi
+	if [[ ! "${url}" =~ ^[Hh][Tt][Tt][Pp][Ss]?://[^[:space:]\"\<\>\\\`]+$ ]] || [ ${#url} -gt 2000 ]; then
+	    echo "WARNING - ${file} line ${n}: LINK ${name} is not an http or https URL, skipped" >&2
+	    continue
+	fi
+	if [ "${tier}" != "" ] && ! drsm_valid_id "${tier}"; then
+	    echo "WARNING - ${file} line ${n}: LINK ${name} tier ${tier} is not a tier name, skipped" >&2
+	    continue
+	fi
+	out+="${sep}{\"path\":$(drsm_json_str "${name}"),\"url\":$(drsm_json_str "${url}"),\"tier\":$(drsm_json_str "${tier}")}"
+	sep=","
+    done < "${file}"
+    echo "[${out}]"
+}
+
 function drsm_write_site_json()
 {
     # Write site.json for site $1 in its report directory: the site, the
@@ -302,6 +363,8 @@ function drsm_write_site_json()
 	printf '"org_name":%s,"org_contact":%s,' "$(drsm_json_str "${oc[NAME]:-${site%%/*}}")" "$(drsm_json_str "${oc[CONTACT]}")"
 	printf '"collector":%s,"time":%s,"stale_minutes":%s,' "$(drsm_json_str "$(drsm_collector_id)")" "$(date +%s)" "${stale}"
 	printf '"counts":{"ok":%s,"warning":%s,"error":%s,"stale":%s},' "${n[ok]}" "${n[warning]}" "${n[error]}" "${n[stale]}"
+	# Site links, and the org's links for every site of the org
+	printf '"links":%s,"org_links":%s,' "$(drsm_links_json "$(drsm_site_file "${site}")")" "$(drsm_links_json "$(drsm_org_file "${site%%/*}")")"
 	printf '"hosts":[%s]}\n' "${hosts}"
     } > "${tmp}" && mv -f "${tmp}" "${root}/site.json"
 }

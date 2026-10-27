@@ -56,6 +56,22 @@ All notable changes to the DataReel System Monitor (DRSM) are listed here.
   own addresses, falling back to `ALERT_EMAIL`. QA alert subjects say
   "QA Systems".
 
+- Site links: `LINK="Menu/Submenu/Name|https://url|tier"` lines in
+  site and org files fill a Site links menu, in the top bar when the
+  site picker shows one site and on each Organizations site card. Each
+  `/` in the name makes a submenu, the optional tier shows the link
+  only with that tier filter (or All), and org links appear for every
+  site of the org. Only http and https URLs are kept, checked when
+  `drsm_run.sh` writes them into `site.json` and again on the
+  dashboard. Links open in a new tab with `rel="noopener noreferrer"`.
+  The menus are `<details>` elements, so they open by click, tap or
+  keyboard without the script; the script closes them on Escape or a
+  click elsewhere.
+- Organizations, Heat map and Connectivity in the main menu have
+  submenus for their views. The main menu shows icons only below
+  1440 pixels wide so the top bar fits with the site picker and the
+  Site links menu. The Web only demo has example site and org links.
+
 #### Changed
 
 - `drsm_web_sync.sh` copies each site to `orgs/<org>/<site>` on the
