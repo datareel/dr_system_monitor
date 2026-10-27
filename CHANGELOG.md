@@ -22,6 +22,17 @@ All notable changes to the DataReel System Monitor (DRSM) are listed here.
   `etc/sites/default/default.site` has LINK lines; drsm_run.sh writes
   them to `$REPORTdir/site.json`.
 
+### Documentation
+
+#### Added
+
+- Guides for AI coding assistants: `AGENTS.md`, with
+  `.github/copilot-instructions.md`, `GEMINI.md` and `CLAUDE.md`
+  pointing to it, `llms.txt`, `llms-full.txt`, and task guides in
+  `docs/ai` (maintain a site, write a plugin, change the dashboard),
+  linked from the docs Overview page. `docs/ai/make_llms.sh` rebuilds
+  `llms-full.txt`; `tests/docs_test.sh` checks it is current.
+
 ### Scripts
 
 #### Added

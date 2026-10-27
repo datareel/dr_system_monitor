@@ -1,0 +1,367 @@
+# DRSM: all AI assistant guides in one file
+
+Built by docs/ai/make_llms.sh from AGENTS.md and docs/ai/*.md.
+
+----------------------------------------------------------------
+File: AGENTS.md
+----------------------------------------------------------------
+
+# AGENTS.md: DRSM for AI coding assistants
+
+DRSM (DataReel System Monitor) monitors Linux and Windows hosts and
+shows them on a PHP dashboard. The checks are BASH plugins, run by
+`bin/drsm_run.sh` from cron on one monitor host: on the host itself,
+on Linux hosts over SSH, or from Windows agent report files. Each run
+writes plain text report files; the PHP pages only read those files.
+There is no database and no daemon.
+
+This file is for GitHub Copilot, Gemini, Claude and other assistants,
+and for the admins who use them. `.github/copilot-instructions.md`,
+`GEMINI.md` and `CLAUDE.md` point here. The task guides are in
+`docs/ai/`; `llms.txt` lists them and `llms-full.txt` has all of them
+in one file.
+
+## Two kinds of work
+
+1. **Running DRSM for a site** (most admins): host files, plugin
+   settings, sites and links, the dashboard settings, cron. Change the
+   files under `$DRSMHOME/etc` and `$CONFIGdir`, never the installed
+   code. See `docs/ai/maintain-a-site.md`.
+2. **Changing DRSM itself**: plugins, the runner, the PHP pages. Work in
+   the source tree, run the tests, then reinstall. See
+   `docs/ai/write-a-plugin.md` and `docs/ai/change-the-dashboard.md`.
+
+## Where things are
+
+```
+bin/drsm_run.sh          plugin runner, writes every report (cron runs it)
+bin/archive.sh, purge.sh daily archive and hourly purge of report files
+bin/system_*.sh          older per-host scripts, kept for old setups
+lib/drsm_plugin.sh       helpers every plugin sources (drsm_warn, drsm_crit, ...)
+lib/drsm_conf.sh         KEY=value reader for manifests, host and site files
+lib/drsm_sites.sh        organizations, sites, tiers, site.json and links
+lib/drsm_history.sh      metrics history for the trends page
+collectors/              local.sh, ssh-linux.sh, wra.sh (Windows agent reports)
+plugins/<cat>/<name>/    plugin.conf + check.sh (on the host) or probe.sh (from the monitor)
+plugins/local/           site plugins, never overwritten by updates
+etc/drsm.sh              config template, copied to ~/.drsm.sh (or named by DRSM_CONFIG)
+etc/hosts/               _defaults.conf + one <host>.conf per host
+etc/sites/               <org>.org and <org>/<site>.site files
+www/php/                 dashboard pages; drsm_lib.php is the shared code
+www/css/drsm.css, www/js/drsm.js   one stylesheet and one script, no framework
+utils/install.sh         installs code to $DRSMHOME and pages to $WWWdir
+utils/                   migrate_systems_dat.sh, wra_hosts.sh, new_plugin.sh, drsm_web_sync.sh, ...
+tests/*.sh               all tests, plain BASH; run every one before a change is done
+docs/*.html              user documentation (hand written HTML)
+docs/ai/                 these guides; docs/ai/make_llms.sh rebuilds llms-full.txt
+PLUGINS.md               full plugin, host file, site and Windows reference
+CHANGELOG.md             add every change under "Unreleased"
+```
+
+Installed layout: code in `$DRSMHOME` (default `~/drsm`), dashboard in
+`$WWWdir` with its PHP settings in `$CONFIGdir/drsm.php`, reports in
+`$REPORTdir` (`system_health_report*.txt`, `system_check*_report*.txt`,
+`systems/<host>/<host>_report.txt`, `archive/`). Every script reads
+`$DRSM_CONFIG` if set, else `~/.drsm.sh`, else `$BASEdir/etc/drsm.sh`.
+
+## Report format (the contract between plugins and pages)
+
+- A plugin prints `INFO - text`, `WARNING - text`, `ERROR - text`,
+  `UNKNOWN - text`, `METRIC name{labels}=value` and
+  `DETAIL name=value` lines, plus any free text, and exits 0 OK,
+  1 WARNING, 2 ERROR, 3 UNKNOWN.
+- The runner wraps each plugin in `=== <cat>/<name> [STATE] <secs>s ===`
+  and adds `HOSTNAME:`, `ETIME:`, `GROUP:` and other header lines.
+- The pages find problems by the `ERROR - ` and `WARNING - ` prefixes
+  (note the spaces). Keep message text in that form: `<host> <what> is
+  <value>`, for example `web1:/var is at 91% capacity.`
+
+## Rules
+
+- BASH: `#!/bin/bash`, the file header block of the other scripts, tabs
+  in nested blocks like the existing code, `function name()` style,
+  quote every expansion, `[ ]` tests as in the existing scripts. No
+  Python, Perl or other languages in plugins or core scripts.
+- Scripts that copy, delete, rename or mirror anything default to a
+  dry run and need `--apply`. Keep that for new utils.
+- PHP must stay 7.2 compatible (see the note at the top of
+  `www/php/drsm_lib.php`): no arrow functions, `??=`, `str_contains()`,
+  `match`, or trailing commas in calls. Escape all output with `h()`;
+  build page links with `drsm_url()`; start and end pages with
+  `drsm_page_start()` and `drsm_page_end()`.
+- Pages read files only. Never let a request name a path to read: map
+  an ID to a configured file, as `extreports.php` and `readreport.php`
+  do.
+- Any PHP warning or notice fails `tests/www_test.sh`. Run pages with
+  `php -d error_reporting=-1`.
+- New PHP files must be added to the `files=` list in
+  `utils/install.sh`, or they are not installed.
+- Settings for one site never go in the code: host files, site files,
+  `_defaults.conf`, `config/drsm.php` (`$SITEtitle`, `$SITElogo`,
+  `$NAVextra`, `$EXTreports`, `$STALEminutes`, `$AUTH...`) and
+  `site/custom.css`.
+- Update `CHANGELOG.md` (Unreleased), the HTML docs page that covers
+  the area, and `PLUGINS.md` for plugin or host file changes. After
+  editing anything in `docs/ai/` or this file run
+  `docs/ai/make_llms.sh`.
+
+## Testing
+
+```
+$ for t in tests/*.sh; do bash "$t" || break; done
+```
+
+`drsm_run_test.sh` runs the runner and plugins against a temp tree,
+`www_test.sh` renders every page with the PHP command line,
+`auth_test.sh` covers the login, `docs_test.sh` checks the HTML docs
+links and that `llms-full.txt` is current. To try a change on a real
+install without alerts: `drsm_run.sh -n -H <host> -v`.
+
+## Releases
+
+`version.txt` and `CHANGELOG.md` (`## <ver> - <date>`), annotated git
+tag `<ver>` (`<ver>-betaN` for betas), source tarball from
+`git archive --prefix=dr_system_monitor-<ver>/`.
+
+----------------------------------------------------------------
+File: docs/ai/maintain-a-site.md
+----------------------------------------------------------------
+
+# Maintain a DRSM site
+
+For admins (and their AI assistants) who run DRSM for an organization.
+Change configuration files, not the installed code. Everything below
+is plain text; check a change with `drsm_run.sh -l` and test with
+`drsm_run.sh -n -H <host> -v` (`-n` sends no alerts).
+
+## Find the install
+
+```
+$ echo "${DRSM_CONFIG:-$HOME/.drsm.sh}"     # the config every script reads
+$ grep -E 'DRSMHOME|WWWdir|REPORTdir|CONFIGdir' "${DRSM_CONFIG:-$HOME/.drsm.sh}"
+$ crontab -l | grep drsm                     # what runs and as whom
+```
+
+When a site runs two DRSM installs in one account (a new release
+beside an older one), each new-DRSM cron line sets `DRSM_CONFIG`. Use
+the same prefix when you run a script by hand.
+
+## Hosts
+
+- One file per host: `$DRSMHOME/etc/hosts/<host>.conf` with `HOST`,
+  `DESCRIPTION`, `IMPACT`, `GROUP` (`production`/`ops`, `dev`, `qa` or
+  your own, such as `windows`), `PLATFORM`, `COLLECTOR` (`ssh`,
+  `local`, `wra`, `none`), `PROBES`, `PLUGINS`, `ENABLED=no` to pause.
+- Shared values go in `etc/hosts/_defaults.conf`; a host file lists only
+  what differs.
+- Plugin settings: `<category>_<name>_<SETTING>=value`, for example
+  `storage_disk_WARN=85`, `storage_disk_SKIP="/mnt/scratch"`,
+  `core_cpu_TIMEOUT=60`. The defaults and every setting are in
+  `plugins/<category>/<name>/plugin.conf`.
+- Linux hosts over SSH need the monitor account's key in the host's
+  `authorized_keys`. The collector copies a small bundle to
+  `~/drsm_agent` on the host.
+- Windows hosts: `utils/wra_hosts.sh` (dry run, then `--apply`) makes a
+  host file per agent report. Use `-g` for the group and `-p` for the
+  plugins; leave out `windows/resources` for agents older than 3.3.
+- Remove a host and its reports: `utils/drsm_remove_host.sh <host>`
+  (dry run), then `--apply`.
+- From an old `systems.dat` setup: `utils/migrate_systems_dat.sh`.
+
+## Sites, tiers and links
+
+- `etc/sites/<org>.org` (NAME, CONTACT, LINK) and
+  `etc/sites/<org>/<site>.site` (NAME, LOCATION, TZ, ALERT_EMAIL,
+  ALERT_EMAIL_<TIER>, STALE_MINUTES, COLLECTOR_ID, LINK, and host
+  defaults). A host joins a site with `SITE=<org>/<site>`.
+- A single-site install uses `etc/sites/default/default.site` for its
+  name and links.
+- Links: `LINK="Menu/Submenu/Name|https://url|tier"`. Each `/` makes a
+  submenu, http and https only, tier optional. They show in the Site
+  links menu after the next run.
+
+## Alerts
+
+- Addresses: `$ALERTdir/alert.email.list` (`EMAILlist`, `TEXTlist`), or
+  `ALERT_EMAIL` / `ALERT_EMAIL_<TIER>` in a site file.
+- `drsm_run.sh` alerts on ERROR; `-n` turns alerts off for a run (use
+  it in cron for groups that should only show on the dashboard).
+
+## Dashboard settings
+
+In `$CONFIGdir/drsm.php` (see `change-the-dashboard.md`): `$SITEtitle`,
+`$SITElogo`, `$REFRESHseconds`, `$STALEminutes`, `$NAVextra` (own menu
+items), `$EXTreports` (reports from your own scripts), `$AUTH...`
+(login). Colors in `$WWWdir/site/custom.css`.
+
+## Why is a host red?
+
+1. Open the host page (Hosts, then the host). Each plugin section shows
+   its own lines; the first ERROR line is the cause.
+2. "No report posted": the host has a host file but no run has written
+   its report yet, or the group's cron line is missing.
+3. "Not reporting" / Stale: the report is older than `$STALEminutes`
+   (or the site's `STALE_MINUTES`). Check cron and the run log in
+   `$LOGdir/drsm_run*.log`.
+4. Run it by hand: `drsm_run.sh -n -H <host> -v`.
+5. A plugin is UNKNOWN when a command in its `REQUIRES` is missing on
+   the host.
+
+## Upgrade
+
+1. Unpack the new release next to the old source.
+2. Run `utils/install.sh <new source>` as the DRSM user (or root),
+   with `DRSM_CONFIG` set if the install uses it. It keeps
+   `_defaults.conf`, host and site files, `plugins/local`, `config/drsm.php`
+   (it writes `drsm.php_install_new` beside it) and `$WWWdir/site`.
+3. Compare `drsm.php_install_new` with `drsm.php` for new settings.
+4. `drsm_run.sh -l`, then one run with `-n`.
+
+----------------------------------------------------------------
+File: docs/ai/write-a-plugin.md
+----------------------------------------------------------------
+
+# Write a DRSM plugin
+
+A check is a folder `plugins/<category>/<name>/` with `plugin.conf`
+and `check.sh` (runs on the host) or `probe.sh` (runs on the monitor
+host against the host). Site-only plugins go in `plugins/local/`.
+The full reference is `PLUGINS.md`, section "Writing a plugin".
+
+## Steps
+
+1. `utils/new_plugin.sh local/<name>` (or `local/<name> probe`) makes
+   the folder from a template.
+2. Fill in `plugin.conf`: `NAME`, `CATEGORY`, `DESCRIPTION`,
+   `PLATFORMS` (`linux`, `windows`, `any`), `MODE` (`remote` or
+   `probe`), `TIMEOUT`, `REQUIRES` (commands that must exist),
+   `NEEDS_SUDO`, then one `KEY=default` line per setting.
+3. Write the script:
+
+```bash
+#!/bin/bash
+source "${DRSM_LIB:-$(dirname "$0")/../../../lib}/drsm_plugin.sh"
+
+WARN=$(drsm_setting WARN 100)
+CRIT=$(drsm_setting CRIT 500)
+
+count=$(find /var/spool/myapp -type f | wc -l)
+if [ "${count}" -ge "${CRIT}" ]; then
+    drsm_crit "${HOST} myapp queue has ${count} files"
+elif [ "${count}" -ge "${WARN}" ]; then
+    drsm_warn "${HOST} myapp queue has ${count} files"
+else
+    drsm_ok "${HOST} myapp queue checks good at ${count} files"
+fi
+drsm_metric myapp_queue_files "${count}"
+drsm_exit
+```
+
+4. Run it by hand: `DRSM_WARN=50 bash plugins/local/<name>/check.sh`
+   (probes: `DRSM_TARGET=<host> bash .../probe.sh`).
+5. Add it to `PLUGINS` (or `PROBES`) in a host file or
+   `_defaults.conf`, then `drsm_run.sh -n -H <host> -v`.
+
+## Helpers (lib/drsm_plugin.sh)
+
+`drsm_ok`/`drsm_info` (INFO), `drsm_warn` (WARNING), `drsm_crit`
+(ERROR, alerts), `drsm_unknown`, `drsm_metric name value [labels]`
+(trends), `drsm_detail name value` (host page Details), `drsm_setting
+NAME default`, `drsm_target`, `drsm_gt a b` (float compare),
+`drsm_exit`. Settings arrive as `DRSM_<KEY>`; hosts override them with
+`<category>_<name>_<KEY>`.
+
+## Rules
+
+- BASH only, and only commands found on a minimal RHEL install unless
+  listed in `REQUIRES`.
+- Messages start with the host name and say what is wrong and the value.
+- Never prompt, never write outside `/tmp` on the host, finish well
+  inside `TIMEOUT`.
+- A plugin for the DRSM release also needs a test in
+  `tests/drsm_run_test.sh`, a row in the PLUGINS.md table and
+  docs/plugins.html, and a CHANGELOG entry.
+
+----------------------------------------------------------------
+File: docs/ai/change-the-dashboard.md
+----------------------------------------------------------------
+
+# Change the DRSM dashboard
+
+The dashboard is plain PHP pages in `www/php/` (installed to
+`$WWWdir/php/`), one stylesheet `www/css/drsm.css` and one script
+`www/js/drsm.js`. Pages read the report files in `$REPORTdir`; they
+never run checks or write reports.
+
+## Settings first
+
+Most site changes need no code. In `$CONFIGdir/drsm.php`:
+
+```php
+$SITEtitle = 'Example System Monitor';   // top bar name
+$SITElogo = '/images/logo.svg';          // logo before the name
+$REFRESHseconds = 300;                   // auto refresh, 0 off
+$STALEminutes = 120;                     // report age that counts as not reporting
+$NAVextra = array(                       // own top bar items
+  array("label" => "Classic", "url" => "/classic/", "icon" => "layout"),
+  array("label" => "Tools", "url" => "/tools/", "icon" => "link",
+        "sub" => array(array("Time converter", "/tools/utc.php"))));
+$EXTreports = '/var/www/html/dashboard/config/ext_reports.conf';
+$EXTtitle = 'Site reports';
+```
+
+Icons: grid, heat, list, trend, net, file, windows, layout, link,
+external, building, cloud, archive, lock, alert, check.
+
+### Reports from your own scripts ($EXTreports)
+
+```
+# Title | report file | link | max age minutes | status file
+[backups] Backups and patching
+PROD backups | /var/www/html/sysadmin/backup/prod_summary.txt | | 1500
+SSL certificates | /path/all_certs.txt | | 1500 | /path/cert_errors.txt
+Scan results | /path/scan.txt | | | -
+Storage console | - | https://storage.example.com/
+```
+
+ERROR or FAILED in the status file (default: the report file) is an
+error, WARNING a warning, a missing file an error, older than the max
+age Stale (`ETIME:` line, else the file time). An empty link shows the
+file in the dashboard; `-` as the file is a plain link; `-` as the
+status file shows the report with no state.
+
+### Colors and header
+
+`$WWWdir/site/custom.css` loads after `drsm.css`; override the CSS
+variables (`--accent`, `--accent-2`, ...) for light and dark themes.
+A full custom header is `$WWWdir/site/page_header.php`; it must print
+`drsm_head_assets()` and leave `<main>` open.
+
+## Code changes
+
+- Page skeleton, as in `www/php/extreports.php`:
+
+```php
+require_once("../config/drsm.php");
+require_once("{$WWWdir}/php/query_post_validation.php");
+require_once("{$WWWdir}/php/drsm_lib.php");
+drsm_page_start("Title", "menu-key", $state);
+// ... HTML, every value through h() ...
+drsm_page_end();
+```
+
+- Helpers in `drsm_lib.php`: `h()`, `drsm_url($page, $args)`,
+  `drsm_load_hosts()`, `drsm_badge($state)`, `drsm_time_html($t)`,
+  `drsm_icon($name)`, `drsm_read_lines($file)`, `drsm_worst($a, $b)`,
+  states OK, WARNING, ERROR, UNKNOWN, STALE. Sites and links are in
+  `drsm_sites.php`, other script reports in `drsm_ext.php`, login in
+  `drsm_auth.php`, trends in `trends_lib.php`.
+- The top bar is `default_header.php` (`$drsm_nav`, `$drsm_sub`).
+- PHP 7.2 compatible code only, no PHP warnings or notices.
+- A request may pick an ID, never a file path.
+- Add a new PHP file to the `files=` list in `utils/install.sh`.
+- Add checks for the change to `tests/www_test.sh` (`render`, `expect`,
+  `reject`) and run all of `tests/*.sh`.
+- Document it in `docs/dashboard.html` and `CHANGELOG.md`.
+- Screenshots for the docs: headless Chrome against `php -S` on a copy
+  made by `utils/make_web_demo.sh -s`.

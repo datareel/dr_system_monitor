@@ -68,6 +68,23 @@ for page in "${D}"/*.html; do
     if [ "${bad}" == "0" ]; then pass "${name} links, images and anchors"; fi
 done
 
+# The AI guides: llms-full.txt and the docs/ai copies must match their sources
+T=$(mktemp -d)
+
+cp "${TOPdir}/llms-full.txt" "${T}/llms-full.txt.cur"
+
+bash "${TOPdir}/docs/ai/make_llms.sh" > /dev/null 2>&1
+if cmp -s "${TOPdir}/llms-full.txt" "${T}/llms-full.txt.cur" && cmp -s "${TOPdir}/AGENTS.md" "${D}/ai/AGENTS.md" \
+    && cmp -s "${TOPdir}/llms-full.txt" "${D}/ai/llms-full.txt"; then
+    pass "llms-full.txt and docs/ai copies are current"
+else
+    fail "llms-full.txt or docs/ai is out of date, run docs/ai/make_llms.sh"
+fi
+rm -rf "${T}"
+for f in llms.txt AGENTS.md GEMINI.md CLAUDE.md .github/copilot-instructions.md; do
+    if [ -s "${TOPdir}/${f}" ]; then pass "${f} present"; else fail "${f} missing"; fi
+done
+
 if [ "${failures}" -gt 0 ]; then echo "${failures} test(s) failed"; exit 1; fi
 echo "All docs tests passed"
 exit 0
