@@ -17,6 +17,7 @@ Contents:
 * Email Text messaging setup
 * Monitoring cloud servers
 * Plugin monitoring with drsm_run.sh
+* Organizations and sites
 * Monitoring Crons
 * MySQL Utilities
 * Postgres Utilities
@@ -790,6 +791,47 @@ To create a plugin for your own site, for example a custom
 application:
 
 $ ~/drsm/utils/new_plugin.sh local/myapp
+
+Organizations and sites:
+-----------------------
+To monitor several customers or offices from one dashboard, put hosts
+in organizations and sites: organization > site > group > host. Hosts
+in no site are in the default/default site and keep the report layout
+of earlier releases, so nothing changes until a site is added.
+
+Create the organization and site files, from the examples in
+${DRSMHOME}/etc/sites:
+
+$ cd ~/drsm/etc/sites
+$ cp example.org_example acme.org
+$ mkdir acme
+$ cp example/example.site_example acme/hq.site
+
+Then add SITE=acme/hq to the host files of that site, or move every
+host with no site in one step (dry run first):
+
+$ ~/drsm/utils/drsm_migrate_sites.sh -o "Acme Corp" -n "Head office" acme/hq
+$ ~/drsm/utils/drsm_migrate_sites.sh --apply -o "Acme Corp" -n "Head office" acme/hq
+
+drsm_run.sh runs every site in turn, or one site with -s:
+
+$ ~/drsm/bin/drsm_run.sh -n -s acme/hq
+$ ~/drsm/bin/drsm_run.sh -n -H acme/hq/web1
+
+Each site has its own reports in $REPORTdir/orgs/<org>/<site>, its
+own alert throttle, and ALERT_EMAIL in the site file for its own
+alert addresses. With more than one site the dashboard adds an
+Organizations page, with a heat map per site, and a site picker.
+
+For a monitor host at each site feeding one hosted dashboard, set
+DRSM_COLLECTOR_ID in each monitor host's ~/.drsm.sh and COLLECTOR_ID
+in each site file, and print the setup for each with:
+
+$ ~/drsm/utils/drsm_add_collector.sh -u user@dashboard -r /path/reports acme/hq
+
+To limit dashboard users to their own organizations or sites, see
+$AUTHscopes and $AUTHnetworkscopes in php/drsm_auth.php. PLUGINS.md
+has the full list of site settings and tools.
 
 Monitoring Crons:
 ----------------

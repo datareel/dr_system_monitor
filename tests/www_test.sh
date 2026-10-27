@@ -303,6 +303,9 @@ render trends.php "h=acme/branch/app1&r=7d"
 expect "org/site/host trends" "app1 trends"
 render trends.php "h=web1"
 expect "ambiguous trends host" "web1 is in more than one site"
+render trends.php ""
+expect "trends grouped by site" 'class="site-row"'
+expect "trends site totals" "Acme Corp / Branch total"
 
 echo "== Web only demo package"
 bash "${TOPdir}/utils/make_web_demo.sh" -s -o "${T}/demo" > "${T}/demo.log" 2>&1
@@ -312,7 +315,16 @@ if [ -s "${T}/page.err" ]; then fail "demo index.php PHP messages: $(head -3 "${
 expect "demo title" "DRSM Live Demo"
 expect "demo sample host" ">mail1</strong>"
 expect "demo links use the URL path" 'href="/drsm/dashboard/php/heatmap.php"'
+expect "demo sites table" 'id="site-table"'
+render orgs.php ""
+expect "demo organizations" "Northwind Traders"
+expect "demo second organization" "Blue Ridge Clinics"
+expect "demo stale collector" "Collector not reporting"
+expect "demo four sites" 'data-site="blueridge/annex"'
+render readreport.php "n=www1"
 reject "demo hosts are not stale" "Last report is over"
+render readreport.php "n=fw1"
+expect "demo annex hosts are stale" "Last report is over"
 render heatmap.php "mode=metrics"
 expect "demo metrics" 'Memory used'
 render trends.php "h=www2&r=7d"

@@ -4,6 +4,55 @@ All notable changes to the DataReel System Monitor (DRSM) are listed here.
 
 ## Unreleased
 
+### Organizations and sites
+
+#### Added
+
+- Organizations and sites: organization > site > group > host, for
+  monitoring several customers or offices from one dashboard. Site
+  files in `etc/sites` (`<org>.org`, `<org>/<site>.site`) with name,
+  location, time zone, alert addresses, stale limit, collector ID and
+  host defaults. Hosts join a site with `SITE=<org>/<site>`, or every
+  host of a monitor host with `DRSM_SITE` in `~/.drsm.sh`. Two sites
+  may have a host with the same name.
+- `drsm_run.sh` runs each site in turn with its own lock, log, alert
+  throttle and alert subject, or one site with `-s org/site`. `-H`
+  takes `org/site/host`. Site reports go to `reports/orgs/<org>/<site>`
+  with a `site.json`, plus `reports/orgs/<org>/org.json`. Plugins get
+  `DRSM_ORG` and `DRSM_SITE`.
+- Several monitor hosts per dashboard: `DRSM_COLLECTOR_ID` and the
+  site's `COLLECTOR_ID` decide which monitor host runs a site.
+- Organizations page (`www/php/orgs.php`): a card per site with its
+  worst state, host counts, a heat map tile per host (check status or
+  resource use), its monitor host, and a "Collector not reporting"
+  banner when the monitor host stops. It leads the menu when there is
+  more than one site.
+- Site picker in the page header for all sites, one organization or
+  one site. Hosts has Organization and Site columns, the heat map can
+  group by site, the Overview lists the sites, and Trends groups the
+  capacity table by site with site totals.
+- `$AUTHscopes` and `$AUTHnetworkscopes` limit users and networks to
+  organizations or sites, in every page and in `host_status.php`.
+- `utils/drsm_migrate_sites.sh` moves hosts and reports into a site,
+  `utils/drsm_remove_site.sh` removes a site, and
+  `utils/drsm_add_collector.sh` prints an `rrsync` limited SSH key
+  line for a site's monitor host. All are dry run or print only.
+- `host_status.php` (from the DRCM takeover check work) takes
+  `site=`, or `n=<org>/<site>/<host>`, and answers 409 for a host name
+  found in two sites.
+- The Web only demo (`make_web_demo.sh -s`) has two organizations with
+  two sites each, one with a monitor host that stopped reporting.
+
+#### Changed
+
+- `drsm_web_sync.sh` copies each site to `orgs/<org>/<site>` on the
+  dashboard with its own `--delete`, so other monitor hosts' sites are
+  kept. A reports folder with no sites is copied as before.
+  `WEBSYNC_RRSYNC=1` for a dashboard that limits the key with rrsync.
+- `drsm_remove_host.sh` takes `org/site/host`, `wra_hosts.sh` and
+  `drsm_metrics_backfill.sh` take `-s org/site`.
+- `purge.sh` keeps `site.json` and `org.json`.
+
 ### Trends and capacity planning
 
 #### Added

@@ -446,6 +446,14 @@ if [ ! -e "${R}/orgs/acme/hq" ] && [ ! -e "${T}/hosts/web_hq.conf" ]; then pass 
 if [ -f "${R}/orgs/acme/org.json" ]; then pass "org kept while it has other sites"; else fail "org.json removed with sites left"; fi
 if rmsite default/default; then fail "default site removal accepted"; else pass "default site removal refused"; fi
 
+NEWH="${R}/orgs/acme/new/systems/legacy1"
+narch=$(ls "${NEWH}/archive" | wc -l)
+rm -f "${NEWH}/metrics_history.tsv"
+HOME="${T}/home" bash "${TOPdir}/utils/drsm_metrics_backfill.sh" --no-offline -s acme/new > "${T}/backfill.log" 2>&1
+expect "backfill -s finds the site's hosts" "${T}/backfill.log" "legacy1: ${narch} archived reports, 0 lines in history, ${narch} to add"
+HOME="${T}/home" bash "${TOPdir}/utils/drsm_metrics_backfill.sh" --apply --no-offline -s acme/new legacy1 > "${T}/backfill.log" 2>&1
+if [ "$(wc -l < "${NEWH}/metrics_history.tsv")" -eq "${narch}" ]; then pass "backfill -s writes the site host's history"; else fail "backfill -s history: $(cat "${T}/backfill.log")"; fi
+
 HOME="${T}/home" bash "${TOPdir}/utils/wra_hosts.sh" --apply -s beta/lab -d "${T}/wra" > "${T}/wra.log" 2>&1
 expect "wra_hosts.sh -s names the site" "${T}/hosts/beta_lab_good1.conf" "SITE=beta/lab"
 HOME="${T}/home" bash "${TOPdir}/bin/drsm_run.sh" -l > "${T}/list.log" 2>&1

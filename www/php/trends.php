@@ -84,6 +84,29 @@ function drsm_verdict_html($v)
   return "<span class=\"badge " . h($x["cls"]) . "\" title=\"" . h($x["tip"]) . "\"><span class=\"dot\"></span>" . h($x["label"]) . "</span>";
 }
 
+// Have and need summed over a site's hosts. Shared hosting accounts
+// have no need, so they only add to what the site has.
+function drsm_trend_site_totals($rows)
+{
+  $t = array("hosts" => 0, "cpu_have" => 0, "cpu_need" => 0, "mem_have" => 0, "mem_need" => 0,
+             "disk_have" => 0, "disk_need" => 0, "tx" => 0, "recent" => 0);
+  foreach($rows as $row) {
+    $d = $row["d"];
+    if(!$d["exists"] || $d["count"] == 0) continue;
+    $t["hosts"]++;
+    $t["recent"] += $row["recent"];
+    $c = $row["cap"];
+    if(isset($d["sizes"]["cpu_count"])) $t["cpu_have"] += $d["sizes"]["cpu_count"];
+    if(isset($c["cpu"]) && $c["cpu"]["need_raw"] !== null) $t["cpu_need"] += $c["cpu"]["need_raw"];
+    if(isset($d["sizes"]["mem_total_mb"])) $t["mem_have"] += $d["sizes"]["mem_total_mb"];
+    if(isset($c["mem"]) && $c["mem"]["need_raw"] !== null) $t["mem_need"] += $c["mem"]["need_raw"];
+    foreach($d["sizes"]["disk"] as $mb) $t["disk_have"] += $mb;
+    foreach($row["disks"] as $dk) if($dk["need_raw"] !== null) $t["disk_need"] += $dk["need_raw"];
+    if($row["traffic"]["net"]) $t["tx"] += $row["traffic"]["net"]["tx_month"];
+  }
+  return $t;
+}
+
 function drsm_trend_link($host, $range)
 {
   // $host is a host from drsm_load_hosts(), or "" for every host
@@ -168,6 +191,17 @@ if($hostkey == "") {
     $rows[] = array("host" => $hst, "d" => $d, "cap" => $cap, "disks" => $disks, "traffic" => $traffic, "recent" => $recent,
                     "anoms" => count($anoms), "type" => isset($aws["Instance type"]) ? $aws["Instance type"] : "");
   }
+  // With more than one site, the hosts of each site together with the
+  // site's totals under them
+  $sites = drsm_scope_sites($scope);
+  $bysite = array();
+  if(count($sites) > 1) {
+    foreach($sites as $sid => $st) $bysite[$sid] = array();
+    foreach($rows as $row) $bysite[$row["host"]["site"]][] = $row;
+  }
+  else {
+    $bysite[""] = $rows;
+  }
 ?>
 <section class="panel flush">
   <div class="panel-head pad"><h2><?php echo drsm_icon("trend"); ?>Capacity by host</h2><span class="muted small"><?php echo h($ranges[$range]["label"]); ?> of history, <?php echo (int)$TRENDheadroom; ?>% headroom</span></div>
@@ -180,7 +214,12 @@ if($hostkey == "") {
         <tr><th scope="col">Host</th><th scope="col">History</th><th scope="col">CPU p95</th><th scope="col">CPUs have / need</th><th scope="col">Memory peak</th><th scope="col">Memory have / need</th><th scope="col">Disk have / need</th><th scope="col">Network out / 30 days</th><th scope="col">Outside normal, 24h</th></tr>
       </thead>
       <tbody>
-<?php   foreach($rows as $row) {
+<?php   foreach($bysite as $sid => $siterows) {
+          if($sid != "") {
+            if(count($siterows) == 0) continue; ?>
+        <tr class="site-row"><th scope="rowgroup" colspan="9"><?php echo drsm_icon("building"); ?><?php echo h(drsm_site_label($sid)); ?></th></tr>
+<?php     }
+          foreach($siterows as $row) {
           $c = $row["cap"];
           $url = drsm_trend_link($row["host"], $range); ?>
         <tr>
@@ -203,7 +242,22 @@ if($hostkey == "") {
           <td class="num"><?php echo $row["traffic"]["net"] ? h(drsm_fmt_bytes($row["traffic"]["net"]["tx_month"])) : "-"; ?></td>
           <td class="num"><?php if($row["recent"] > 0) { ?><a class="badge warn" href="<?php echo h($url); ?>#outside"><span class="dot"></span><?php echo (int)$row["recent"]; ?></a><?php } else { ?><span class="badge ok"><span class="dot"></span>0</span><?php } ?></td>
         </tr>
-<?php   } ?>
+<?php     }
+          if($sid != "") {
+            $tot = drsm_trend_site_totals($siterows); ?>
+        <tr class="site-total">
+          <th scope="row"><?php echo h(drsm_site_label($sid)); ?> total<br><span class="muted small"><?php echo (int)$tot["hosts"]; ?> host<?php echo $tot["hosts"] == 1 ? "" : "s"; ?> with history</span></th>
+          <td></td>
+          <td></td>
+          <td><?php echo $tot["cpu_have"] > 0 ? h($tot["cpu_have"] . " / " . $tot["cpu_need"]) : "-"; ?></td>
+          <td></td>
+          <td><?php echo $tot["mem_have"] > 0 ? h(drsm_fmt_bytes($tot["mem_have"] * 1048576) . " / " . $tot["mem_need"] . " GB") : "-"; ?></td>
+          <td><?php echo $tot["disk_have"] > 0 ? h(drsm_fmt_bytes($tot["disk_have"] * 1048576, 0) . " / " . $tot["disk_need"] . " GB") : "-"; ?></td>
+          <td class="num"><?php echo $tot["tx"] > 0 ? h(drsm_fmt_bytes($tot["tx"])) : "-"; ?></td>
+          <td class="num"><?php echo (int)$tot["recent"]; ?></td>
+        </tr>
+<?php     }
+        } ?>
       </tbody>
     </table>
   </div>

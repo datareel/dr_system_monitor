@@ -190,17 +190,17 @@ expect "sign out button" 'name="action" value="logout"'
 TOKEN=$(csrf)
 
 get "${B}/readreport.php?n=db1"
-expect "archive button goes through PHP" 'href="/dashboard/php/archive.php?h=db1"'
-get "${B}/archive.php?h=db1"
+expect "archive button goes through PHP" 'href="/dashboard/php/archive.php?h=db1&amp;site=northwind%2Fhq"'
+get "${B}/archive.php?h=db1&site=northwind/hq"
 expect "host archive listed" "db1_report_"
-FILE=$(grep -o 'archive.php?h=db1&amp;f=[A-Za-z0-9._-]*' "${T}/body" | head -1 | sed 's/&amp;/\&/')
+FILE=$(grep -o 'archive.php?h=db1&amp;f=[A-Za-z0-9._-]*&amp;site=northwind%2Fhq' "${T}/body" | head -1 | sed 's/&amp;/\&/g')
 get "${B}/${FILE}"
 expect "archived report shown" "Start of db1 system health check report"
-get "${B}/archive.php?h=db1&f=..%2F..%2F..%2Fconfig%2Fdrsm.php"
+get "${B}/archive.php?h=db1&site=northwind/hq&f=..%2F..%2F..%2Fconfig%2Fdrsm.php"
 reject_out=$(grep -c "AUTHusers" "${T}/body")
 if [ "${reject_out}" == "0" ]; then pass "archive path traversal refused"; else fail "archive served the config"; fi
 get "${B}/checks.php"
-expect "group archive goes through PHP" 'href="/dashboard/php/archive.php?p=system_check_report_"'
+expect "group archive goes through PHP" 'href="/dashboard/php/archive.php?p=system_check_report_&amp;site='
 
 get "${B}/login.php" --data-urlencode "action=logout" --data-urlencode "csrf=bad"
 get "${B}/index.php"
@@ -292,14 +292,14 @@ scopes "\$AUTHscopes = array('admin' => array('*'), 'tech' => array('acme/hq'));
 login admin "correct horse battery"
 get "${B}/orgs.php"
 expect "'*' sees every site" "LABSECRET site"
-expect "'*' sees the default site" "Default site"
+expect "'*' sees the demo sites" "Northwind Traders"
 
 login tech "tech password here"
 if [ "${CODE}" == "303" ]; then pass "limited user signs in"; else fail "limited user login: ${CODE}"; fi
 get "${B}/index.php"
 expect "limited user sees their site" "HQSECRET host"
 reject "limited user does not see other sites" "LABSECRET"
-reject "limited user does not see the default site" "mail1"
+reject "limited user does not see the demo sites" "mail1"
 reject "one visible site, no Organizations page" "orgs.php"
 get "${B}/orgs.php"
 reject "Organizations page shows only their site" "LABSECRET"
@@ -309,7 +309,7 @@ reject "other site's host report has no data" "LABSECRET"
 get "${B}/readreport.php?n=beta/lab/lab1"
 reject "other site's host by org/site/host refused" "LABSECRET"
 get "${B}/readreport.php?n=mail1"
-if [ "${CODE}" == "404" ]; then pass "default site host refused"; else fail "default site host: ${CODE}"; fi
+if [ "${CODE}" == "404" ]; then pass "demo site host refused"; else fail "demo site host: ${CODE}"; fi
 get "${B}/readreport.php?n=hq1"
 expect "own host by plain name" "HQSECRET host"
 get "${B}/host_status.php?n=lab1&site=beta/lab"
@@ -347,7 +347,7 @@ scopes "\$AUTHnetworkscopes = array('127.0.0.0/8' => array('beta/lab'));"
 get "${B}/index.php"
 expect "network scope shows its site" "LABSECRET host"
 reject "network scope hides other sites" "HQSECRET"
-reject "network scope hides the default site" "mail1"
+reject "network scope hides the demo sites" "mail1"
 get "${B}/host_status.php?n=lab1"
 expect "network scope host status" '"host":"lab1"'
 scopes "\$AUTHnetworkscopes = array('10.0.0.0/8' => array('*'));"

@@ -23,7 +23,7 @@
 </header>
 <div class="layout">
   <nav class="sidebar" aria-label="Documentation">
-    <h4>Get started</h4><a href="index.html">Overview</a><a href="install.html">Install and set up</a><a href="deployment.html">Deployment setups</a><h4>Using DRSM</h4><a href="dashboard.html" class="active" aria-current="page">Web dashboard</a><div class="toc"><a href="#overview">Overview</a><a href="#heatmap">Heat map</a><a href="#hosts">Hosts and reports</a><a href="#connectivity">Connectivity</a><a href="#trends">Trends</a><a href="#anywhere">Phones and wall screens</a><a href="#customize">Customizing</a><a href="#webonly">Web only package</a><a href="#login">Login from outside</a><a href="#security">Security</a></div><a href="plugins.html">Plugins</a><a href="alerts.html">Thresholds and alerts</a><a href="databases.html">MySQL and Postgres</a><h4>Reference</h4><a href="changelog.html">What's new</a><h4>Links</h4><a href="https://datareel.com/drsm/dashboard/">Live demo</a><a href="https://datareel.com/downloads/drsm/">Downloads</a><a href="https://datareel.com/contact.php">Report an issue</a>
+    <h4>Get started</h4><a href="index.html">Overview</a><a href="install.html">Install and set up</a><a href="deployment.html">Deployment setups</a><h4>Using DRSM</h4><a href="dashboard.html" class="active" aria-current="page">Web dashboard</a><div class="toc"><a href="#overview">Overview</a><a href="#orgs">Organizations</a><a href="#heatmap">Heat map</a><a href="#hosts">Hosts and reports</a><a href="#connectivity">Connectivity</a><a href="#trends">Trends</a><a href="#anywhere">Phones and wall screens</a><a href="#customize">Customizing</a><a href="#webonly">Web only package</a><a href="#login">Login from outside</a><a href="#security">Security</a></div><a href="plugins.html">Plugins</a><a href="alerts.html">Thresholds and alerts</a><a href="databases.html">MySQL and Postgres</a><h4>Reference</h4><a href="changelog.html">What's new</a><h4>Links</h4><a href="https://datareel.com/drsm/dashboard/">Live demo</a><a href="https://datareel.com/downloads/drsm/">Downloads</a><a href="https://datareel.com/contact.php">Report an issue</a>
   </nav>
   <main class="content" id="main">
 <h1>Web dashboard</h1>
@@ -44,6 +44,15 @@
 <figure><img src="images/overview.png" width="1400" height="900" loading="lazy" alt="Overview page in the dark theme"><figcaption>Dark theme</figcaption></figure>
 <figure><img src="images/overview_light.png" width="1400" height="900" loading="lazy" alt="Overview page in the light theme"><figcaption>Light theme</figcaption></figure>
 </div>
+
+<h2 id="orgs">Organizations and sites</h2>
+<p>With hosts in more than one <a href="plugins.html#sites">site</a>, an <strong>Organizations</strong> page leads the menu. Each organization lists its sites, worst first. Each site card shows the worst state on a colored edge, host counts by state, a tile per host (select one for its report), and the monitor host that runs the site with the time it last reported. A site whose monitor host has stopped gets a <strong>Collector not reporting</strong> banner. <strong>Resource use</strong> colors each tile by the host's busiest resource instead.</p>
+<div class="shots">
+<figure><img src="images/orgs.png" width="1400" height="900" loading="lazy" alt="Organizations page with two organizations and four sites, one with its collector not reporting"><figcaption>Two organizations, four sites</figcaption></figure>
+<figure><img src="images/orgs_light.png" width="1400" height="900" loading="lazy" alt="Organizations page in the light theme"><figcaption>Light theme</figcaption></figure>
+</div>
+<p>The <strong>site picker</strong> in the top bar shows all sites, one organization or one site on every page. The Overview then lists the sites, Hosts adds Organization and Site columns, the heat map can group hosts <strong>By site</strong>, and Trends totals what each site has and needs. With a single site the pages look as before.</p>
+<p>To limit users to their own organizations or sites, list them in <code>$AUTHscopes</code>, see <a href="#login">Login</a>.</p>
 
 <h2 id="heatmap">Heat map</h2>
 <p>The heat map puts every host against every check. <strong>Check status</strong> shows a status icon per plugin: a green check for OK, an amber triangle for a warning, a red cross for an error, and a gray question mark for unknown. Problem cells are shaded so they stand out. Select a cell to open that check in the host report. The bottom row shows the worst state in each column.</p>
@@ -131,6 +140,8 @@ $AUTHusers = array(
 <tr><td><code>$AUTHidleminutes</code>, <code>$AUTHmaxhours</code></td><td>Sign out after 60 minutes idle, or 12 hours after login</td></tr>
 <tr><td><code>$AUTHmaxfails</code>, <code>$AUTHlockminutes</code></td><td>Lock an address out for 15 minutes after 5 failed logins</td></tr>
 <tr><td><code>$AUTHstatedir</code></td><td>Failed login counts, default <code>config/auth</code>, must be writable by the Web server</td></tr>
+<tr><td><code>$AUTHscopes</code></td><td>Organizations and sites each user may see, for example <code>'tech' =&gt; array('acme/hq', 'beta')</code>, with <code>'*'</code> for all. Unset, every user sees every site. Set, a user not listed sees nothing</td></tr>
+<tr><td><code>$AUTHnetworkscopes</code></td><td>The same for visitors from <code>$AUTHnetworks</code>, by address: <code>'10.1.0.0/16' =&gt; array('acme/hq')</code></td></tr>
 </tbody></table></div>
 <p>Passwords are stored as bcrypt hashes. Sessions use HttpOnly, SameSite cookies, Secure on HTTPS, with a new session id at login, and the login and sign out forms carry a CSRF token.</p>
 
