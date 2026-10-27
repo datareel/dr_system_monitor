@@ -78,7 +78,9 @@ hours=$((age / 3600))
 days=$((age / 86400))
 
 ips=$(wra_section "IP ADDRESS" "${REPORT}" | sed -n 's/^IPv4 Address: *//p' | tr -d ' ' | paste -sd ' ' -)
-echo "Agent ${version:-unknown} reported ${hours} hours ago${ips:+, IP ${ips}}"
+ago="${hours} hours ago"
+if [ ${hours} -eq 0 ]; then ago="$((age / 60)) minutes ago"; elif [ ${hours} -eq 1 ]; then ago="1 hour ago"; fi
+echo "Agent ${version:-unknown} reported ${ago}${ips:+, IP ${ips}}"
 drsm_detail "Agent" "DataReel Reporting Agent ${version:-unknown}"
 if [ "${ips}" != "" ]; then drsm_detail "IP address" "${ips// /, }"; fi
 echo "Agent version: ${version:-unknown}"
