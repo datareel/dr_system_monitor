@@ -39,6 +39,11 @@
 # ----------------------------------------------------------- 
 WRA_HOST="${DRSM_TARGET:-${HOST}}"
 
+# DRSM 1.31 has no drsm_detail, the agent's drsm/install.sh supports it
+if ! declare -F drsm_detail > /dev/null; then
+    function drsm_detail() { echo "DETAIL ${1}=${2}"; }
+fi
+
 function wra_load_report()
 {
     # Sets REPORT to the report path. Without a report it prints
