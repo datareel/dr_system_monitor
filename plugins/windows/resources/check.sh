@@ -56,7 +56,6 @@ MAX_AGE_HOURS=$(drsm_setting MAX_AGE_HOURS 2)
 if drsm_is_none "${DISK_SKIP}"; then DISK_SKIP=""; fi
 
 wra_load_report || drsm_exit
-echo "Resource use for ${WRA_HOST}"
 if ! wra_has_section "PERFORMANCE" "${REPORT}"; then
     drsm_unknown "${WRA_HOST} report has no PERFORMANCE section, the agent needs version 3.3 or later"
     drsm_exit
@@ -77,6 +76,28 @@ declare -A P
 while IFS='=' read -r k v; do
     if [[ "${k}" =~ ^[a-z_]+$ ]] && [[ "${v}" =~ ^-?[0-9.]+$ ]]; then P[${k}]="${v}"; fi
 done < <(wra_section "PERFORMANCE" "${REPORT}")
+
+function uptime_text()
+{
+    # Uptime as days, or hours under a day, $1 == seconds
+    local s="${1%.*}"
+    local n=$((s / 3600)) unit="hour"
+    if [ "${s}" -ge 86400 ]; then n=$((s / 86400)); unit="day"; fi
+    if [ ${n} -eq 1 ]; then echo "1 ${unit}"; else echo "${n} ${unit}s"; fi
+}
+drives=$(wra_section "DISK USAGE" "${REPORT}" | sed -n 's/^drive=\([A-Za-z]:\).*used_pct=\([0-9.]*\).*/\1 \2%/p' | paste -sd ',' - | sed 's/,/, /g')
+summary="CPU ${P[cpu_used_pct]:-?}%, memory ${P[mem_used_pct]:-?}% used"
+if [ "${drives}" != "" ]; then summary="${summary}, ${drives}"; fi
+if [ "${P[uptime_seconds]}" != "" ]; then summary="${summary}, up $(uptime_text "${P[uptime_seconds]}")"; fi
+echo "${summary}"
+if [ "${P[cpu_count]}" != "" ] && [ "${P[mem_total_mb]}" != "" ]; then
+    drsm_detail "Hardware" "${P[cpu_count]} CPUs, $(awk -v m="${P[mem_total_mb]}" 'BEGIN { printf "%.1f", m / 1024 }') GB memory"
+fi
+if [ "${P[uptime_seconds]}" != "" ]; then
+    drsm_detail "Up since" "$(date -d "@$((etime - ${P[uptime_seconds]%.*}))" '+%Y-%m-%d %H:%M'), $(uptime_text "${P[uptime_seconds]}")"
+fi
+sizes=$(wra_section "DISK USAGE" "${REPORT}" | sed -n 's/^drive=\([A-Za-z]:\) size_mb=\([0-9]*\).*/\1 \2/p' | awk '{ printf "%s%s %.0f GB", (NR > 1 ? ", " : ""), $1, $2 / 1024 }')
+if [ "${sizes}" != "" ]; then drsm_detail "Drives" "${sizes}"; fi
 
 # CPU, a 5 second sample taken when the report was written
 if [ "${P[cpu_used_pct]}" != "" ]; then
@@ -114,7 +135,7 @@ if [ "${P[process_count]}" != "" ]; then
 fi
 if [ "${P[uptime_seconds]}" != "" ]; then
     up_days=$(( ${P[uptime_seconds]%.*} / 86400 ))
-    echo "Up ${up_days} days"
+    echo "Up $(uptime_text "${P[uptime_seconds]}")"
     if [ "${UPTIME_WARN_DAYS}" -gt 0 ] && [ ${up_days} -ge "${UPTIME_WARN_DAYS}" ]; then
 	drsm_warn "${WRA_HOST} has not restarted for ${up_days} days, updates may be waiting for a restart"
     fi

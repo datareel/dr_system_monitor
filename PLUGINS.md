@@ -420,6 +420,7 @@ drsm_exit
 | `drsm_crit` | `ERROR - ...` | state ERROR, alerts are sent |
 | `drsm_unknown` | `UNKNOWN - ...` | state UNKNOWN when nothing worse |
 | `drsm_metric name value [labels]` | `METRIC name{labels}=value` | for graphs later |
+| `drsm_detail name value` | `DETAIL name=value` | a host fact shown in the Details panel of the host page, such as an IP address or agent version |
 | `drsm_setting NAME default` | | value of `DRSM_NAME` or the default |
 | `drsm_target` | | the host a probe checks, `DRSM_TARGET` |
 | `drsm_gt a b` | | floating point a > b without `bc` |

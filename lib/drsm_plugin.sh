@@ -62,6 +62,14 @@ function drsm_metric()
     fi
 }
 
+function drsm_detail()
+{
+    # Host fact for the Details panel of the host page, for example:
+    # drsm_detail "IP address" 192.168.1.20
+    # $1 == name, $2 == value. The first plugin to give a name wins.
+    echo "DETAIL ${1}=${2}"
+}
+
 function drsm_setting()
 {
     # Value of plugin setting $1 from DRSM_<NAME>, or default $2

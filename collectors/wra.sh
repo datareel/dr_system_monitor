@@ -29,7 +29,7 @@
 # You should have received a copy of the GNU General Public License
 # along with the DataReel software distribution.  If not, see
 #
-# Collector for Windows hosts that run the Windows Reporting Agent.
+# Collector for Windows hosts that run the DataReel Reporting Agent.
 # The agent pushes its report to the monitor side (HTTPS upload page,
 # CIFS share, or SCP), so nothing connects to the Windows host. The
 # windows/* plugins run here, in place from DRSMHOME, and read the

@@ -130,6 +130,26 @@ expect "plugin section" 'id="p-core-load"'
 expect "error line styled" 'class="l-err"'
 render readreport.php "n=old1"
 expect "legacy report shown" 'old1 disk is at 90%'
+mkdir -p "${W}/reports/systems/winrpt"
+cat > "${W}/reports/systems/winrpt/winrpt_report.txt" <<RPT
+HOSTNAME:winrpt
+ETIME:$(date +%s)
+PLATFORM:windows
+
+=== windows/resources [OK] 0s ===
+CPU 8.0%, memory 25.0% used, C: 20.0%
+DETAIL Hardware=4 CPUs, 16.0 GB memory
+DETAIL Up since=2026-10-26 16:31, 12 hours
+METRIC cpu_used_pct=8.0
+METRIC cpu_count=4
+METRIC mem_available_mb=12000
+METRIC mem_total_mb=16000
+METRIC disk_used_pct{mount="C:"}=20.0
+RPT
+render readreport.php "n=winrpt"
+expect "plugin details in the Details panel" "<dt>Hardware</dt><dd>4 CPUs, 16.0 GB memory</dd>"
+expect "memory gauge from mem_total_mb" "Memory used: 12000 MB free of 16000 MB"
+expect "summary skips DETAIL lines" "CPU 8.0%, memory 25.0% used, C: 20.0%</span>"
 render readreport.php "n=../../etc"
 expect "path traversal refused" "Host not found"
 

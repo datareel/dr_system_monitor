@@ -95,6 +95,7 @@ function drsm_check_lines($lines)
       case "UNKNOWN": $cls = "l-unk"; break;
       case "INFO": $cls = "l-info"; break;
       case "METRIC": $cls = "l-metric"; break;
+      case "DETAIL": $cls = "l-metric"; break;
     }
     $out .= ($cls != "") ? "<span class=\"{$cls}\">" . h($line) . "</span>\n" : h($line) . "\n";
   }

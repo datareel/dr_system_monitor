@@ -47,7 +47,6 @@ PROTECTION_LOOKBACK_DAYS=$(drsm_setting PROTECTION_LOOKBACK_DAYS 30)
 PROTECTION_EVENTS=$(drsm_setting PROTECTION_EVENTS "5001 5010 5012")
 
 wra_load_report || drsm_exit
-echo "Microsoft Defender checks for ${WRA_HOST}"
 if ! wra_has_section "WINDOWS DEFENDER ALERTS" "${REPORT}"; then
     drsm_unknown "${WRA_HOST} report has no Defender section"
     drsm_exit
@@ -71,6 +70,8 @@ events=$(wra_section "WINDOWS DEFENDER ALERTS" "${REPORT}" | awk '
 function event_label()
 {
     case "${1}" in
+	1002) echo "scan stopped before it finished" ;;
+	1005) echo "scan failed" ;;
 	1006|1116) echo "threat detected" ;;
 	1015) echo "suspicious behavior detected" ;;
 	1117) echo "threat removed or quarantined" ;;
@@ -91,10 +92,12 @@ function event_label()
 total=0
 recent=0
 threats=0
+listing=""
 while IFS='|' read -r t id detail
 do
     [ "${id}" == "" ] && continue
     total=$((total + 1))
+    listing="${listing}  ${t}Z  ${id}  $(event_label "${id}")${detail:+  ${detail}}"$'\n'
     if [[ " ${PROTECTION_EVENTS} " == *" ${id} "* ]]; then
 	if [[ "${t}" < "${psince}" ]]; then continue; fi
     elif [[ "${t}" < "${since}" ]]; then
@@ -110,7 +113,7 @@ do
     fi
 done <<< "${events}"
 
-echo "Defender events in the report: ${total}, in the last ${LOOKBACK_DAYS} days: ${recent}"
+summary="Defender: ${recent} events in the last ${LOOKBACK_DAYS} days, ${total} in the report"
 
 # Newest Security Intelligence (definition) update in the patch history
 if [ "${DEFINITIONS_WARN_DAYS}" != "0" ] && wra_has_section "INSTALLED WINDOWS PATCHES" "${REPORT}"; then
@@ -118,16 +121,24 @@ if [ "${DEFINITIONS_WARN_DAYS}" != "0" ] && wra_has_section "INSTALLED WINDOWS P
 	/^Date:/ { d = $2 }
 	/Security Intelligence Update|Definition Update/ { print d }' | wra_newest_date)
     if [ "${last}" == "" ]; then
-	echo "No Security Intelligence updates in the patch history"
+	summary="${summary}, no definition updates in the patch history"
     else
 	age=$(( ( $(date +%s) - $(date -d "${last}" +%s) ) / 86400 ))
 	if [ ${age} -gt "${DEFINITIONS_WARN_DAYS}" ]; then
 	    drsm_warn "${WRA_HOST} Defender definitions are ${age} days old, last update ${last}"
 	else
-	    echo "Defender definitions updated ${last}"
+	    :
 	fi
+	summary="${summary}, definitions ${last}"
+	drsm_detail "Defender definitions" "${last}"
 	drsm_metric wra_defender_definitions_age_days "${age}"
     fi
+fi
+echo "${summary}"
+if [ "${listing}" != "" ]; then
+    echo ""
+    echo "Defender events in the report (critical, error and warning levels):"
+    printf '%s' "${listing}"
 fi
 
 if [ "${DRSM_HAS_ERROR}" == "0" ] && [ "${DRSM_HAS_WARNING}" == "0" ]; then

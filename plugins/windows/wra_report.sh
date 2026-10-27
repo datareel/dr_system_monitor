@@ -30,7 +30,7 @@
 # along with the DataReel software distribution.  If not, see
 #
 # Shared functions for the windows/* plugins, which read the last
-# report the Windows Reporting Agent sent for a host. The wra
+# report the DataReel Reporting Agent sent for a host. The wra
 # collector sets DRSM_WRA_REPORT. To run a plugin by hand:
 #
 #   DRSM_TARGET=laptop1 DRSM_WRA_REPORT=/path/laptop1_windows_report_agent.txt \
