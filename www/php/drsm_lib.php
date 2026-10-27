@@ -48,6 +48,13 @@ $STALEminutes   = 60;   // Host report age that counts as stale, 0 off
 $DEMObuilt      = 0;    // Sample data build time, set by
                         // utils/make_web_demo.sh so report times
                         // stay recent on a live demo
+$SITElogo       = '';   // Logo image URL shown before the site name
+$NAVextra       = array(); // Your own main menu items, each
+                        // array("label" => "Windows", "url" => "/windows/",
+                        //       "icon" => "windows", "sub" => array(
+                        //       array("Name", "/url"), ...))
+                        // icon and sub are optional
+$EXTreports     = '';   // Other script reports, see drsm_ext.php
 
 Login for access from outside the internal networks is off by
 default, see drsm_auth.php for the $AUTH settings.
@@ -646,7 +653,10 @@ function drsm_icon($name)
     "logout" => '<path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 16l-4-4 4-4M6 12h10"/>',
     "link" => '<path d="M10 14a4.5 4.5 0 0 0 6.4 0l3.2-3.2a4.5 4.5 0 0 0-6.4-6.4L11.6 6"/><path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3.2 3.2a4.5 4.5 0 0 0 6.4 6.4l1.6-1.6"/>',
     "external" => '<path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',
-    "chevron" => '<path d="M6 9l6 6 6-6"/>'
+    "chevron" => '<path d="M6 9l6 6 6-6"/>',
+    "file" => '<path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/>',
+    "windows" => '<rect x="3" y="4" width="18" height="13" rx="1.5"/><path d="M8 21h8M12 17v4"/>',
+    "layout" => '<rect x="3" y="3" width="18" height="18" rx="1.5"/><path d="M9 3v18M9 9h12"/>'
   );
   $p = isset($paths[$name]) ? $paths[$name] : "";
   return "<svg class=\"icon\" viewBox=\"0 0 24 24\" aria-hidden=\"true\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">{$p}</svg>";
@@ -684,7 +694,7 @@ function drsm_head_assets()
 // Page layout. $PAGEtitle and $PAGEactive are read by default_header.php
 function drsm_page_start($title, $active, $state = "")
 {
-  global $SITEincludes, $WWWdir, $WWWvpath, $SITEtitle, $REFRESHseconds, $PAGEtitle, $PAGEactive, $PAGEstate, $AUTHuser, $AUTHcsrf;
+  global $SITEincludes, $WWWdir, $WWWvpath, $SITEtitle, $REFRESHseconds, $PAGEtitle, $PAGEactive, $PAGEstate, $AUTHuser, $AUTHcsrf, $SITElogo, $EXTtitle;
   $PAGEtitle = $title;
   $PAGEactive = $active;
   $PAGEstate = $state;
@@ -707,8 +717,29 @@ function drsm_page_end()
   }
 }
 
+// Main menu items from $NAVextra, cleaned: key => array("label",
+// "url", "icon", "sub" => array(array(label, url), ...))
+function drsm_nav_extra()
+{
+  global $NAVextra;
+  $out = array();
+  if(!isset($NAVextra) || !is_array($NAVextra)) return $out;
+  foreach($NAVextra as $i => $item) {
+    if(!is_array($item) || !isset($item["label"]) || !isset($item["url"]) || $item["label"] == "") continue;
+    $sub = array();
+    if(isset($item["sub"]) && is_array($item["sub"])) {
+      foreach($item["sub"] as $s) if(is_array($s) && count($s) >= 2) $sub[] = array((string)$s[0], (string)$s[1]);
+    }
+    $out["extra{$i}"] = array("label" => (string)$item["label"], "url" => (string)$item["url"],
+                              "icon" => isset($item["icon"]) ? (string)$item["icon"] : "link", "sub" => $sub);
+  }
+  return $out;
+}
+
 // Organizations and sites
 require_once("{$WWWdir}/php/drsm_sites.php");
+// Other script reports
+require_once("{$WWWdir}/php/drsm_ext.php");
 
 // Optional login for requests from outside the internal networks,
 // see drsm_auth.php. login.php does its own checks.

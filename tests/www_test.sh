@@ -435,6 +435,68 @@ expect "trends grouped by site" 'class="site-row"'
 expect "trends site totals" "Acme Corp / Branch total"
 
 echo "== Web only demo package"
+# Other script reports ($EXTreports), Site links on a one-site
+# install, a logo and extra menu items ($SITElogo, $NAVextra)
+printf 'ETIME:%s\nall backups good\n' "$(date +%s)" > "${T}/ext_ok.txt"
+printf 'WARNING - cert expires in 20 days <b>\n' > "${T}/ext_warn.txt"
+printf 'ETIME:1000000000\nok\n' > "${T}/ext_old.txt"
+printf 'ERROR - blade fan\n' > "${T}/ext_err.txt"
+cat > "${W}/config/ext_reports.conf" <<EXT
+# comment
+[backup] Backups
+Nightly backups | ${T}/ext_ok.txt | | 60
+Certificates | ${T}/ext_warn.txt
+Old report | ${T}/ext_old.txt | | 60
+Blades | ${T}/ext_ok.txt | /blades/ | | ${T}/ext_err.txt
+[links] Links
+Missing | ${T}/ext_missing.txt
+Console | - | https://console.example.com/
+EXT
+cp "${W}/config/drsm.php" "${T}/drsm.php.saved"
+sed -i '$d' "${W}/config/drsm.php"
+cat >> "${W}/config/drsm.php" <<PHPCONF
+\$EXTreports = '${W}/config/ext_reports.conf';
+\$EXTtitle = 'Site reports';
+\$SITElogo = '/img/logo.png';
+\$NAVextra = array(array("label" => "Classic view", "url" => "/classic/", "icon" => "layout"),
+                   array("label" => "Tools", "url" => "/tools/", "sub" => array(array("Time converter", "/tools/utc.php"))),
+                   array("label" => ""));
+?>
+PHPCONF
+# Only the default site for these
+if [ -d "${W}/reports/orgs" ]; then mv "${W}/reports/orgs" "${T}/orgs.saved"; fi
+mv "${T}/sites" "${T}/sites.saved"
+mkdir -p "${T}/sites/default"
+printf 'NAME="Head office"\nLINK="Consoles/Storage|https://storage.example.com/"\n' > "${T}/sites/default/default.site"
+HOME="${T}/home" bash "${TOPdir}/bin/drsm_run.sh" -n -s default/default > "${T}/run.log" 2>&1
+if [ -f "${W}/reports/site.json" ] && grep -q 'storage.example.com' "${W}/reports/site.json"; then pass "default site.json written with links"; else fail "default site.json not written"; fi
+render index.php ""
+expect "site reports panel" "Site reports"
+expect "site reports section state" "3 of 4 need attention"
+expect "site links on one site" 'https://storage.example.com/'
+expect "logo" 'class="brand-logo" src="/img/logo.png"'
+expect "extra menu item kept as is" 'href="/classic/"'
+expect "extra submenu" 'href="/tools/utc.php"'
+reject "one site still has no picker" 'name="site"'
+render extreports.php ""
+expect "ext ok report" "Nightly backups"
+expect "ext warning" '<span class="badge warn">'
+expect "ext stale" "Report is older than 1 hour"
+expect "ext status file error links to its page" 'href="/blades/"'
+expect "ext missing file" "Report file is missing"
+expect "ext plain link" 'href="https://console.example.com/"'
+render extreports.php "s=links"
+reject "one section only" "Nightly backups"
+render extreports.php "v=backup-1"
+expect "ext report shown and escaped" 'cert expires in 20 days &lt;b&gt;'
+render extreports.php "v=../../etc/passwd"
+expect "ext only listed files" "No such report"
+cp "${T}/drsm.php.saved" "${W}/config/drsm.php"
+rm -f "${W}/reports/site.json"
+rm -rf "${T}/sites"
+mv "${T}/sites.saved" "${T}/sites"
+if [ -d "${T}/orgs.saved" ]; then mv "${T}/orgs.saved" "${W}/reports/orgs"; fi
+
 bash "${TOPdir}/utils/make_web_demo.sh" -s -o "${T}/demo" > "${T}/demo.log" 2>&1
 W="${T}/demo/dashboard"
 (cd "${W}" && php -d error_reporting=-1 -d display_errors=stderr index.php > "${T}/page.html" 2> "${T}/page.err")

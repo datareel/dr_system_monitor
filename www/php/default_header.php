@@ -29,6 +29,18 @@ $drsm_sub["heatmap"] = array(array("Check status", drsm_url("heatmap.php", array
 if(count(drsm_scope_sites(drsm_scope())) > 1) $drsm_sub["heatmap"][] = array("By site", drsm_url("heatmap.php", array("by" => "site")));
 $drsm_sub["checks"] = array(array("Connectivity tests", drsm_url("checks.php")),
                             array("Health reports", drsm_url("checks.php", array("r" => "health"))));
+// Other script reports, see extreports.php
+if(drsm_ext_enabled()) {
+  $drsm_nav["ext"] = array($EXTtitle, "extreports.php", "file");
+  $drsm_sub["ext"] = array();
+  foreach(drsm_ext_sections() as $sid => $sec) $drsm_sub["ext"][] = array($sec["title"], drsm_url("extreports.php", array("s" => $sid)));
+  if(count($drsm_sub["ext"]) < 2) unset($drsm_sub["ext"]);
+}
+// Site menu items from config/drsm.php $NAVextra, see drsm_lib.php
+foreach(drsm_nav_extra() as $key => $item) {
+  $drsm_nav[$key] = array($item["label"], $item["url"], $item["icon"], null, true);
+  if(count($item["sub"]) > 0) $drsm_sub[$key] = $item["sub"];
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -48,12 +60,16 @@ $drsm_sub["checks"] = array(array("Connectivity tests", drsm_url("checks.php")),
 <header class="topbar">
   <div class="topbar-inner">
     <a class="brand" href="<?php echo h(count($drsm_sites) > 1 ? drsm_url("orgs.php", array("site" => "")) : drsm_url("index.php")); ?>">
+<?php if(isset($SITElogo) && $SITElogo != "") { ?>
+      <img class="brand-logo" src="<?php echo h($SITElogo); ?>" alt="" aria-hidden="true">
+<?php } ?>
       <span class="brand-mark <?php echo h(drsm_state_class($drsm_state != "" ? $drsm_state : "OK")); ?>" aria-hidden="true"><span></span><span></span><span></span></span>
       <span class="brand-text"><?php echo h($SITEtitle); ?></span>
     </a>
     <nav class="nav" aria-label="Main">
 <?php foreach($drsm_nav as $key => $item) {
-        $drsm_link = '<a href="' . h(drsm_url($item[1], isset($item[3]) ? $item[3] : array())) . '" title="' . h($item[0]) . '"' . ($PAGEactive == $key ? ' class="active" aria-current="page"' : '') . '>' . drsm_icon($item[2]) . '<span>' . h($item[0]) . '</span></a>';
+        $drsm_href = !empty($item[4]) ? $item[1] : drsm_url($item[1], isset($item[3]) ? $item[3] : array());
+        $drsm_link = '<a href="' . h($drsm_href) . '" title="' . h($item[0]) . '"' . ($PAGEactive == $key ? ' class="active" aria-current="page"' : '') . '>' . drsm_icon($item[2]) . '<span>' . h($item[0]) . '</span></a>';
         if(!isset($drsm_sub[$key])) { ?>
       <?php echo $drsm_link; ?>
 
@@ -90,6 +106,11 @@ $drsm_sub["checks"] = array(array("Connectivity tests", drsm_url("checks.php")),
 <?php   // Site links for one site, else the org links in the scope
         if(isset($drsm_sites[$drsm_scope])) echo drsm_links_menu($drsm_scope, drsm_tier_from_request(), "links-menu");
         else echo drsm_org_links_menu($drsm_scope, drsm_tier_from_request());
+      }
+      // One site: its Site links, when its site file has LINK lines
+      else if(count($drsm_sites) == 1) {
+        $drsm_ids = array_keys($drsm_sites);
+        echo drsm_links_menu($drsm_ids[0], drsm_tier_from_request(), "links-menu");
       } ?>
       <button type="button" class="tool" data-action="refresh" title="Auto refresh" aria-pressed="true">
         <svg class="ring" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle class="ring-fill" cx="12" cy="12" r="9"/></svg>

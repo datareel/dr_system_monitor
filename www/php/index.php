@@ -224,6 +224,24 @@ drsm_page_start("Overview", "overview", $overall);
       </ul>
     </section>
 
+<?php if(drsm_ext_enabled() && count(drsm_ext_sections()) > 0) { ?>
+    <section class="panel">
+      <div class="panel-head"><h2><?php echo drsm_icon("file"); ?><?php echo h($EXTtitle); ?></h2><a class="link" href="<?php echo h(drsm_url("extreports.php")); ?>">All</a></div>
+      <ul class="group-list">
+<?php   foreach(drsm_ext_sections() as $sid => $sec) {
+          $sum = drsm_ext_summary($sec);
+          $bad = $sum["ERROR"] + $sum["WARNING"] + $sum["STALE"]; ?>
+        <li>
+          <a href="<?php echo h(drsm_url("extreports.php", array("s" => $sid))); ?>">
+            <span class="dot-lg <?php echo h(drsm_state_class($sum["state"] != "" ? $sum["state"] : "UNKNOWN")); ?>" aria-hidden="true"></span>
+            <span class="grow"><strong><?php echo h($sec["title"]); ?></strong><span class="muted"><?php echo ($sum["total"] == 0) ? "Links" : (($bad == 0) ? "{$sum["total"]} reports good" : "{$bad} of {$sum["total"]} need attention"); ?></span></span>
+            <?php if($sum["state"] != "") echo drsm_badge($sum["state"]); ?>
+          </a>
+        </li>
+<?php   } ?>
+      </ul>
+    </section>
+<?php } ?>
     <section class="panel">
       <div class="panel-head"><h2><?php echo drsm_icon("heat"); ?>Host matrix</h2><a class="link" href="<?php echo h(drsm_url("heatmap.php")); ?>">Heat map</a></div>
       <div class="matrix" role="list">

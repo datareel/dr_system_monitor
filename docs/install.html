@@ -72,7 +72,10 @@
 export WWWdir=/var/www/html/sysadmin
 export SYSADMIN_USERNAME=sysadmin
 export SYSADMIN_GROUPNAME=sysadmin
-export TEMPdir="/tmp/${SYSADMIN_USERNAME}/drsm"</code></pre></li>
+export TEMPdir="/tmp/${SYSADMIN_USERNAME}/drsm"</code></pre>
+<p>To keep a second DRSM install in the same account, for example a new release beside an old one that other scripts still use, give it its own config file and point <code>DRSM_CONFIG</code> at it. Every DRSM script reads <code>$DRSM_CONFIG</code> in place of <code>~/.drsm.sh</code> when it is set. Give each install its own <code>DRSMHOME</code>, <code>WWWdir</code> and <code>TEMPdir</code>.</p>
+<pre><code><span class="p">$ </span>export DRSM_CONFIG=~/drsm2/etc/drsm.sh
+<span class="p">$ </span>~/drsm2/bin/drsm_run.sh -l</code></pre></li>
 <li><strong>Create the Web directory</strong>
 <pre><code><span class="r"># </span>mkdir -p /var/www/html/sysadmin
 <span class="r"># </span>chmod 775 /var/www/html/sysadmin

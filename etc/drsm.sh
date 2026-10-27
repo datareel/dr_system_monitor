@@ -1,5 +1,7 @@
 #!/bin/bash
 # DRSM master configuration file
+# Copy to ~/.drsm.sh, or set DRSM_CONFIG to the path of this file to
+# run a second DRSM install from the same account.
 
 # Name of your site
 export SITEID="DRSM"

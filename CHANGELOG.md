@@ -12,6 +12,23 @@ All notable changes to the DataReel System Monitor (DRSM) are listed here.
   sites or a whole organization: the org links of each organization
   the user may see, by tier. The Site links menu for one site is
   unchanged.
+- Reports from your own scripts: list text reports in a file named by
+  `$EXTreports` and they show on a new page (extreports.php), in the
+  top bar and in an Overview panel, with the ERROR, FAILED and WARNING
+  rule of the older dashboard includes and an optional max age.
+- `$SITElogo` puts a logo in the top bar and `$NAVextra` adds your own
+  top bar menu items with optional submenus.
+- A single-site install shows the Site links menu when
+  `etc/sites/default/default.site` has LINK lines; drsm_run.sh writes
+  them to `$REPORTdir/site.json`.
+
+### Scripts
+
+#### Added
+
+- `DRSM_CONFIG` names the config file in place of `~/.drsm.sh`, so a
+  second DRSM install can run from the same account, for example a new
+  release beside an older one other scripts still source.
 
 ## 1.32-beta2 - 2026-10-27
 

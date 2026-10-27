@@ -505,6 +505,21 @@ out=$(cd "${TOPdir}" && bash -c 'source lib/drsm_conf.sh; source lib/drsm_sites.
   drsm_is_site_key ALERT_EMAIL_QA && echo sitekey' 2>&1)
 if [ "${out}" == $'OPS OPS QA production\ndev@x ops@x all@x\nsitekey' ]; then pass "tier names and ALERT_EMAIL_<TIER> fallback"; else fail "tier helpers: ${out}"; fi
 
+# DRSM_CONFIG names the config in place of ~/.drsm.sh, for a second
+# install in the same account
+mkdir -p "${T}/home2"
+cp "${T}/home/.drsm.sh" "${T}/drsm2.sh"
+if HOME="${T}/home2" DRSM_CONFIG="${T}/drsm2.sh" bash "${TOPdir}/bin/drsm_run.sh" -l > "${T}/run2.log" 2>&1 && ! grep -q "Missing base config" "${T}/run2.log"; then
+    pass "DRSM_CONFIG used when ~/.drsm.sh is missing"
+else
+    fail "DRSM_CONFIG not used: $(head -2 "${T}/run2.log")"
+fi
+if HOME="${T}/home2" bash "${TOPdir}/bin/drsm_run.sh" -l 2>&1 | grep -q "Missing base config"; then
+    pass "no config without DRSM_CONFIG"
+else
+    fail "a config was found without DRSM_CONFIG"
+fi
+
 echo ""
 if [ ${failures} -eq 0 ]; then echo "All tests passed"; exit 0; fi
 echo "${failures} test(s) failed"

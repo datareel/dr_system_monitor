@@ -45,7 +45,7 @@
 #
 # ----------------------------------------------------------- 
 if [ "${BASEdir}" == "" ]; then export BASEdir="${HOME}/drsm"; fi
-if [ -f "${HOME}/.drsm.sh" ]; then CONFIG_FILE="${HOME}/.drsm.sh"; else CONFIG_FILE="${BASEdir}/etc/drsm.sh"; fi
+if [ -f "${DRSM_CONFIG:-${HOME}/.drsm.sh}" ]; then CONFIG_FILE="${DRSM_CONFIG:-${HOME}/.drsm.sh}"; else CONFIG_FILE="${BASEdir}/etc/drsm.sh"; fi
 if [ ! -f "${CONFIG_FILE}" ]; then echo "Missing base config ${CONFIG_FILE}"; exit 1; fi
 # shellcheck source=etc/drsm.sh
 source "${CONFIG_FILE}"

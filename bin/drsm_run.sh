@@ -53,8 +53,8 @@
 # ----------------------------------------------------------- 
 if [ "${BASEdir}" == "" ]; then export BASEdir="${HOME}/drsm"; fi
 
-if [ -f "${HOME}/.drsm.sh" ]; then
-    CONFIG_FILE="${HOME}/.drsm.sh"
+if [ -f "${DRSM_CONFIG:-${HOME}/.drsm.sh}" ]; then
+    CONFIG_FILE="${DRSM_CONFIG:-${HOME}/.drsm.sh}"
 else
     CONFIG_FILE="${BASEdir}/etc/drsm.sh"
 fi
@@ -654,6 +654,10 @@ fi
 if [ "${ssfx}" != "" ]; then
     drsm_write_site_json "${runsite}"
     drsm_write_org_json "${runsite%%/*}"
+elif [ -f "$(drsm_site_file "${runsite}")" ]; then
+    # A single-site install with etc/sites/default/default.site gets
+    # site.json in ${REPORTdir} too, for its name and Site links
+    drsm_write_site_json "${runsite}"
 fi
 
 function send_alert()

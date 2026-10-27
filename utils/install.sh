@@ -37,9 +37,9 @@ else
     exit 1
 fi
 
-if [ -f ${HOME}/.drsm.sh ]; then
-    echo "INFO - Using config override file ${HOME}/.drsm.sh"
-    CONFIG_FILE=${HOME}/.drsm.sh
+if [ -f ${DRSM_CONFIG:-${HOME}/.drsm.sh} ]; then
+    echo "INFO - Using config override file ${DRSM_CONFIG:-${HOME}/.drsm.sh}"
+    CONFIG_FILE=${DRSM_CONFIG:-${HOME}/.drsm.sh}
 else
     echo "INFO - Using default config ${BASEdir}/etc/drsm.sh"
     CONFIG_FILE=${BASEdir}/etc/drsm.sh
@@ -155,6 +155,8 @@ default_footer.php \
 default_header.php \
 drsm_auth.php \
 drsm_lib.php \
+drsm_ext.php \
+extreports.php \
 drsm_sites.php \
 heatmap.php \
 host_status.php \

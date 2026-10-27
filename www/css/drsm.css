@@ -193,6 +193,7 @@ code { font-family: var(--mono); font-size: .9em; background: var(--surface-3); 
 }
 .brand { display: flex; align-items: center; gap: 10px; color: var(--text); font-weight: 700; white-space: nowrap; }
 .brand:hover { text-decoration: none; }
+.brand-logo { height: 32px; width: auto; max-width: 120px; object-fit: contain; }
 .brand-mark { display: inline-flex; align-items: flex-end; gap: 3px; width: 28px; height: 28px; padding: 6px; border-radius: 8px; background: linear-gradient(135deg, var(--accent), var(--accent-2)); }
 .brand-mark span { flex: 1; border-radius: 2px; background: rgba(255, 255, 255, .92); }
 .brand-mark span:nth-child(1) { height: 45%; }
