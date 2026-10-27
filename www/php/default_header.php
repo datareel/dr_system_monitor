@@ -57,7 +57,7 @@ foreach(drsm_nav_extra() as $key => $item) {
 </head>
 <body data-refresh="<?php echo (int)$REFRESHseconds; ?>" data-page="<?php echo h($PAGEactive); ?>">
 <a class="skip" href="#main">Skip to content</a>
-<header class="topbar">
+<header class="topbar<?php if(count($drsm_nav) > 6) echo " nav-wide"; ?>">
   <div class="topbar-inner">
     <a class="brand" href="<?php echo h(count($drsm_sites) > 1 ? drsm_url("orgs.php", array("site" => "")) : drsm_url("index.php")); ?>">
 <?php if(isset($SITElogo) && $SITElogo != "") { ?>

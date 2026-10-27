@@ -478,6 +478,7 @@ expect "site links on one site" 'https://storage.example.com/'
 expect "logo" 'class="brand-logo" src="/img/logo.png"'
 expect "extra menu item kept as is" 'href="/classic/"'
 expect "extra submenu" 'href="/tools/utc.php"'
+expect "wide top bar with extra items" 'class="topbar nav-wide"'
 reject "one site still has no picker" 'name="site"'
 render extreports.php ""
 expect "ext ok report" "Nightly backups"

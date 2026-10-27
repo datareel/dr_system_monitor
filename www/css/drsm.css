@@ -752,6 +752,13 @@ td > .tier:first-child { margin-left: 0; }
   .nav a span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   .nav a { padding: 8px 10px; }
 }
+/* Extra menu items ($NAVextra, other reports): the top bar uses the
+   full width, and shows icons only sooner */
+.topbar.nav-wide .topbar-inner { max-width: none; }
+@media (max-width: 1800px) and (min-width: 721px) {
+  .topbar.nav-wide .nav a span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .topbar.nav-wide .nav a { padding: 8px 10px; }
+}
 @media (max-width: 1000px) and (min-width: 721px) {
   .site-picker select { max-width: 150px; }
   .tools .refresh-label { display: none; }
