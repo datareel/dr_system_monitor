@@ -135,7 +135,7 @@ core_cpu_TIMEOUT=60
 | `HOST` | Name or address for SSH and probes, default is the file name |
 | `DESCRIPTION`, `IMPACT` | Shown in reports and alerts |
 | `SITE` | Organization and site, `<org>/<site>`, see [Organizations and sites](#organizations-and-sites) |
-| `GROUP` | Host group, selected with `drsm_run.sh -g` |
+| `GROUP` | Host group and tier: `ops` (or `production`, the default), `dev` or `qa`, selected with `drsm_run.sh -g`, see [Tiers](#tiers) |
 | `PLATFORM` | `linux` or `windows` |
 | `COLLECTOR` | `ssh`, `local` for the monitor host itself, `wra` for Windows Reporting Agent hosts, `none` for probes only |
 | `ENABLED` | `no` skips the host |
@@ -175,6 +175,7 @@ etc/sites/acme/hq.site        the hq site of acme
 | `NAME`, `LOCATION` | Shown on the Organizations page |
 | `TZ` | Time zone for the site's report times |
 | `ALERT_EMAIL` | Alert addresses for the site, replace `alert.email.list` |
+| `ALERT_EMAIL_<TIER>` | Alert addresses for one tier at the site, for example `ALERT_EMAIL_DEV`, else `ALERT_EMAIL` |
 | `STALE_MINUTES` | When a host report or the site's monitor host counts as not reporting, default 60 |
 | `COLLECTOR_ID` | The monitor host that runs the site, see below |
 
@@ -183,6 +184,9 @@ site's hosts, read after `_defaults.conf` and before the host file, for
 example `PROBES` or `WRA_REPORTS_DIR`. Examples are in
 `etc/sites/example.org_example` and
 `etc/sites/example/example.site_example`.
+
+`GROUP` in a site file is a default too, so a whole site can be a QA or
+DEV site.
 
 A host joins a site with `SITE=<org>/<site>` in its host file. Hosts
 without one use `DRSM_SITE` from `~/.drsm.sh`, so a monitor host that
@@ -212,6 +216,29 @@ line that limits a monitor host to its site's folder with `rrsync`.
 | `utils/drsm_remove_host.sh org/site/host` | Removes one host of a site |
 | `utils/wra_hosts.sh -s org/site` | Windows host files for a site |
 | `utils/drsm_metrics_backfill.sh -s org/site` | History for a site's hosts |
+
+
+## Tiers
+
+`GROUP` sorts hosts into tiers: `dev`, `qa` and `ops`. The dashboard
+shows them as DEV, QA and OPS, with All and a button per tier on the
+Organizations, Heat map and Hosts pages. `ops` is another name for
+`production`, the default group: ops hosts run with the production
+hosts, write the production report names (no `_<group>` suffix) and
+get texts, so existing production files keep their names. Run each
+tier from cron:
+
+```
+15,45 * * * * ~/drsm/bin/drsm_run.sh &> /dev/null          # OPS
+55 09-16 * * mon-fri ~/drsm/bin/drsm_run.sh -g dev &> /dev/null
+55 09-16 * * mon-fri ~/drsm/bin/drsm_run.sh -g qa &> /dev/null
+```
+
+DEV and QA alerts never send texts. A site file can send each tier's
+alerts to its own addresses with `ALERT_EMAIL_DEV`, `ALERT_EMAIL_QA`
+and `ALERT_EMAIL_OPS`; a tier without one uses `ALERT_EMAIL`, then
+`alert.email.list`. Other group names still work and show as their own
+tier, in upper case.
 
 ## Windows hosts
 

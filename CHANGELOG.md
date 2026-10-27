@@ -42,6 +42,19 @@ All notable changes to the DataReel System Monitor (DRSM) are listed here.
   found in two sites.
 - The Web only demo (`make_web_demo.sh -s`) has two organizations with
   two sites each, one with a monitor host that stopped reporting.
+- Tiers: `GROUP` values `dev`, `qa` and `ops`, shown as DEV, QA and
+  OPS. `ops` is another name for `production`: ops hosts run with the
+  production hosts and keep the production report names, and
+  `drsm_run.sh -g ops` is the production run. `GROUP` may be set in a
+  site file for every host of the site. The Organizations, Heat map and
+  Hosts pages have a tier filter (`tier=`, remembered in the
+  `drsm_tier` cookie), site cards count hosts by tier, and the heat map
+  and host table show each host's tier. The Hosts page tier buttons
+  replace its group list.
+- `ALERT_EMAIL_<TIER>` in a site file (`ALERT_EMAIL_DEV`,
+  `ALERT_EMAIL_QA`, `ALERT_EMAIL_OPS`) sends that tier's alerts to its
+  own addresses, falling back to `ALERT_EMAIL`. QA alert subjects say
+  "QA Systems".
 
 #### Changed
 

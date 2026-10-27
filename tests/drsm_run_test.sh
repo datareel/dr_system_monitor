@@ -459,6 +459,31 @@ expect "wra_hosts.sh -s names the site" "${T}/hosts/beta_lab_good1.conf" "SITE=b
 HOME="${T}/home" bash "${TOPdir}/bin/drsm_run.sh" -l > "${T}/list.log" 2>&1
 expect "Windows host lists in its site" "${T}/list.log" "site:    beta/lab"
 
+echo "== tiers"
+rm -f "${T}/hosts/"*.conf
+rm -rf "${R}/orgs/acme/qa"
+printf 'PLUGINS="core/memory"\nPROBES=""\nCOLLECTOR=local\n' > "${T}/hosts/_defaults.conf"
+printf 'NAME="QA lab"\nGROUP=qa\nALERT_EMAIL="all@acme.test"\nALERT_EMAIL_QA="qa@acme.test"\n' > "${T}/sites/acme/qa.site"
+printf 'HOST=qa1\nSITE=acme/qa\n' > "${T}/hosts/qa1.conf"
+printf 'HOST=ops1\nSITE=acme/qa\nGROUP=OPS\n' > "${T}/hosts/ops1.conf"
+run -n
+QA="${R}/orgs/acme/qa"
+expect "GROUP=OPS runs with production" "${QA}/systems/ops1/ops1_report.txt" "GROUP:production"
+if [ ! -f "${QA}/systems/qa1/qa1_report.txt" ]; then pass "site GROUP=qa default keeps qa1 out of production"; else fail "qa1 ran in the production run"; fi
+if ! ls "${QA}"/*ops* > /dev/null 2>&1; then pass "ops writes the production file names"; else fail "ops report files: $(ls "${QA}")"; fi
+run -n -g QA
+expect "site GROUP default puts qa1 in qa" "${QA}/systems/qa1/qa1_report.txt" "GROUP:qa"
+expect "qa group report name" "${QA}/system_health_report_qa.txt" "Start of qa1"
+expect "qa in site.json" "${QA}/site.json" '"host":"qa1","group":"qa"'
+run -n -g ops
+expect "-g ops is the production run" "${QA}/system_health_report.txt" "Start of ops1"
+out=$(cd "${TOPdir}" && bash -c 'source lib/drsm_conf.sh; source lib/drsm_sites.sh
+  declare -A S=([ALERT_EMAIL]="all@x" [ALERT_EMAIL_DEV]="dev@x" [ALERT_EMAIL_OPS]="ops@x")
+  echo "$(drsm_group_tier Production) $(drsm_group_tier ops) $(drsm_group_tier qa) $(drsm_group_canon OPS)"
+  echo "$(drsm_site_alert_email S dev) $(drsm_site_alert_email S production) $(drsm_site_alert_email S qa)"
+  drsm_is_site_key ALERT_EMAIL_QA && echo sitekey' 2>&1)
+if [ "${out}" == $'OPS OPS QA production\ndev@x ops@x all@x\nsitekey' ]; then pass "tier names and ALERT_EMAIL_<TIER> fallback"; else fail "tier helpers: ${out}"; fi
+
 echo ""
 if [ ${failures} -eq 0 ]; then echo "All tests passed"; exit 0; fi
 echo "${failures} test(s) failed"

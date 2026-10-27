@@ -53,7 +53,24 @@ $mode = (isset($_GET['mode']) && $_GET['mode'] == "metrics") ? "metrics" : "stat
 $scope = drsm_scope_from_request();
 $sites = drsm_scope_sites($scope);
 $hosts = drsm_load_hosts($scope);
+// Tier counts on the site cards are for every host, the tiles and
+// totals for the tier filter
+$alltiers = drsm_tiers($hosts);
+$tiercounts = array();
+foreach($hosts as $hst) {
+  $t = drsm_tier_id($hst["group"]);
+  if(!isset($tiercounts[$hst["site"]])) $tiercounts[$hst["site"]] = array();
+  $tiercounts[$hst["site"]][$t] = isset($tiercounts[$hst["site"]][$t]) ? $tiercounts[$hst["site"]][$t] + 1 : 1;
+}
+$tier = drsm_tier_from_request();
+$hosts = drsm_tier_filter($hosts, $tier);
 $bysite = drsm_hosts_by_site($hosts, $sites);
+// With a tier picked, only the sites that have hosts in it
+if($tier != "") {
+  foreach($sites as $id => $s) {
+    if(count($bysite[$id]) == 0) unset($sites[$id], $bysite[$id]);
+  }
+}
 $orgs = drsm_orgs($sites);
 
 // Site summaries, and totals for the bar at the top
@@ -89,12 +106,13 @@ uksort($orgs, function($a, $b) use ($orgstate, $orgs) {
 $scopename = "";
 if($scope != "") $scopename = isset($orgs[$scope]) ? $orgs[$scope]["name"] : drsm_site_label($scope);
 
-function drsm_orgs_link($mode, $scope)
+function drsm_orgs_link($mode, $scope, $tier = null)
 {
   $args = array();
   if($mode != "status") $args["mode"] = $mode;
   // Always name the scope, so "" clears the site picker cookie
   $args["site"] = $scope;
+  if($tier !== null) $args["tier"] = $tier;
   return drsm_url("orgs.php", $args);
 }
 
@@ -109,6 +127,7 @@ drsm_page_start("Organizations", "orgs", $overall);
 <?php } ?>
   </div>
   <div class="head-actions">
+    <?php echo drsm_tier_buttons($alltiers, $tier, function($t) use ($mode, $scope) { return drsm_orgs_link($mode, $scope, $t); }); ?>
     <div class="seg" role="group" aria-label="Tile type">
       <a href="<?php echo h(drsm_orgs_link("status", $scope)); ?>"<?php if($mode == "status") echo ' class="active" aria-current="page"'; ?>>Check status</a>
       <a href="<?php echo h(drsm_orgs_link("metrics", $scope)); ?>"<?php if($mode == "metrics") echo ' class="active" aria-current="page"'; ?>>Resource use</a>
@@ -126,7 +145,7 @@ drsm_page_start("Organizations", "orgs", $overall);
 </section>
 
 <?php if(count($sites) == 0) { ?>
-<section class="panel"><div class="empty"><p>No sites to show.</p></div></section>
+<section class="panel"><div class="empty"><p><?php echo $tier != "" ? "No " . h(drsm_tier_label($tier)) . " hosts in these sites." : "No sites to show."; ?></p></div></section>
 <?php } ?>
 <?php foreach($orgs as $oid => $o) { ?>
 <section class="org" aria-labelledby="org-<?php echo h($oid); ?>">
@@ -159,6 +178,13 @@ drsm_page_start("Organizations", "orgs", $overall);
         <li class="<?php echo h(drsm_state_class($k)); ?>"><span class="dot"></span><?php echo (int)$sm["counts"][$k]; ?> <?php echo h(strtolower(drsm_state_label($k))); ?></li>
 <?php     } ?>
       </ul>
+<?php     if(isset($tiercounts[$id])) { ?>
+      <ul class="tier-counts" aria-label="Hosts by tier">
+<?php       foreach(drsm_tiers(array_map(function($t) { return array("group" => $t); }, array_keys($tiercounts[$id]))) as $t) { ?>
+        <li<?php if($tier == $t) echo ' class="active"'; ?>><span class="tier tier-<?php echo h($t); ?>"><?php echo h(drsm_tier_label($t)); ?></span><?php echo (int)$tiercounts[$id][$t]; ?></li>
+<?php       } ?>
+      </ul>
+<?php     } ?>
 <?php     if(count($tiles) == 0) { ?>
       <p class="muted small">No host reports yet.</p>
 <?php     } else { ?>
@@ -175,7 +201,7 @@ drsm_page_start("Organizations", "orgs", $overall);
               }
               else {
                 $cls = drsm_state_class($hst["state"]);
-                $tip = $hst["name"] . " - " . drsm_state_label($hst["state"]) . ($hst["description"] != "" ? " - " . $hst["description"] : "");
+                $tip = $hst["name"] . " (" . drsm_tier_label(drsm_tier_id($hst["group"])) . ") - " . drsm_state_label($hst["state"]) . ($hst["description"] != "" ? " - " . $hst["description"] : "");
                 foreach(array_slice($hst["report"]["messages"], 0, 3) as $msg) $tip .= "\n" . $msg["text"];
               } ?>
         <a role="listitem" class="cell <?php echo h($cls); ?>" href="<?php echo h($url); ?>" title="<?php echo h($tip); ?>"><span class="sr"><?php echo h($tip); ?></span></a>

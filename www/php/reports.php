@@ -33,7 +33,8 @@ along with the DataReel software distribution.  If not, see
 <http://www.gnu.org/licenses/>.
 
 System reports processing script: a sortable table of every host
-with its state, plugin results, resource use and last report time.
+with its state, tier, plugin results, resource use and last report
+time. tier= (or the drsm_tier cookie) shows one tier.
 */
 // ----------------------------------------------------------- //
 // SCRIPT CONTENT STARTS BELOW.
@@ -47,7 +48,9 @@ require_once("{$WWWdir}/php/drsm_lib.php");
 $scope = drsm_scope_from_request();
 $multi = (count(drsm_scope_sites($scope)) > 1);
 $hosts = drsm_load_hosts($scope);
-$groups = drsm_groups($hosts);
+$alltiers = drsm_tiers($hosts);
+$tier = drsm_tier_from_request();
+$hosts = drsm_tier_filter($hosts, $tier);
 $overall = "OK";
 foreach($hosts as $hst) $overall = drsm_worst($overall, $hst["state"]);
 
@@ -60,16 +63,7 @@ drsm_page_start("Hosts", "hosts", $overall);
   </div>
   <div class="head-actions filters" data-filter-scope="host-table">
     <label class="search"><?php echo drsm_icon("search"); ?><span class="sr">Search hosts</span><input type="search" placeholder="Search hosts" data-filter-text autocomplete="off"></label>
-<?php if(count($groups) > 1) { ?>
-    <label class="select"><span class="sr">Group</span>
-      <select data-filter-group>
-        <option value="">All groups</option>
-<?php   foreach($groups as $g) { ?>
-        <option value="<?php echo h($g); ?>"><?php echo h(ucfirst($g)); ?></option>
-<?php   } ?>
-      </select>
-    </label>
-<?php } ?>
+    <?php echo drsm_tier_buttons($alltiers, $tier, function($t) { return drsm_url("reports.php", array("tier" => $t)); }); ?>
   </div>
 </section>
 
@@ -88,7 +82,7 @@ drsm_page_start("Hosts", "hosts", $overall);
           <th scope="col" data-sort="text" class="hide-sm">Site</th>
 <?php } ?>
           <th scope="col" data-sort="text" class="hide-sm">Description</th>
-          <th scope="col" data-sort="text" class="hide-md">Group</th>
+          <th scope="col" data-sort="text" class="hide-md">Tier</th>
           <th scope="col" data-sort="num" class="hide-sm">Checks</th>
           <th scope="col" data-sort="num" class="hide-md num">CPU</th>
           <th scope="col" data-sort="num" class="hide-md num">Memory</th>
@@ -105,7 +99,7 @@ drsm_page_start("Hosts", "hosts", $overall);
             else $nok++;
           } ?>
         <tr class="row-<?php echo h(drsm_state_class($hst["state"])); ?>" data-state="<?php echo h($hst["state"]); ?>" data-group="<?php echo h($hst["group"]); ?>" data-text="<?php echo h(strtolower($hst["name"] . " " . $hst["description"] . " " . $hst["group"] . ($multi ? " " . $hst["site"] . " " . drsm_site_label($hst["site"]) : ""))); ?>">
-          <td data-v="<?php echo h($hst["name"]); ?>"><a class="strong" href="<?php echo h(drsm_host_url("readreport.php", $hst)); ?>"><?php echo h($hst["name"]); ?></a><div class="show-sm muted small"><?php echo h(implode(" - ", array_filter(array($multi ? drsm_site_label($hst["site"]) : "", $hst["description"]), "strlen"))); ?></div></td>
+          <td data-v="<?php echo h($hst["name"]); ?>"><a class="strong" href="<?php echo h(drsm_host_url("readreport.php", $hst)); ?>"><?php echo h($hst["name"]); ?></a><span class="show-md-inline"><?php echo drsm_tier_badge($hst["group"]); ?></span><div class="show-sm muted small"><?php echo h(implode(" - ", array_filter(array($multi ? drsm_site_label($hst["site"]) : "", $hst["description"]), "strlen"))); ?></div></td>
           <td data-v="<?php echo drsm_state_rank($hst["state"]); ?>"><?php echo drsm_badge($hst["state"]); ?></td>
 <?php     if($multi) {
             $st = drsm_all_sites();
@@ -114,7 +108,7 @@ drsm_page_start("Hosts", "hosts", $overall);
           <td class="hide-sm" data-v="<?php echo h($st["name"]); ?>"><a href="<?php echo h(drsm_url("reports.php", array("site" => $hst["site"]))); ?>"><?php echo h($st["name"]); ?></a></td>
 <?php     } ?>
           <td class="hide-sm" data-v="<?php echo h($hst["description"]); ?>"><?php echo h($hst["description"]); ?><?php if($hst["note"] != "") echo "<div class=\"small muted\">" . h($hst["note"]) . "</div>"; ?></td>
-          <td class="hide-md" data-v="<?php echo h($hst["group"]); ?>"><span class="tag"><?php echo h($hst["group"]); ?></span></td>
+          <td class="hide-md" data-v="<?php echo h(drsm_tier_id($hst["group"])); ?>"><?php echo drsm_tier_badge($hst["group"]); ?></td>
           <td class="hide-sm" data-v="<?php echo $nerr * 10000 + $nwarn * 100 + $nok; ?>">
 <?php     if(count($hst["plugins"]) == 0) { ?>
             <span class="muted">&ndash;</span>

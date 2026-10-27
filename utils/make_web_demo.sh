@@ -338,7 +338,7 @@ function sample_site_files() {
 function group_reports() {
     # Group reports from the host reports of the site in ${SR}
     local g hp cp_ f
-    for g in production dev; do
+    for g in production dev qa; do
 	if ! grep -qs "^GROUP:${g}\$" "${SR}"/systems/*/*_report.txt; then continue; fi
 	if [ "${g}" == "production" ]; then hp="system_health_report"; cp_="system_check_report"; else hp="system_health_report_${g}"; cp_="system_check_${g}_report"; fi
 	{
@@ -399,7 +399,7 @@ if [ "${sample}" == "1" ]; then
     host_report pacs1   "Imaging archive"            "Scans unavailable"        production  22  54  88   70  8   2  no  none
     host_report build1  "CI build server"            "Builds stop"              dev         73  66  58  350  8  12  no  user
     host_report dev1    "Development web server"     "Developers blocked"       dev         15  40  49   45  4   0  yes none
-    host_report test1   "QA test server"             "Testing is blocked"       dev         11  35  38   25  4   0  no  none
+    host_report test1   "QA test server"             "Testing is blocked"       qa          11  35  38   25  4   0  no  none
     sample_history ehr1 38 67 72 8 no
     sample_history build1 60 66 58 8 no
 

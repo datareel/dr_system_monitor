@@ -39,7 +39,8 @@
 # Usage: drsm_run.sh [-s org/site] [-g group] [-H host] [-m all|probes] [-e] [-n] [-l] [-v]
 #   -s  Site to run, default every site this collector runs, one
 #       after the other
-#   -g  Host group to run, default production
+#   -g  Host group (tier) to run: production (or ops), dev, qa,
+#       default production
 #   -H  Run a single host, for testing: host, or org/site/host when
 #       two sites have a host with that name
 #   -m  all (default) runs probes and plugins and writes the health
@@ -96,7 +97,7 @@ while getopts "s:g:H:m:enlvh" opt
 do
     case "${opt}" in
 	s) runsite="${OPTARG,,}" ;;
-	g) group="${OPTARG,,}" ;;
+	g) group=$(drsm_group_canon "${OPTARG}") ;;
 	H) singletesthost="${OPTARG}" ;;
 	m) mode="${OPTARG,,}" ;;
 	e) emailstatusreport="YES" ;;
@@ -137,7 +138,7 @@ function load_host_file()
     drsm_read_conf "${1}" HCONF
     HCONF[SITE]="${site}"
     if [ "${HCONF[HOST]}" == "" ]; then HCONF[HOST]=$(basename "${1}" .conf); fi
-    if [ "${HCONF[GROUP]}" == "" ]; then HCONF[GROUP]="production"; fi
+    HCONF[GROUP]=$(drsm_group_canon "${HCONF[GROUP]}")
     if [ "${HCONF[PLATFORM]}" == "" ]; then HCONF[PLATFORM]="linux"; fi
     if [ "${HCONF[COLLECTOR]}" == "" ]; then HCONF[COLLECTOR]="ssh"; fi
     HCONF[SOURCE]="${1}"
@@ -672,16 +673,17 @@ function send_alert()
     export SUBJECT BODY TIMESPAN SENDEMAIL SENDTEXT TIMEFILE INITFILE
     # shellcheck source=bin/text_email_alert.sh
     source "${DRSMHOME}/bin/text_email_alert.sh"
-    # A site's ALERT_EMAIL replaces the addresses in alert.email.list,
-    # texts still go to its TEXTlist
-    email_alert "${SUBJECT}" "${BODY}" "${SCONF[ALERT_EMAIL]}"
+    # A site's ALERT_EMAIL_<TIER>, else its ALERT_EMAIL, replaces the
+    # addresses in alert.email.list, texts still go to its TEXTlist
+    email_alert "${SUBJECT}" "${BODY}" "$(drsm_site_alert_email SCONF "${group}")"
 }
 
 what="Health Checks"
 if [ "${mode}" == "probes" ]; then what="Connection Checks"; fi
 groupname=""
 if [ "${ssfx}" != "" ]; then groupname="${runsite} "; fi
-if [ "${group}" != "production" ]; then groupname="${groupname}${group^} Systems "; fi
+if [ "${group}" == "qa" ]; then groupname="${groupname}QA Systems "
+elif [ "${group}" != "production" ]; then groupname="${groupname}${group^} Systems "; fi
 message="${VARdir}/drsm_run_message.$$"
 { cat "${errorfile}"; echo ""; cat "${statusfile}"; } > "${message}"
 
