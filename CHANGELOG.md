@@ -60,6 +60,11 @@ All notable changes to the DataReel System Monitor (DRSM) are listed here.
   on another server (WEBSYNC_DEST in ~/.drsm.sh) with rsync over SSH.
   Dry run unless --apply, retries, one run at a time, never touches
   the remote pages, config or .htaccess files.
+- www/php/host_status.php returns one host's last report time, age,
+  state and stale flag as JSON (php/host_status.php?n=<host>), for
+  scripts on other servers such as the DRCM takeover check
+  (drsm_report_check.sh). Same login as the other pages, so the
+  reading server goes in $AUTHnetworks.
 
 ### Removing hosts
 
