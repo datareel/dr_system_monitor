@@ -72,6 +72,12 @@ All notable changes to the DataReel System Monitor (DRSM) are listed here.
   1440 pixels wide so the top bar fits with the site picker and the
   Site links menu. The Web only demo has example site and org links.
 
+- Documentation: the HTML docs, README and PLUGINS.md cover
+  organizations and sites, tiers, site links, the main menu submenus,
+  several monitor hosts feeding one dashboard, scoped logins and per
+  site and per tier alert addresses. The screenshots in `docs/images`
+  were retaken from the new demo, with a new Site links image.
+
 #### Changed
 
 - `drsm_web_sync.sh` copies each site to `orgs/<org>/<site>` on the

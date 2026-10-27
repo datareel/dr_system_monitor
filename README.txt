@@ -829,6 +829,13 @@ in each site file, and print the setup for each with:
 
 $ ~/drsm/utils/drsm_add_collector.sh -u user@dashboard -r /path/reports acme/hq
 
+Each monitor host's drsm_web_sync.sh copies only its own sites, to
+reports/orgs/<org>/<site> on the dashboard. To remove a site, its host
+files and reports (dry run first):
+
+$ ~/drsm/utils/drsm_remove_site.sh acme/hq
+$ ~/drsm/utils/drsm_remove_site.sh --apply acme/hq
+
 Tiers: GROUP sorts hosts into dev, qa and ops (production, the
 default, is ops by another name and keeps its report file names). Run
 each tier with drsm_run.sh, -g dev and -g qa for the others. GROUP in

@@ -189,6 +189,10 @@ example `PROBES` or `WRA_REPORTS_DIR`. Examples are in
 `GROUP` in a site file is a default too, so a whole site can be a QA or
 DEV site.
 
+To limit dashboard users to their own organizations or sites, list
+them in `$AUTHscopes` (per user) and `$AUTHnetworkscopes` (per internal
+network) in the dashboard's `config/drsm.php`; see `php/drsm_auth.php`.
+
 A host joins a site with `SITE=<org>/<site>` in its host file. Hosts
 without one use `DRSM_SITE` from `~/.drsm.sh`, so a monitor host that
 only watches one site can set it once. IDs use `a-z`, `0-9`, `_` and

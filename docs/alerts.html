@@ -23,7 +23,7 @@
 </header>
 <div class="layout">
   <nav class="sidebar" aria-label="Documentation">
-    <h4>Get started</h4><a href="index.html">Overview</a><a href="install.html">Install and set up</a><a href="deployment.html">Deployment setups</a><h4>Using DRSM</h4><a href="dashboard.html">Web dashboard</a><a href="plugins.html">Plugins</a><a href="alerts.html" class="active" aria-current="page">Thresholds and alerts</a><div class="toc"><a href="#plugin-settings">Plugin settings</a><a href="#profiles">Profiles</a><a href="#email">Email and text</a><a href="#relay">Relay host</a><a href="#smarthost">Smart host</a></div><a href="databases.html">MySQL and Postgres</a><h4>Reference</h4><a href="changelog.html">What's new</a><h4>Links</h4><a href="https://datareel.com/drsm/dashboard/">Live demo</a><a href="https://datareel.com/downloads/drsm/">Downloads</a><a href="https://datareel.com/contact.php">Report an issue</a>
+    <h4>Get started</h4><a href="index.html">Overview</a><a href="install.html">Install and set up</a><a href="deployment.html">Deployment setups</a><h4>Using DRSM</h4><a href="dashboard.html">Web dashboard</a><a href="plugins.html">Plugins</a><a href="alerts.html" class="active" aria-current="page">Thresholds and alerts</a><div class="toc"><a href="#plugin-settings">Plugin settings</a><a href="#profiles">Profiles</a><a href="#email">Email and text</a><a href="#site-alerts">Per site and tier</a><a href="#relay">Relay host</a><a href="#smarthost">Smart host</a></div><a href="databases.html">MySQL and Postgres</a><h4>Reference</h4><a href="changelog.html">What's new</a><h4>Links</h4><a href="https://datareel.com/drsm/dashboard/">Live demo</a><a href="https://datareel.com/downloads/drsm/">Downloads</a><a href="https://datareel.com/contact.php">Report an issue</a>
   </nav>
   <main class="content" id="main">
 <h1>Thresholds and alerts</h1>
@@ -58,6 +58,12 @@ export TEXTlist="5555555555@vtext.com"
 <span class="p">$ </span>$DRSMHOME/bin/test_alert.sh</code></pre>
 <p>For texts, use the carrier's email to text address, such as <code>number@vtext.com</code> (Verizon) or <code>number@tmomail.net</code> (T-Mobile).</p>
 <div class="callout warn"><p>Several carriers have shut down their email to text gateways, including AT&amp;T (2025), Sprint, Nextel and Cingular. Check with your carrier before relying on text alerts.</p></div>
+<h3 id="site-alerts">Per site and per tier addresses</h3>
+<p>With <a href="plugins.html#sites">organizations and sites</a>, <code>ALERT_EMAIL</code> in a site file sends that site's alerts to its own addresses in place of <code>EMAILlist</code>, and the subject names the site. <code>ALERT_EMAIL_DEV</code>, <code>ALERT_EMAIL_QA</code> and <code>ALERT_EMAIL_OPS</code> go further and give each <a href="plugins.html#tiers">tier</a> its own addresses, falling back to <code>ALERT_EMAIL</code>. Each site has its own 4 hour throttle. Only OPS (production) alerts send texts.</p>
+<pre><code><span class="c"># etc/sites/acme/hq.site</span>
+ALERT_EMAIL="ops@acme.example"
+ALERT_EMAIL_DEV="dev-team@acme.example"
+ALERT_EMAIL_QA="qa@acme.example"</code></pre>
 <p>DRSM uses the first <code>mail</code>, <code>mailx</code> or <code>s-nail</code> command it finds. Set <code>MAILcmd</code> in <code>~/.drsm.sh</code> to use another.</p>
 
 <h3 id="relay">Relay host</h3>

@@ -38,7 +38,7 @@
 </section>
 
 <figure>
-  <img src="images/overview.png" width="1400" height="900" alt="The DRSM Overview page: a red banner saying 8 hosts need attention, counts of healthy, warning and error hosts, a Needs attention list, group checks, and a host matrix.">
+  <img src="images/overview.png" width="1400" height="900" alt="The DRSM Overview page for all sites: a red banner saying 11 hosts need attention, counts of healthy, warning, error and not reporting hosts, a table of sites, a Needs attention list and group checks.">
   <figcaption>The Overview page from the <a href="https://datareel.com/drsm/dashboard/">live demo</a>, which runs on made up sample hosts.</figcaption>
 </figure>
 
@@ -49,6 +49,8 @@
   <div class="card"><h3>Plugins</h3><p>Every check is a folder with a manifest and one BASH script. Add your own check without touching a core script.</p></div>
   <div class="card"><h3>Situational awareness</h3><p>Overview, heat map, hosts and connectivity pages, on desktop, phone and NOC wall screen, in light or dark.</p></div>
   <div class="card"><h3>Alerts</h3><p>Email and email to text alerts, throttled to one per problem every 4 hours, with the business impact in each message.</p></div>
+  <div class="card"><h3>Organizations and sites</h3><p>Customers and offices on one dashboard: an Organizations page with a heat map per site, a site picker, per site alerts, several monitor hosts feeding one dashboard, and logins limited to their own sites.</p></div>
+  <div class="card"><h3>Tiers and site links</h3><p>DEV, QA and OPS tiers with a tier filter and per tier alert addresses, and a Site links menu with nested submenus for each site's own tools and runbooks.</p></div>
   <div class="card"><h3>Databases</h3><p>MySQL and Postgres backup, statistics and maintenance scripts, with stored credentials for unattended runs.</p></div>
 </div>
 
@@ -109,11 +111,12 @@
 <p>Nothing needs to be installed on a monitored host except a user account with keyed SSH access. The plugins are copied over on the first run and only again when they change.</p>
 
 <h2 id="new">What's new</h2>
-<p>DRSM had a full code review and three feature releases in October 2026. See <a href="changelog.html">What's new</a> for the details.</p>
+<p>DRSM had a full code review and several feature updates in October 2026. See <a href="changelog.html">What's new</a> for the details.</p>
 <div class="grid">
   <a class="card" href="changelog.html#v130"><h3>Code review and modernization</h3><p>Release 1.30. More than 30 monitoring and security fixes, RHEL 10, Debian, Ubuntu, PHP 8 and cloud server support.</p></a>
   <a class="card" href="plugins.html"><h3>Plugin module system</h3><p><code>drsm_run.sh</code>, the plugin contract, host files, and a migration tool from <code>systems.dat</code>.</p></a>
   <a class="card" href="dashboard.html"><h3>Dashboard redesign</h3><p>Situational awareness Overview, heat map with status icons, host reports with gauges, and a Web only package for shared hosting.</p></a>
+  <a class="card" href="plugins.html#sites"><h3>Organizations and sites</h3><p>Organization &gt; site &gt; tier &gt; host, an Organizations page with a heat map per site, scoped logins, DEV, QA and OPS tiers, and site links.</p></a>
 </div>
 
 <h2 id="setups">Deployment setups</h2>

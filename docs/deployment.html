@@ -23,7 +23,7 @@
 </header>
 <div class="layout">
   <nav class="sidebar" aria-label="Documentation">
-    <h4>Get started</h4><a href="index.html">Overview</a><a href="install.html">Install and set up</a><a href="deployment.html" class="active" aria-current="page">Deployment setups</a><div class="toc"><a href="#cluster">Production cluster</a><a href="#workstation">Workstation and hosted</a><a href="#demo">Public live demo</a><a href="#cloud">Cloud servers</a></div><h4>Using DRSM</h4><a href="dashboard.html">Web dashboard</a><a href="plugins.html">Plugins</a><a href="alerts.html">Thresholds and alerts</a><a href="databases.html">MySQL and Postgres</a><h4>Reference</h4><a href="changelog.html">What's new</a><h4>Links</h4><a href="https://datareel.com/drsm/dashboard/">Live demo</a><a href="https://datareel.com/downloads/drsm/">Downloads</a><a href="https://datareel.com/contact.php">Report an issue</a>
+    <h4>Get started</h4><a href="index.html">Overview</a><a href="install.html">Install and set up</a><a href="deployment.html" class="active" aria-current="page">Deployment setups</a><div class="toc"><a href="#cluster">Production cluster</a><a href="#workstation">Workstation and hosted</a><a href="#multisite">Several sites</a><a href="#demo">Public live demo</a><a href="#cloud">Cloud servers</a></div><h4>Using DRSM</h4><a href="dashboard.html">Web dashboard</a><a href="plugins.html">Plugins</a><a href="alerts.html">Thresholds and alerts</a><a href="databases.html">MySQL and Postgres</a><h4>Reference</h4><a href="changelog.html">What's new</a><h4>Links</h4><a href="https://datareel.com/drsm/dashboard/">Live demo</a><a href="https://datareel.com/downloads/drsm/">Downloads</a><a href="https://datareel.com/contact.php">Report an issue</a>
   </nav>
   <main class="content" id="main">
 <h1>Deployment setups</h1>
@@ -158,8 +158,19 @@ export WEBSYNC_DEST="datareel-web:public_html/drsm/osa/reports"
 </ol>
 <div class="callout"><p>The dashboard marks a host <strong>Not reporting</strong> when its report is older than <code>$STALEminutes</code> (60 by default). On a hosted dashboard that also tells you the workstation stopped sending reports, for example when it was powered off.</p></div>
 
+<h2 id="multisite">Several sites, one dashboard</h2>
+<p>An MSP or a company with offices can run a monitor host at each site and feed one hosted dashboard. Each site is described once in <a href="plugins.html#sites"><code>etc/sites</code></a>; each monitor host runs only its own sites.</p>
+<ol>
+<li>On each monitor host, set <code>DRSM_COLLECTOR_ID</code> in <code>~/.drsm.sh</code>, and set <code>COLLECTOR_ID</code> to match in the site files it runs. A site with no <code>COLLECTOR_ID</code> runs on any monitor host.</li>
+<li>Print the setup for each monitor host, including its SSH key line for the dashboard account:
+<pre><code><span class="p">$ </span>~/drsm/utils/drsm_add_collector.sh -u user@dashboard -r /path/reports acme/hq</code></pre></li>
+<li><code>drsm_web_sync.sh</code> copies each site to <code>reports/orgs/&lt;org&gt;/&lt;site&gt;</code> with its own <code>--delete</code>, so monitor hosts never remove each other's sites. Set <code>WEBSYNC_RRSYNC=1</code> when the dashboard limits the key with rrsync.</li>
+<li>Limit dashboard users to their own organizations or sites with <code>$AUTHscopes</code>, and internal networks with <code>$AUTHnetworkscopes</code>, in <code>config/drsm.php</code>. See <a href="dashboard.html#login">Login from outside</a>.</li>
+</ol>
+<p>The Organizations page marks a site whose monitor host has stopped writing <code>site.json</code> as <strong>Collector not reporting</strong>. Remove a site and its reports with <code>utils/drsm_remove_site.sh org/site</code>, dry run unless <code>--apply</code>.</p>
+
 <h2 id="demo">Public live demo</h2>
-<p>The live demo at <a href="https://datareel.com/drsm/dashboard/">https://datareel.com/drsm/dashboard/</a> is the same package built with <code>-s</code>, which adds sample reports for 15 made up hosts. Nothing from the machine that builds it goes into the sample reports, and their times always show as recent.</p>
+<p>The live demo at <a href="https://datareel.com/drsm/dashboard/">https://datareel.com/drsm/dashboard/</a> is the same package built with <code>-s</code>, which adds sample reports for 19 made up hosts in two organizations and four sites, with DEV, QA and OPS tiers and example site links. Nothing from the machine that builds it goes into the sample reports, and their times always show as recent.</p>
 <pre><code><span class="p">$ </span>~/drsm/utils/make_web_demo.sh -p /drsm/dashboard -s -o /tmp/drsm_web</code></pre>
 <p>Upload <code>/tmp/drsm_web/drsm_dashboard.zip</code> to <code>public_html/drsm</code> and extract it. Rebuild and upload again to refresh the demo after a dashboard update.</p>
 
