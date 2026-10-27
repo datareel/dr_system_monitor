@@ -89,7 +89,7 @@ find ${DRSMHOME} -name "*.sh" -exec chmod 755 {} +
 
 # Plugin host files, the shared defaults file is only created once so
 # local changes survive a reinstall
-mkdir -p ${DRSMHOME}/etc/hosts ${DRSMHOME}/plugins/local
+mkdir -p ${DRSMHOME}/etc/hosts ${DRSMHOME}/etc/sites ${DRSMHOME}/plugins/local
 if [ ! -f ${DRSMHOME}/etc/hosts/_defaults.conf ]; then
     cp -fv ${BASEdir}/etc/hosts/_defaults.conf_example ${DRSMHOME}/etc/hosts/_defaults.conf
 fi

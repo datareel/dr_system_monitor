@@ -1,0 +1,31 @@
+# DRSM site file, copy to <org>/<site>.site in the sites directory,
+# where <site> is the site ID: a-z, 0-9, _ and -. Hosts join the site
+# with SITE=<org>/<site> in their host file, or every host of a
+# collector with DRSM_SITE=<org>/<site> in ~/.drsm.sh. Plain KEY=value
+# lines, parsed, not run.
+#
+# Reports for the site go to ${REPORTdir}/orgs/<org>/<site>. Hosts in
+# no site are in default/default, which keeps the reports in
+# ${REPORTdir} as before sites.
+
+# Name and location shown on the Organizations page
+NAME="Head office"
+LOCATION="Springfield"
+# Time zone for the site's report times, default TZ from drsm.sh
+# TZ=America/New_York
+# Alert email addresses for the site, comma separated, replace the
+# addresses in alert.email.list. Texts still go to its TEXTlist.
+# ALERT_EMAIL="ops@example.com, oncall@example.com"
+# Minutes before a host report, or the site collector, counts as
+# stale on the dashboard, default 60
+STALE_MINUTES=60
+# The monitor host that runs this site: DRSM_COLLECTOR_ID from its
+# ~/.drsm.sh, default its short host name. Other monitor hosts skip
+# the site. Leave unset for a site any monitor host may run.
+# COLLECTOR_ID=monitor1
+
+# Any host key or plugin setting is a default for the site's hosts,
+# read after _defaults.conf and before each host file
+# PROBES="network/ping"
+# WRA_REPORTS_DIR=/var/www/html/windows/reports/example
+# storage_disk_WARN=85

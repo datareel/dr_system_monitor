@@ -1,0 +1,9 @@
+# DRSM organization file, copy to <org>.org in this directory, where
+# <org> is the organization ID: a-z, 0-9, _ and -. Its sites are the
+# <org>/<site>.site files. Plain KEY=value lines, parsed, not run.
+# See etc/sites/example/example.site_example.
+
+# Name shown on the Organizations page
+NAME="Example Company"
+# Who to call about this organization's systems
+CONTACT="IT help desk, 555-0100, it@example.com"

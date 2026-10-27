@@ -61,6 +61,7 @@ export TEMPdir=${T}/tmp
 export LOGdir=\${TEMPdir}/logs
 export VARdir=\${TEMPdir}/var
 export HOSTSdir=${T}/hosts
+export SITESdir=${T}/sites
 export SYSADMIN_USERNAME=\$(whoami)
 CONF
 
@@ -317,6 +318,75 @@ remove --apply good1
 if [ ! -e "${R}/systems/good1" ]; then pass "reports removed for a host with no host file"; else fail "good1 reports still there"; fi
 if remove ../web1; then fail "path accepted as a host name"; else pass "path refused as a host name"; fi
 if remove nosuchhost; then fail "unknown host accepted"; else pass "unknown host is an error"; fi
+
+echo "== organizations and sites"
+rm -f "${T}/hosts/"*.conf
+mkdir -p "${T}/sites/acme" "${T}/sites/beta" "${TOPdir}/plugins/local/zz_test_site"
+printf 'MODE=remote\nPLATFORMS=any\n' > "${TOPdir}/plugins/local/zz_test_site/plugin.conf"
+printf 'echo "INFO - site ${DRSM_ORG}/${DRSM_SITE}"\n' > "${TOPdir}/plugins/local/zz_test_site/check.sh"
+printf 'PLUGINS="core/memory"\nPROBES=""\n' > "${T}/hosts/_defaults.conf"
+printf 'NAME="Acme Corp"\nCONTACT="ops@acme.test"\n' > "${T}/sites/acme.org"
+printf 'NAME="Head office"\nLOCATION="Springfield"\n' > "${T}/sites/acme/hq.site"
+printf 'NAME="Branch"\nPLUGINS="core/load"\nSTALE_MINUTES=30\n' > "${T}/sites/acme/branch.site"
+printf 'NAME="Lab"\nCOLLECTOR_ID=othermon\n' > "${T}/sites/beta/lab.site"
+printf 'HOST=web\nCOLLECTOR=local\nSITE=acme/hq\nPLUGINS="core/memory local/zz_test_site"\n' > "${T}/hosts/web_hq.conf"
+printf 'HOST=web\nCOLLECTOR=local\nSITE=acme/branch\n' > "${T}/hosts/web_branch.conf"
+printf 'HOST=lab1\nCOLLECTOR=local\nSITE=beta/lab\n' > "${T}/hosts/lab1.conf"
+printf 'HOST=legacy1\nCOLLECTOR=local\n' > "${T}/hosts/legacy1.conf"
+rm -rf "${R}/systems" "${R}"/system_*.txt
+run -n
+HQ="${R}/orgs/acme/hq"
+BR="${R}/orgs/acme/branch"
+expect "default site keeps the flat layout" "${R}/systems/legacy1/legacy1_report.txt" "HOSTNAME:legacy1"
+if ! grep -q "^SITE:" "${R}/systems/legacy1/legacy1_report.txt"; then pass "default site report has no SITE line"; else fail "default site report has a SITE line"; fi
+expect "site host report" "${HQ}/systems/web/web_report.txt" "SITE:acme/hq"
+expect "plugins get the org and site" "${HQ}/systems/web/web_report.txt" "INFO - site acme/hq"
+expect "same host name in a second site" "${BR}/systems/web/web_report.txt" "SITE:acme/branch"
+expect "site file sets host defaults" "${BR}/systems/web/web_report.txt" "=== core/load ["
+if ! grep -q "=== core/memory" "${BR}/systems/web/web_report.txt"; then pass "site default replaces _defaults.conf"; else fail "branch ran the _defaults.conf plugins"; fi
+expect "site group report" "${HQ}/system_health_report.txt" "Start of web"
+expect "site group report names the site" "${HQ}/system_check_report.txt" "Site: acme/hq Head office"
+if ! grep -q "Start of web" "${R}/system_health_report.txt"; then pass "default site report has only its hosts"; else fail "site host in the default site report"; fi
+expect "site.json names the site" "${HQ}/site.json" '"org":"acme","site":"hq","name":"Head office","location":"Springfield"'
+expect "site.json lists the host" "${HQ}/site.json" '"host":"web","group":"production"'
+expect "site.json stale limit" "${BR}/site.json" '"stale_minutes":30'
+expect "org.json" "${R}/orgs/acme/org.json" '{"org":"acme","name":"Acme Corp","contact":"ops@acme.test","sites":["branch","hq"]}'
+if [ ! -d "${R}/orgs/beta/lab" ]; then pass "another collector's site is skipped"; else fail "beta/lab ran on this collector"; fi
+if [ -f "${T}/tmp/logs/drsm_run_acme_hq_all.log" ] && [ -f "${T}/tmp/logs/drsm_run_all.log" ]; then pass "log file per site"; else fail "no per site log files"; fi
+if run -n -H web; then fail "ambiguous host name accepted"; else pass "ambiguous host name refused"; fi
+expect "ambiguous host lists the sites" "${T}/run.log" "acme/branch/web"
+rm -rf "${BR}/systems/web"
+run -n -H acme/branch/web
+expect "org/site/host runs one host" "${BR}/systems/web/web_report.txt" "HOSTNAME:web"
+if run -n -s beta/lab; then fail "ran a site of another collector"; else pass "site of another collector refused"; fi
+expect "refusal names the collector" "${T}/run.log" "run by collector othermon"
+DRSM_COLLECTOR_ID=othermon run -n -s beta/lab
+expect "collector ID runs its site" "${R}/orgs/beta/lab/systems/lab1/lab1_report.txt" "SITE:beta/lab"
+HOME="${T}/home" bash "${TOPdir}/bin/drsm_run.sh" -l > "${T}/list.log" 2>&1
+expect "list shows the site" "${T}/list.log" "site:    acme/hq"
+expect "list shows the owner" "${T}/list.log" "site:    beta/lab, run by another collector"
+touch -d "10 days ago" "${HQ}/site.json" "${R}/orgs/acme/org.json"
+HOME="${T}/home" bash "${TOPdir}/bin/purge.sh" > /dev/null 2>&1
+if [ -f "${HQ}/site.json" ] && [ -f "${R}/orgs/acme/org.json" ]; then pass "purge.sh keeps site.json and org.json"; else fail "purge.sh deleted site.json or org.json"; fi
+rm -rf "${TOPdir}/plugins/local/zz_test_site"
+
+echo "== migrate to sites"
+function migrate() { HOME="${T}/home" bash "${TOPdir}/utils/drsm_migrate_sites.sh" "$@" > "${T}/migrate.log" 2>&1; }
+run -n
+migrate -n "New site" -c "$(hostname -s)" acme/new
+expect "migrate dry run lists the host" "${T}/migrate.log" "legacy1: set SITE=acme/new"
+expect "migrate dry run lists the reports" "${T}/migrate.log" "legacy1: move ${R}/systems/legacy1"
+if [ ! -f "${T}/sites/acme/new.site" ] && [ -d "${R}/systems/legacy1" ] && ! grep -q SITE= "${T}/hosts/legacy1.conf"; then pass "migrate dry run changes nothing"; else fail "migrate dry run changed files"; fi
+migrate --apply -n "New site" -c "$(hostname -s)" acme/new
+expect "migrate writes the site file" "${T}/sites/acme/new.site" 'NAME="New site"'
+expect "migrate sets SITE" "${T}/hosts/legacy1.conf" "SITE=acme/new"
+if [ -f "${R}/orgs/acme/new/systems/legacy1/legacy1_report.txt" ] && [ ! -e "${R}/systems/legacy1" ]; then pass "migrate moves the reports"; else fail "reports not moved"; fi
+if [ -f "${R}/orgs/acme/new/system_health_report.txt" ] && [ ! -e "${R}/system_health_report.txt" ]; then pass "migrate moves the group reports"; else fail "group reports not moved"; fi
+if grep -q "web_hq.conf" "${T}/migrate.log"; then fail "migrate touched a host in another site"; else pass "hosts in other sites left alone"; fi
+run -n
+expect "migrated host runs in its site" "${R}/orgs/acme/new/systems/legacy1/legacy1_report.txt" "SITE:acme/new"
+if [ ! -e "${R}/systems/legacy1" ]; then pass "migrated host no longer in the default site"; else fail "migrated host written to the default site"; fi
+if migrate --apply default/default; then fail "migrate to default/default accepted"; else pass "migrate to default/default refused"; fi
 
 echo ""
 if [ ${failures} -eq 0 ]; then echo "All tests passed"; exit 0; fi
