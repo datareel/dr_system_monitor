@@ -31,6 +31,9 @@ All notable changes to the DataReel System Monitor (DRSM) are listed here.
   release beside an older one other scripts still source.
   utils/install.sh keeps a config in `$DRSMHOME/etc/drsm.sh` that
   `DRSM_CONFIG` names.
+- utils/migrate_systems_dat.sh reads `<host>_profile.sh` from the dat
+  file's folder first, so an old install's files can be converted with
+  a new install's config.
 - utils/wra_hosts.sh `-p` sets the plugins of the new host files, for
   agents older than 3.3 that send no PERFORMANCE section.
 
