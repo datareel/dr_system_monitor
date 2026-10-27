@@ -113,7 +113,7 @@ if printf 'short\n' | php "${TOPdir}/utils/drsm_password.php" admin > /dev/null 
 # requests need a login
 function config() {
     # $1 == internal networks, $2 == proxies
-    sed -i '/^?>$/d; /^\$AUTHnetworks/d; /^\$AUTHproxies/d; /^\$AUTHhttps/d; /^\$AUTHstatedir/d; /^\$AUTHsessiondir/d; /^\$AUTHmaxfails/d' "${C}"
+    sed -i '/^?>$/d; /^\$AUTHnetworks/d; /^\$AUTHproxies/d; /^\$AUTHhttps/d; /^\$AUTHstatedir/d; /^\$AUTHsessiondir/d; /^\$AUTHmaxfails/d; /^\$AUTHscopes/d; /^\$AUTHusers\[/d' "${C}"
     sed -i "s|^\$AUTHusers = array($|\$AUTHusers = array(\n${HASH}|" "${C}"
     {
 	echo "\$AUTHnetworks = array($1);"
@@ -246,6 +246,116 @@ get "${B}/index.php" -H "X-Forwarded-For: 10.9.9.5"
 if [ "${CODE}" == "200" ]; then pass "X-Forwarded-For used from a listed proxy"; else fail "listed proxy: ${CODE}"; fi
 get "${B}/index.php" -H "X-Forwarded-For: 10.9.9.5, 198.51.100.4"
 if [ "${CODE}" == "302" ]; then pass "forged address left of the client ignored"; else fail "forged chain let in: ${CODE}"; fi
+
+echo "== Organizations and sites"
+# Two sites next to the demo hosts, which are in the default site
+R="${T}/site/dashboard/reports"
+now=$(date +%s)
+function site_fixture() {
+    # $1 == org/site, $2 == host, $3 == word only that site's files have
+    local d="${R}/orgs/${1}"
+    mkdir -p "${d}/systems/${2}/archive" "${d}/archive"
+    printf '{"org":"%s","name":"%s"}\n' "${1%%/*}" "${1%%/*} name" > "${R}/orgs/${1%%/*}/org.json"
+    printf '{"org":"%s","site":"%s","name":"%s site","location":"","collector":"mon","time":%s,"stale_minutes":60,"counts":{},"hosts":[]}\n' "${1%%/*}" "${1#*/}" "${3}" "${now}" > "${d}/site.json"
+    printf 'ETIME:%s\nHOSTNAME:%s\nDESCRIPTION:%s host\nSITE:%s\n' "${now}" "${2}" "${3}" "${1}" > "${d}/systems/${2}/${2}_report.txt"
+    cp "${d}/systems/${2}/${2}_report.txt" "${d}/systems/${2}/archive/${2}_report_20260101_000000.txt"
+    printf 'INFO - %s connectivity\n' "${3}" > "${d}/system_check_report.txt"
+    printf 'INFO - %s archive\n' "${3}" > "${d}/archive/system_check_report_${3}.txt"
+    printf '%s\tcpu_used_pct=5\n' "${now}" > "${d}/systems/${2}/metrics_history.tsv"
+}
+site_fixture acme/hq hq1 HQSECRET
+site_fixture beta/lab lab1 LABSECRET
+TECH=$(printf 'tech password here\n' | php "${TOPdir}/utils/drsm_password.php" tech 2> /dev/null)
+function scopes() {
+    # $1 == PHP lines for the site limits
+    sed -i '/^?>$/d; /^\$AUTHscopes/d; /^\$AUTHnetworkscopes/d; /^\$AUTHusers\[/d' "${C}"
+    {
+	echo "\$AUTHusers['tech'] = '$(echo "${TECH}" | sed "s/.*=> '\(.*\)',*/\1/")';"
+	echo "${1}"
+	echo "?>"
+    } >> "${C}"
+    if ! php -l "${C}" > /dev/null; then fail "site limit config has errors"; cat "${C}"; fi
+}
+function login() {
+    # $1 == user, $2 == password
+    rm -f "${J}"
+    get "${B}/login.php"
+    TOKEN=$(csrf)
+    get "${B}/login.php" --data-urlencode "action=login" --data-urlencode "user=${1}" --data-urlencode "password=${2}" --data-urlencode "csrf=${TOKEN}"
+}
+function reject() {
+    if grep -qF -- "$2" "${T}/body"; then fail "$1: '$2' in page"; else pass "$1"; fi
+}
+
+config "'10.9.9.0/24'" ""
+scopes "\$AUTHscopes = array('admin' => array('*'), 'tech' => array('acme/hq'));"
+login admin "correct horse battery"
+get "${B}/orgs.php"
+expect "'*' sees every site" "LABSECRET site"
+expect "'*' sees the default site" "Default site"
+
+login tech "tech password here"
+if [ "${CODE}" == "303" ]; then pass "limited user signs in"; else fail "limited user login: ${CODE}"; fi
+get "${B}/index.php"
+expect "limited user sees their site" "HQSECRET host"
+reject "limited user does not see other sites" "LABSECRET"
+reject "limited user does not see the default site" "mail1"
+reject "one visible site, no Organizations page" "orgs.php"
+get "${B}/orgs.php"
+reject "Organizations page shows only their site" "LABSECRET"
+get "${B}/readreport.php?n=lab1&site=beta/lab"
+if [ "${CODE}" == "404" ]; then pass "other site's host report refused"; else fail "other site's host report: ${CODE}"; fi
+reject "other site's host report has no data" "LABSECRET"
+get "${B}/readreport.php?n=beta/lab/lab1"
+reject "other site's host by org/site/host refused" "LABSECRET"
+get "${B}/readreport.php?n=mail1"
+if [ "${CODE}" == "404" ]; then pass "default site host refused"; else fail "default site host: ${CODE}"; fi
+get "${B}/readreport.php?n=hq1"
+expect "own host by plain name" "HQSECRET host"
+get "${B}/host_status.php?n=lab1&site=beta/lab"
+if [ "${CODE}" == "404" ]; then pass "other site's host status refused"; else fail "other site's host status: ${CODE}"; fi
+get "${B}/archive.php?h=lab1&site=beta/lab"
+reject "other site's host archive refused" "lab1_report_"
+get "${B}/archive.php?site=beta/lab"
+reject "other site's group archive refused" "LABSECRET"
+get "${B}/archive.php?site=acme/hq"
+expect "own group archive" "system_check_report_HQSECRET.txt"
+get "${B}/archive.php?site=beta/lab&f=system_check_report_LABSECRET.txt"
+reject "other site's archived file refused" "LABSECRET archive"
+get "${B}/checks.php?site=beta/lab"
+reject "other site's connectivity report refused" "LABSECRET"
+get "${B}/trends.php?h=lab1&site=beta/lab"
+reject "other site's trends refused" "lab1"
+get "${B}/heatmap.php?site=beta"
+reject "other org as scope refused" "LABSECRET"
+get "${B}/reports.php"
+expect "host list shows own site" "hq1"
+reject "host list hides other sites" "lab1"
+
+scopes "\$AUTHscopes = array('tech' => array('acme'));"
+login admin "correct horse battery"
+get "${B}/index.php"
+reject "user missing from \$AUTHscopes sees no hosts" "mail1"
+reject "user missing from \$AUTHscopes sees no sites" "HQSECRET"
+login tech "tech password here"
+get "${B}/index.php"
+expect "org scope covers its sites" "HQSECRET host"
+
+rm -f "${J}"
+config "'127.0.0.0/8'" ""
+scopes "\$AUTHnetworkscopes = array('127.0.0.0/8' => array('beta/lab'));"
+get "${B}/index.php"
+expect "network scope shows its site" "LABSECRET host"
+reject "network scope hides other sites" "HQSECRET"
+reject "network scope hides the default site" "mail1"
+get "${B}/host_status.php?n=lab1"
+expect "network scope host status" '"host":"lab1"'
+scopes "\$AUTHnetworkscopes = array('10.0.0.0/8' => array('*'));"
+get "${B}/index.php"
+reject "address in no scoped network sees nothing" "mail1"
+scopes ""
+get "${B}/orgs.php"
+expect "internal network sees every site without limits" "LABSECRET site"
 
 if grep -q "PHP \(Warning\|Notice\|Deprecated\|Fatal\)" "${T}/server.log"; then fail "PHP messages: $(grep "PHP " "${T}/server.log" | head -3)"; else pass "no PHP messages"; fi
 

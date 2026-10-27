@@ -93,9 +93,9 @@ function drsm_url($page, $args = array())
 // since the report folder itself is not covered by the login.
 function drsm_archive_url($host = "", $prefix = "", $site = DRSM_LEGACY_SITE)
 {
-  global $REPORTvpath, $REPORTarchivevpath, $AUTHenable, $AUTHscopes;
-  // Login, or users limited to some sites: the folders are not covered
-  if(!empty($AUTHenable) || isset($AUTHscopes)) {
+  global $REPORTvpath, $REPORTarchivevpath, $AUTHenable;
+  // Login, or visitors limited to some sites: the folders are not covered
+  if(!empty($AUTHenable) || drsm_auth_scoped()) {
     $args = array();
     if($host != "") $args["h"] = $host;
     if($prefix != "") $args["p"] = $prefix;

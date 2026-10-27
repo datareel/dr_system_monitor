@@ -60,6 +60,30 @@ $AUTHstatedir = '/path';  // Failed login counts, must be writable by the
                           // Web server. Default ${CONFIGdir}/auth
 $AUTHsessiondir = '';     // PHP session files, default is PHP's own
 
+Organizations and sites each user may see. Without $AUTHscopes every
+user sees every site. With it, a user not listed sees nothing. A scope
+is '*' for every site, an organization ID, or org/site. Hosts in no
+site are in 'default/default'.
+
+$AUTHscopes = array(
+  'admin' => array('*'),
+  'acme'  => array('acme'),               // every Acme site
+  'tech'  => array('acme/hq', 'beta/lab')
+);
+
+Visitors from $AUTHnetworks, and everyone when login is off, see every
+site, unless $AUTHnetworkscopes is set. Then they see the sites of
+every network their address is in, and nothing from other addresses:
+
+$AUTHnetworkscopes = array(
+  '10.1.0.0/16' => array('acme/hq'),
+  '10.0.0.0/8'  => array('*')
+);
+
+Limiting sites only protects the data when the report folder can not
+be read directly: block it, as make_web_demo.sh -a does, so reports
+are only read through the pages.
+
 Keep this file PHP 7.2 compatible, see drsm_lib.php.
 */
 // ----------------------------------------------------------- //
@@ -268,6 +292,49 @@ function drsm_auth_safe_next($next)
   if($base != "/" && strpos($next, $base) !== 0) return $home;
   if(strpos($next, "/php/login.php") !== false) return $home;
   return $next;
+}
+
+// ---------- Organizations and sites ----------
+
+/*
+Scopes the visitor may see, or null for every site. Signed in users
+get theirs from $AUTHscopes, other visitors from $AUTHnetworkscopes.
+A visitor who still has to log in sees nothing.
+*/
+function drsm_auth_scopes()
+{
+  global $AUTHuser, $AUTHscopes, $AUTHnetworkscopes;
+  if($AUTHuser != "") {
+    if(!isset($AUTHscopes) || !is_array($AUTHscopes)) return null;
+    return (isset($AUTHscopes[$AUTHuser]) && is_array($AUTHscopes[$AUTHuser])) ? $AUTHscopes[$AUTHuser] : array();
+  }
+  if(drsm_auth_enabled() && !drsm_auth_internal()) return array();
+  if(!isset($AUTHnetworkscopes) || !is_array($AUTHnetworkscopes)) return null;
+  $ip = drsm_client_ip();
+  $out = array();
+  foreach($AUTHnetworkscopes as $cidr => $scopes) {
+    if($ip != "" && drsm_ip_in_cidr($ip, $cidr)) $out = array_merge($out, (array)$scopes);
+  }
+  return $out;
+}
+
+// True when the visitor may see site $site (org/site)
+function drsm_auth_site_allowed($site)
+{
+  $scopes = drsm_auth_scopes();
+  if($scopes === null) return true;
+  $org = explode("/", (string)$site, 2);
+  foreach($scopes as $sc) {
+    if($sc === "*" || $sc === $site || $sc === $org[0]) return true;
+  }
+  return false;
+}
+
+// True when some visitors see only some sites
+function drsm_auth_scoped()
+{
+  global $AUTHscopes, $AUTHnetworkscopes;
+  return isset($AUTHscopes) || isset($AUTHnetworkscopes);
 }
 
 // ---------- Failed login limits ----------

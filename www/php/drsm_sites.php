@@ -76,6 +76,8 @@ function drsm_site_dir($site)
 {
   global $REPORTdir;
   if($site == DRSM_LEGACY_SITE) return $REPORTdir;
+  // No site, for a visitor who may see none: a folder that never exists
+  if(!drsm_valid_site($site)) return "{$REPORTdir}/orgs/.none";
   return "{$REPORTdir}/orgs/{$site}";
 }
 
@@ -156,9 +158,10 @@ function drsm_all_sites()
   return $cache;
 }
 
+// Login and site limits are in drsm_auth.php
 function drsm_site_allowed($site)
 {
-  return function_exists("drsm_auth_site_allowed") ? drsm_auth_site_allowed($site) : true;
+  return drsm_auth_site_allowed($site);
 }
 
 // The sites this visitor may see
