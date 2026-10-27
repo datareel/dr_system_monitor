@@ -155,12 +155,17 @@ default_footer.php \
 default_header.php \
 drsm_auth.php \
 drsm_lib.php \
+drsm_sites.php \
 heatmap.php \
+host_status.php \
 index.php \
 login.php \
+orgs.php \
 query_post_validation.php \
 readreport.php \
-reports.php"
+reports.php \
+trends.php \
+trends_lib.php"
 
 for f in ${files}
 do
