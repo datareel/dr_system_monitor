@@ -107,7 +107,9 @@ $NAVhome = array("label" =&gt; "Status", "url" =&gt; "/dashboard/status.php", "i
 $NAVurl = array("hosts" =&gt; "/dashboard/myhosts.php");     // built in item to your page
 $NAVsub = array("heatmap" =&gt; array(array("Wall", "/dashboard/wall.php")));
 $SITEfooter = 'Example Ops Monitor';  // footer name
-$SITEhelp = '';                    // footer Help link: unset = built in Users guide, '' = none
+$SITEhelp = '';                    // footer Help link: unset = built in Users and Admin guides, '' = none
+$HELPadmin = false;                // hide the Admin guide tab on the Help page
+$DOCSurl = 'https://datareel.com/drsm/docs/'; // where the Admin guide's doc links go
 $NAVextra = array(                 // Your own top bar menu items
   array("label" =&gt; "Classic view", "url" =&gt; "/classic/", "icon" =&gt; "layout"),
   array("label" =&gt; "Tools", "url" =&gt; "/tools/",

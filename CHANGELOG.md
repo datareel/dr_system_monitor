@@ -4,15 +4,6 @@ All notable changes to the DataReel System Monitor (DRSM) are listed here.
 
 ## Unreleased
 
-### Added
-
-- Admin guide on the dashboard Help page (help.php?p=admin, a tab next
-  to the Users guide): where things are, adding and removing hosts,
-  thresholds, status messages, your own scripts, upgrades,
-  troubleshooting and AI assistants, with links to the full docs.
-  $DOCSurl sets where the docs links go, $HELPadmin = false hides the
-  guide, and a site's own ${SITEincludes}/help_admin.php replaces it.
-
 ### Planned for the next version
 
 From the NHC dashboard port (their versions are in the NHC package,
@@ -29,6 +20,20 @@ DEVIATIONS.md D1, D3, D4, D6, D10, D14):
 - Report viewer: script report files and folders shown inside the
   dashboard layout, with a plain file link.
 - Overview paging or lazy host cards for sites with hundreds of hosts.
+
+## 1.33 - 2026-10-28
+
+Release 1.33 is 1.32 with the Admin guide. It replaces every earlier
+release download.
+
+### Added
+
+- Admin guide on the dashboard Help page (help.php?p=admin, a tab next
+  to the Users guide): where things are, adding and removing hosts,
+  thresholds, status messages, your own scripts, upgrades,
+  troubleshooting and AI assistants, with links to the full docs.
+  $DOCSurl sets where the docs links go, $HELPadmin = false hides the
+  guide, and a site's own ${SITEincludes}/help_admin.php replaces it.
 
 ## 1.32 - 2026-10-28
 
