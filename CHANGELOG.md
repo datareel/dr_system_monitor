@@ -16,6 +16,9 @@ All notable changes to the DataReel System Monitor (DRSM) are listed here.
   `$EXTreports` and they show on a new page (extreports.php), in the
   top bar and in an Overview panel, with the ERROR, FAILED and WARNING
   rule of the older dashboard includes and an optional max age.
+- `$METRICSskip`, for example `array("windows")`, names platforms or
+  groups that send no resource metrics: their hosts get no gauges and
+  are left off the trends page and the resource use heat map.
 - `$SITElogo` puts a logo in the top bar and `$NAVextra` adds your own
   top bar menu items with optional submenus.
 - A single-site install shows the Site links menu when
