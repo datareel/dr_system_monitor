@@ -4,6 +4,29 @@ All notable changes to the DataReel System Monitor (DRSM) are listed here.
 
 ## Unreleased
 
+### Planned for the next version
+
+From the NHC dashboard port (their versions are in the NHC package,
+DEVIATIONS.md D1, D3, D4, D6, D10, D14):
+
+- Service group tiles: a status page of configured groups (Linux,
+  Windows, storage, network, phones and so on), each with a health
+  gauge and its reports, fed by host groups and report files cut into
+  items (blocks, lines, one item per file).
+- Heat map flow wall display: every report of every group in one
+  mosaic, problems pulsing, a gauge per group, full screen.
+- Hosts page with sections by tier and platform (Linux PROD/DEV/QA,
+  Windows laptops and other Windows, network, consoles).
+- Report viewer: script report files and folders shown inside the
+  dashboard layout, with a plain file link.
+- Overview paging or lazy host cards for sites with hundreds of hosts.
+
+## 1.32 - 2026-10-28
+
+Release 1.32 includes 1.32-beta1 and 1.32-beta2 (below) and these
+changes, most of them from moving a production dashboard (about 130
+Linux and 135 Windows hosts) to DRSM.
+
 ### Dashboard
 
 #### Added
@@ -79,23 +102,6 @@ All notable changes to the DataReel System Monitor (DRSM) are listed here.
   a new install's config.
 - utils/wra_hosts.sh `-p` sets the plugins of the new host files, for
   agents older than 3.3 that send no PERFORMANCE section.
-
-### Planned for the next version
-
-From the NHC dashboard port (their versions are in the NHC package,
-DEVIATIONS.md D1, D3, D4, D6, D10, D14):
-
-- Service group tiles: a status page of configured groups (Linux,
-  Windows, storage, network, phones and so on), each with a health
-  gauge and its reports, fed by host groups and report files cut into
-  items (blocks, lines, one item per file).
-- Heat map flow wall display: every report of every group in one
-  mosaic, problems pulsing, a gauge per group, full screen.
-- Hosts page with sections by tier and platform (Linux PROD/DEV/QA,
-  Windows laptops and other Windows, network, consoles).
-- Report viewer: script report files and folders shown inside the
-  dashboard layout, with a plain file link.
-- Overview paging or lazy host cards for sites with hundreds of hosts.
 
 ### Fixed
 

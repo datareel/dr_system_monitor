@@ -27,9 +27,24 @@
   </nav>
   <main class="content" id="main">
 <h1>What's new</h1>
-<p class="lead">DRSM had a full code review and three feature updates in October 2026. All of it was written by <a href="https://claude.com/claude-code">Claude Code</a> at the request of the project owner. The updates after 1.30 shipped together as release 1.31 on October 25, 2026, and the updates since then are in the 1.32 beta (1.32-beta1, October 26, 2026, and 1.32-beta2, October 27, 2026). The complete list of changes is in <code>CHANGELOG.md</code>.</p>
+<p class="lead">DRSM had a full code review and three feature updates in October 2026. All of it was written by <a href="https://claude.com/claude-code">Claude Code</a> at the request of the project owner. The updates after 1.30 shipped together as release 1.31 on October 25, 2026, and the updates since then shipped as release 1.32 on October 28, 2026 (after 1.32-beta1 and 1.32-beta2). The complete list of changes is in <code>CHANGELOG.md</code>.</p>
 
 <ul class="timeline">
+<li>
+  <h3>Ansible inventory and Ansible Automation Platform <span class="badge new">New</span></h3>
+  <p class="meta">October 28, 2026 &middot; 1.32</p>
+  <p>Take the Linux host list and tiers from an <a href="plugins.html#ansible">Ansible inventory</a> or from Ansible Automation Platform (formerly Tower) or AWX, so there is one list to keep. With <code>ANSIBLE_EXCLUSIVE</code> a host removed from Ansible leaves monitoring. <code>utils/drsm_ansible_hosts.sh</code> shows what DRSM takes.</p>
+</li>
+<li>
+  <h3>Status messages <span class="badge new">New</span></h3>
+  <p class="meta">October 28, 2026 &middot; 1.32</p>
+  <p>Post a notice with <code>utils/drsm_message.sh</code> and it <a href="dashboard.html#messages">scrolls across the top of every page</a>, in large type on wall displays, with a link to the details and an end time.</p>
+</li>
+<li>
+  <h3>Reports from your own scripts, menus, help <span class="badge new">New</span></h3>
+  <p class="meta">October 28, 2026 &middot; 1.32</p>
+  <p>Show the text reports of your own scripts with a state (<code>$EXTreports</code>), add a logo, menu items and your own main page, name the site in the footer, and a built in Users guide behind the footer's Help link. Windows agents that send no metrics can be left off trends (<code>$METRICSskip</code>). New <a href="admin.html">Day-to-day admin</a> and <a href="ai-assistants.html">AI assistants</a> pages, and guide files for GitHub Copilot, Gemini and Claude.</p>
+</li>
 <li>
   <h3>Complete Windows host pages <span class="badge new">New</span></h3>
   <p class="meta">October 27, 2026 &middot; 1.32 beta 2</p>
