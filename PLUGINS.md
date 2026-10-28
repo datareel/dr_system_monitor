@@ -168,7 +168,9 @@ export ANSIBLE_EXCLUSIVE=no                             # yes: Linux hosts only 
 
 With `ANSIBLE_EXCLUSIVE=yes`, Linux host files of hosts the inventory
 does not list are skipped, so removing a host from Ansible stops its
-checks from the next run; Windows and other host files still run. The
+checks from the next run; Windows and other host files still run, and
+so do probe only hosts (`PLUGINS=""` or `COLLECTOR=none`, such as
+cluster addresses). The
 host's last report stays on the dashboard, shown as not reporting,
 until `utils/drsm_remove_host.sh <host> --apply` removes it.
 

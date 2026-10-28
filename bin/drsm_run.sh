@@ -225,6 +225,9 @@ if [ "${ANSIBLE_INVENTORY}" != "" ]; then
 	if [ "${ANSIBLE_EXCLUSIVE,,}" == "yes" ]; then
 	    p=$(sed -n 's/^PLATFORM=["]*\([^"]*\)["]*$/\1/p' "${f}" | head -1)
 	    if [ "${p}" == "" ] && [ -f "${HOSTSdir}/_defaults.conf" ]; then p=$(sed -n 's/^PLATFORM=["]*\([^"]*\)["]*$/\1/p' "${HOSTSdir}/_defaults.conf" | head -1); fi
+	    # Probe only hosts (PLUGINS="" or COLLECTOR=none), such as cluster
+	    # addresses, are not Ansible hosts and stay
+	    if grep -qE '^(PLUGINS=""|COLLECTOR=none)' "${f}"; then p="probe"; fi
 	    if [ "${p,,}" == "" ] || [ "${p,,}" == "linux" ]; then
 		vlog "INFO - ${f} is a Linux host not in ${ANSIBLE_INVENTORY}, skipped (ANSIBLE_EXCLUSIVE)"
 		continue
