@@ -58,6 +58,13 @@ the same prefix when you run a script by hand.
   submenu, http and https only, tier optional. They show in the Site
   links menu after the next run.
 
+## Status messages
+
+`utils/drsm_message.sh --apply add <info|warning|critical> "<text>"
+[--link URL] [--until "YYYY-MM-DD HH:MM"] [--pin]` posts a notice that
+scrolls across the top of every page; `list`, `remove <n>` and `clean`
+manage them (file `$CONFIGdir/messages.conf`).
+
 ## Alerts
 
 - Addresses: `$ALERTdir/alert.email.list` (`EMAILlist`, `TEXTlist`), or

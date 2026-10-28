@@ -128,6 +128,29 @@ expect "host table" 'id="host-table"'
 render readreport.php "n=db1"
 expect "plugin section" 'id="p-core-load"'
 expect "error line styled" 'class="l-err"'
+# Status messages
+cat > "${W}/config/messages.conf" <<'MSG'
+# test messages
+info | Maintenance tonight <b> | /maint.html | 2099-01-01 00:00 |
+critical | Core switch down | | | pin
+warning | Old notice | | 2000-01-01 00:00 |
+info | Bad link | javascript:alert(1) | |
+MSG
+render index.php ""
+expect "message bar on every page" 'class="msgbar msgbar-critical"'
+expect "pinned critical message" '<div class="msg-pinned"><a class="msg msg-critical"'
+expect "message text escaped" 'Maintenance tonight &lt;b&gt;'
+expect "message link" 'href="/maint.html"'
+reject "ended message hidden" 'Old notice'
+reject "bad link dropped" 'javascript:alert'
+expect "no link goes to the messages page" 'php/messages.php#m'
+render messages.php ""
+expect "messages page" "Core switch down"
+expect "ended messages listed apart" "Ended messages (1)"
+rm -f "${W}/config/messages.conf"
+render index.php ""
+reject "no bar without messages" 'class="msgbar'
+
 render help.php ""
 expect "users guide" "<h1>Users guide</h1>"
 expect "default footer help link" 'href="/drsm/dashboard/php/help.php">Help'

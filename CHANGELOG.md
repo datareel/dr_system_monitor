@@ -19,6 +19,10 @@ All notable changes to the DataReel System Monitor (DRSM) are listed here.
 - `$METRICSskip`, for example `array("windows")`, names platforms or
   groups that send no resource metrics: their hosts get no gauges and
   are left off the trends page and the resource use heat map.
+- Status messages: notices posted with `utils/drsm_message.sh` (info,
+  warning, critical, optional link, end time and pin) scroll across the
+  top of every page, in large type in wall display mode; `messages.php`
+  lists them. Ended messages drop off by themselves.
 - `$NAVhome` adds your own main page as the first menu item and the
   brand link; `$NAVurl` sends built in menu items to your own pages and
   `$NAVsub` replaces their submenus.
@@ -71,6 +75,23 @@ All notable changes to the DataReel System Monitor (DRSM) are listed here.
   a new install's config.
 - utils/wra_hosts.sh `-p` sets the plugins of the new host files, for
   agents older than 3.3 that send no PERFORMANCE section.
+
+### Planned for the next version
+
+From the NHC dashboard port (their versions are in the NHC package,
+DEVIATIONS.md D1, D3, D4, D6, D10, D14):
+
+- Service group tiles: a status page of configured groups (Linux,
+  Windows, storage, network, phones and so on), each with a health
+  gauge and its reports, fed by host groups and report files cut into
+  items (blocks, lines, one item per file).
+- Heat map flow wall display: every report of every group in one
+  mosaic, problems pulsing, a gauge per group, full screen.
+- Hosts page with sections by tier and platform (Linux PROD/DEV/QA,
+  Windows laptops and other Windows, network, consoles).
+- Report viewer: script report files and folders shown inside the
+  dashboard layout, with a plain file link.
+- Overview paging or lazy host cards for sites with hundreds of hosts.
 
 ### Fixed
 

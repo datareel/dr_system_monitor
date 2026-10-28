@@ -113,6 +113,15 @@ $NAVextra = array(                 // Your own top bar menu items
   array("label" =&gt; "Tools", "url" =&gt; "/tools/",
         "sub" =&gt; array(array("Time converter", "/tools/utc.php"))));</code></pre>
 <p>A single-site install shows a <strong>Site links</strong> menu when <code>etc/sites/default/default.site</code> has <code>LINK=</code> lines, the same lines as a site file in a <a href="#orgs">multi-site</a> setup. <code>bin/drsm_run.sh</code> writes them to <code>$REPORTdir/site.json</code>.</p>
+<h3 id="messages">Status messages</h3>
+<p>Post a notice for everyone, such as a planned outage or a known problem, and it scrolls across the top of every page, in large type in wall display mode. Critical messages come first; <code>--pin</code> keeps one in view instead of scrolling. Each message links to a details page, or to the list of messages (<code>php/messages.php</code>). Ended messages drop off by themselves.</p>
+<pre><code>$ ~/drsm/utils/drsm_message.sh add critical "Core switch down, network team on site" --pin
+$ ~/drsm/utils/drsm_message.sh --apply add info "Patching tonight 22:00 to 02:00" \
+      --link https://wiki.example.com/patching --until "2026-11-02 02:00"
+$ ~/drsm/utils/drsm_message.sh list
+$ ~/drsm/utils/drsm_message.sh --apply remove 1
+$ ~/drsm/utils/drsm_message.sh --apply clean       # drop ended messages</code></pre>
+<p>Without <code>--apply</code> the script shows the change and saves nothing. The messages are lines in <code>$CONFIGdir/messages.conf</code> (or <code>$MESSAGESfile</code>): <code>level | message | link | until | options</code>.</p>
 <h3 id="extreports">Reports from your own scripts</h3>
 <p>Backup, patching, certificate, SNMP and other checks that write a text file can show on the dashboard with a state. List them in a file and set <code>$EXTreports</code> to its path. They get a menu item, a page with a section for each <code>[id] Title</code> line, and a panel on the Overview.</p>
 <pre><code>$EXTreports = '/var/www/html/dashboard/config/ext_reports.conf';

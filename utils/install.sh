@@ -170,6 +170,8 @@ default_header.php \
 drsm_auth.php \
 drsm_lib.php \
 drsm_ext.php \
+drsm_messages.php \
+messages.php \
 extreports.php \
 help.php \
 drsm_sites.php \

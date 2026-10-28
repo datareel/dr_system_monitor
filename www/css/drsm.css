@@ -737,6 +737,39 @@ td > .tier:first-child { margin-left: 0; }
 .trend-table .site-total th, .trend-table .site-total td { border-top: 2px solid var(--border-strong); font-weight: 650; }
 .heat-site h2 { font-size: 1rem; }
 
+/* ---------- Status messages (drsm_messages.php) ---------- */
+.msgbar { --tone: var(--accent); display: flex; align-items: stretch; gap: 0; border-bottom: 1px solid var(--border); background: var(--surface); overflow: hidden; font-size: .9rem; }
+.msgbar-warning { --tone: var(--warn); }
+.msgbar-critical { --tone: var(--err); }
+.msgbar::before { content: ""; flex: none; width: 5px; background: var(--tone); }
+.msg-pinned { display: flex; flex: none; max-width: 60%; border-right: 1px solid var(--border); }
+.msg-scroll { flex: 1; min-width: 0; overflow: hidden; -webkit-mask-image: linear-gradient(90deg, transparent, #000 24px, #000 calc(100% - 24px), transparent); mask-image: linear-gradient(90deg, transparent, #000 24px, #000 calc(100% - 24px), transparent); }
+.msg-track { display: flex; width: max-content; animation: msg-scroll linear infinite; }
+.msg-scroll:hover .msg-track, .msg-scroll:focus-within .msg-track { animation-play-state: paused; }
+@keyframes msg-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+.msg-run { display: flex; align-items: center; padding-right: 40px; }
+.msg { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; color: var(--text); white-space: nowrap; }
+.msg:hover { text-decoration: none; background: var(--surface-2); }
+.msg .icon { width: 16px; height: 16px; flex: none; }
+.msg-level { font-size: .72rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; padding: 2px 7px; border-radius: 999px; }
+.msg-info .icon { color: var(--accent); } .msg-info .msg-level { color: var(--accent); background: var(--surface-3); }
+.msg-warning .icon { color: var(--warn); } .msg-warning .msg-level { color: var(--warn-ink); background: var(--warn-bg); }
+.msg-critical .icon { color: var(--err); } .msg-critical .msg-level { color: var(--err-ink); background: var(--err-bg); }
+.msg-text { font-weight: 600; }
+.msg-level.msg-info { color: var(--accent); background: var(--surface-3); } .msg-level.msg-warning { color: var(--warn-ink); background: var(--warn-bg); } .msg-level.msg-critical { color: var(--err-ink); background: var(--err-bg); }
+.msg-pinned .msg { white-space: normal; }
+.msg-sep { color: var(--muted); padding: 0 6px; }
+:root.wall .msgbar { font-size: 1.35rem; }
+:root.wall .msg { padding: 14px 24px; }
+:root.wall .msg .icon { width: 24px; height: 24px; }
+@media (prefers-reduced-motion: reduce) {
+  .msg-track { animation: none; width: auto; }
+  .msg-run { flex-wrap: wrap; }
+  .msg-run[aria-hidden] { display: none; }
+  .msg { white-space: normal; }
+}
+@media print { .msgbar { display: none; } }
+
 /* ---------- Responsive ---------- */
 
 @media (max-width: 1640px) {

@@ -145,4 +145,5 @@ foreach(drsm_nav_extra() as $key => $item) {
     </div>
   </div>
 </header>
+<?php echo drsm_messages_bar(); ?>
 <main id="main" class="page">

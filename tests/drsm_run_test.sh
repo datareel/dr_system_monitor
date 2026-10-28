@@ -513,6 +513,25 @@ out=$(cd "${TOPdir}" && bash -c 'source lib/drsm_conf.sh; source lib/drsm_sites.
   drsm_is_site_key ALERT_EMAIL_QA && echo sitekey' 2>&1)
 if [ "${out}" == $'OPS OPS QA production\ndev@x ops@x all@x\nsitekey' ]; then pass "tier names and ALERT_EMAIL_<TIER> fallback"; else fail "tier helpers: ${out}"; fi
 
+echo "== status messages"
+M="${T}/www/config/messages.conf"
+function msg() { HOME="${T}/home" bash "${TOPdir}/utils/drsm_message.sh" "$@" > "${T}/msg.log" 2>&1; }
+msg add critical "Core switch down" --pin
+if [ ! -f "${M}" ] && grep -q "Dry run" "${T}/msg.log"; then pass "message add is a dry run"; else fail "message add wrote without --apply"; fi
+msg --apply add critical "Core switch down" --pin
+msg --apply add info "Maintenance tonight" --link /maint.html --until "2099-01-01 00:00"
+msg --apply add warning "Old notice" --until "2000-01-01 00:00"
+expect "message saved" "${M}" "critical | Core switch down |  |  | pin"
+if msg --apply add info "a|b"; then fail "message with | accepted"; else pass "message with | refused"; fi
+if msg --apply add info "x" --link "javascript:alert(1)"; then fail "bad link accepted"; else pass "bad link refused"; fi
+msg list
+expect "message list ended" "${T}/msg.log" "ended"
+msg --apply clean
+if grep -q "Old notice" "${M}"; then fail "clean kept an ended message"; else pass "clean removes ended messages"; fi
+msg --apply remove 1
+if grep -q "Core switch" "${M}"; then fail "remove 1 kept the message"; else pass "remove by number"; fi
+rm -f "${M}" "${M}.bak"
+
 echo "== ansible inventory"
 rm -f "${T}/hosts/"*.conf
 rm -rf "${T}/sites.ans"; mv "${T}/sites" "${T}/sites.ans"; mkdir -p "${T}/sites"

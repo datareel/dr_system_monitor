@@ -68,6 +68,8 @@ $NAVurl         = array(); // Send built in menu items elsewhere, by key:
 $NAVsub         = array(); // Replace a built in submenu, by key:
                         // array("heatmap" => array(array("Wall", "/wall.php")))
 $EXTreports     = '';   // Other script reports, see drsm_ext.php
+$MESSAGESfile   = '';   // Status messages, default ${CONFIGdir}/messages.conf,
+                        // see drsm_messages.php
 $METRICSskip    = array(); // Platforms or groups with no resource
                         // metrics, such as array("windows") for Windows
                         // agents that send none: their hosts get no
@@ -779,6 +781,8 @@ function drsm_nav_extra()
 require_once("{$WWWdir}/php/drsm_sites.php");
 // Other script reports
 require_once("{$WWWdir}/php/drsm_ext.php");
+// Status messages
+require_once("{$WWWdir}/php/drsm_messages.php");
 
 // Optional login for requests from outside the internal networks,
 // see drsm_auth.php. login.php does its own checks.
