@@ -11,6 +11,13 @@ All notable changes to the DataReel System Monitor (DRSM) are listed here.
   truncate -o /dev/null). The body now goes to stdout. New helper
   drsm_web_answers in lib/drsm_plugin.sh.
 
+### Changed
+
+- Top bar with extra menu items (nav-wide): below 1800px the menu moves
+  to its own row and keeps its names instead of showing icons only.
+  NHC users on Windows, at 125 to 150% display scaling, did not see the
+  icons as a menu.
+
 ### Added
 
 - network/http setting HTTPS_FALLBACK=yes: a host with port 80 closed

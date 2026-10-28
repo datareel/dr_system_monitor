@@ -786,11 +786,18 @@ td > .tier:first-child { margin-left: 0; }
   .nav a { padding: 8px 10px; }
 }
 /* Extra menu items ($NAVextra, other reports): the top bar uses the
-   full width, and shows icons only sooner */
+   full width. Below 1800px the menu gets its own row and keeps its
+   names (icons alone were not seen as a menu on Windows screens,
+   which are 1280 to 1800 CSS pixels wide at 125 to 150% scaling). */
 .topbar.nav-wide .topbar-inner { max-width: none; }
 @media (max-width: 1800px) and (min-width: 721px) {
-  .topbar.nav-wide .nav a span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-  .topbar.nav-wide .nav a { padding: 8px 10px; }
+  .topbar.nav-wide .topbar-inner { flex-wrap: wrap; row-gap: 2px; padding-bottom: 6px; }
+  .topbar.nav-wide .brand { flex: 1 1 auto; }
+  .topbar.nav-wide .nav { order: 3; flex-basis: 100%; flex-wrap: wrap; gap: 2px; }
+  .topbar.nav-wide .nav a span { position: static; width: auto; height: auto; overflow: visible; clip: auto; }
+  .topbar.nav-wide .nav a { padding: 7px 10px; }
+  .topbar.nav-wide .links-menu .menu-label { display: inline; }
+  .topbar.nav-wide .brand-text, .topbar.nav-wide .nav-menu { display: revert; }
 }
 @media (max-width: 1000px) and (min-width: 721px) {
   .site-picker select { max-width: 150px; }
