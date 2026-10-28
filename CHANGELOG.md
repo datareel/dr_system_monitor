@@ -4,6 +4,20 @@ All notable changes to the DataReel System Monitor (DRSM) are listed here.
 
 ## Unreleased
 
+### Fixed
+
+- network/http, https and ftp probes: a server that answered but made
+  curl retry failed with "curl exit code 23" (the retry cannot
+  truncate -o /dev/null). The body now goes to stdout. New helper
+  drsm_web_answers in lib/drsm_plugin.sh.
+
+### Added
+
+- network/http setting HTTPS_FALLBACK=yes: a host with port 80 closed
+  that answers https://<host> passes, for web servers that now serve
+  HTTPS only. Found at NHC, where the old DRSM 1.2 HTTP check never
+  failed (it tested $? after another test) and hid closed ports.
+
 ### Planned for the next version
 
 From the NHC dashboard port (their versions are in the NHC package,

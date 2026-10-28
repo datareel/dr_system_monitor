@@ -41,6 +41,13 @@ target=$(drsm_target) || exit 3
 URL=$(drsm_setting URL "")
 if [ "${URL}" == "" ]; then URL="http://${target}"; fi
 
+# HTTPS_FALLBACK=yes: a host that closed port 80 but answers HTTPS
+# (certificate not checked) passes, for web servers moved to HTTPS only
+if [ "$(drsm_setting URL "")" == "" ] && [ "$(drsm_setting HTTPS_FALLBACK no)" == "yes" ] \
+    && ! drsm_web_answers "${URL}" && drsm_web_answers "https://${target}" -k; then
+    drsm_ok "HTTP connectivity test passed on ${target}, ${DRSM_HOST_DESCRIPTION} (HTTPS only, port 80 closed)"
+    drsm_exit
+fi
 drsm_web_probe "${URL}" "HTTP" "web service"
 
 drsm_exit

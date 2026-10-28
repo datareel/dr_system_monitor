@@ -99,6 +99,20 @@ function drsm_target()
     echo "${DRSM_TARGET}"
 }
 
+function drsm_web_answers()
+{
+    # True when the server at URL $1 answers at all. More curl options,
+    # such as -k, follow the URL. The body goes to stdout, not -o
+    # /dev/null: a retry after a partial answer truncates the -o file,
+    # which fails on /dev/null with exit 23 although the server answered.
+    local url="${1}" ctimeout mtime retries
+    shift
+    ctimeout=$(drsm_setting CONNECT_TIMEOUT 15)
+    mtime=$(drsm_setting MAX_TIME 30)
+    retries=$(drsm_setting RETRIES 2)
+    curl -s --connect-timeout "${ctimeout}" --max-time "${mtime}" --retry "${retries}" "$@" "${url}" > /dev/null 2>&1
+}
+
 function drsm_web_probe()
 {
     # Connection test with curl for the http, https, and ftp probes.
@@ -108,11 +122,8 @@ function drsm_web_probe()
     # $1 == URL, $2 == label such as HTTP, $3 == service words for the
     # IMPACT line such as "web service"
     local target="${DRSM_TARGET}" desc="${DRSM_HOST_DESCRIPTION}" impact="${DRSM_HOST_IMPACT}"
-    local ctimeout mtime retries rv
-    ctimeout=$(drsm_setting CONNECT_TIMEOUT 15)
-    mtime=$(drsm_setting MAX_TIME 30)
-    retries=$(drsm_setting RETRIES 2)
-    curl -s -o /dev/null --connect-timeout "${ctimeout}" --max-time "${mtime}" --retry "${retries}" "${1}" &> /dev/null
+    local rv
+    drsm_web_answers "${1}"
     rv=$?
     if [ ${rv} -eq 0 ]; then
 	drsm_ok "${2} connectivity test passed on ${target}, ${desc}"
