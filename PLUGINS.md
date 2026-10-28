@@ -163,7 +163,14 @@ export ANSIBLE_INVENTORY=/etc/ansible/hosts
 export ANSIBLE_TIERS="production=prod qa=qa dev=dev"   # tier=group[,group]
 export ANSIBLE_DEFAULT_TIER=""                          # tier for other hosts, empty leaves them out
 export ANSIBLE_SHORT_NAMES=yes                          # web1.example.com becomes web1
+export ANSIBLE_EXCLUSIVE=no                             # yes: Linux hosts only from Ansible
 ```
+
+With `ANSIBLE_EXCLUSIVE=yes`, Linux host files of hosts the inventory
+does not list are skipped, so removing a host from Ansible stops its
+checks from the next run; Windows and other host files still run. The
+host's last report stays on the dashboard, shown as not reporting,
+until `utils/drsm_remove_host.sh <host> --apply` removes it.
 
 Hosts in a listed group, or in a group under it through
 `[group:children]` at any depth, are Linux hosts checked over SSH in

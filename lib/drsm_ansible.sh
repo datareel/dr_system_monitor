@@ -41,6 +41,10 @@
 #   ANSIBLE_DEFAULT_TIER=""                # tier for the other hosts,
 #                                          # empty leaves them out
 #   ANSIBLE_SHORT_NAMES=yes                # web1.example.com -> web1
+#   ANSIBLE_EXCLUSIVE=no                   # yes: Linux host files of hosts
+#                                          # not in the inventory are skipped,
+#                                          # so removing a host from Ansible
+#                                          # stops its checks
 #
 # Every listed host is a Linux host checked over SSH with the
 # _defaults.conf plugins. A host file with the same name (short or

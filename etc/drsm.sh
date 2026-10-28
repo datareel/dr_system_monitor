@@ -41,6 +41,7 @@ export BACKUP_age=30
 # Ansible inventory as the Linux host list, see PLUGINS.md
 # export ANSIBLE_INVENTORY=/etc/ansible/hosts
 # export ANSIBLE_TIERS="production=prod qa=qa dev=dev"
+# export ANSIBLE_EXCLUSIVE=yes
 # or from Ansible Automation Platform (formerly Tower) or AWX:
 # export ANSIBLE_AAP_URL=https://aap.example.com
 # export ANSIBLE_AAP_INVENTORY=12

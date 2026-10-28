@@ -547,6 +547,14 @@ run -n -g dev
 expect "ansible: dev run" "${R}/systems/db1/db1_report.txt" "DESCRIPTION:Ansible group db_dev"
 run -n -g windows
 expect "ansible: host files for other hosts still run" "${R}/systems/win1/win1_report.txt" "HOSTNAME:win1"
+printf 'DESCRIPTION="Retired"\n' > "${T}/hosts/old1.conf"
+run -n -l
+expect "ansible: Linux host file not in Ansible still runs by default" "${T}/run.log" "old1 (linux"
+printf 'export ANSIBLE_EXCLUSIVE=yes\n' >> "${T}/home/.drsm.sh"
+run -n -l
+if grep -q "old1 (linux" "${T}/run.log"; then fail "ansible: ANSIBLE_EXCLUSIVE kept a Linux host not in Ansible"; else pass "ansible: ANSIBLE_EXCLUSIVE drops Linux hosts not in Ansible"; fi
+run -n -l -g windows
+expect "ansible: ANSIBLE_EXCLUSIVE keeps other platforms" "${T}/run.log" "win1 (windows"
 echo "== ansible automation platform inventory (old ANSIBLE_TOWER_* names)"
 cp "${T}/home/.drsm.sh.noans" "${T}/home/.drsm.sh"
 printf 'secret-token\n' > "${T}/tower_token"; chmod 600 "${T}/tower_token"

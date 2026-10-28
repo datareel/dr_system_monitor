@@ -45,6 +45,8 @@ All notable changes to the DataReel System Monitor (DRSM) are listed here.
   of an Ansible INI inventory in the tiers of their groups (nested
   `:children` and host ranges included). Host files only add settings
   for those hosts; other host files work as before (`lib/drsm_ansible.sh`).
+  `ANSIBLE_EXCLUSIVE=yes` skips Linux host files of hosts not in the
+  inventory, so a host removed from Ansible leaves monitoring.
 - Ansible Automation Platform (formerly Ansible Tower) and AWX
   inventories: `ANSIBLE_AAP_URL`, `ANSIBLE_AAP_INVENTORY` (ID or name)
   and a token file (`ANSIBLE_TOWER_*` names also accepted). The

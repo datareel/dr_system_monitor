@@ -215,10 +215,22 @@ if [ "${ANSIBLE_INVENTORY}" != "" ]; then
 	if [ "${f}" != "" ]; then USED[${f}]=1; fi
 	ANSIBLESOURCES+=("ansible:${ah}|${at}|${ag}|${f}")
     done < <(drsm_ansible_hosts "${ANSIBLE_INVENTORY}")
-    # Host files of hosts Ansible does not list stay as they are
+    # Host files of hosts Ansible does not list stay as they are, except
+    # Linux ones with ANSIBLE_EXCLUSIVE=yes: then a Linux host leaves
+    # monitoring when it leaves the inventory
     rest=()
     for src in "${HOSTSOURCES[@]}"; do
-	if [ "${USED[${src#file:}]}" == "" ]; then rest+=("${src}"); fi
+	f="${src#file:}"
+	if [ "${USED[${f}]}" != "" ]; then continue; fi
+	if [ "${ANSIBLE_EXCLUSIVE,,}" == "yes" ]; then
+	    p=$(sed -n 's/^PLATFORM=["]*\([^"]*\)["]*$/\1/p' "${f}" | head -1)
+	    if [ "${p}" == "" ] && [ -f "${HOSTSdir}/_defaults.conf" ]; then p=$(sed -n 's/^PLATFORM=["]*\([^"]*\)["]*$/\1/p' "${HOSTSdir}/_defaults.conf" | head -1); fi
+	    if [ "${p,,}" == "" ] || [ "${p,,}" == "linux" ]; then
+		vlog "INFO - ${f} is a Linux host not in ${ANSIBLE_INVENTORY}, skipped (ANSIBLE_EXCLUSIVE)"
+		continue
+	    fi
+	fi
+	rest+=("${src}")
     done
     HOSTSOURCES=("${ANSIBLESOURCES[@]}" "${rest[@]}")
 fi
