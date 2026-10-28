@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Day-to-day admin | DRSM Documentation</title>
+<meta name="description" content="Add and remove hosts, change thresholds, post status messages, upgrade and troubleshoot a running DRSM.">
+<link rel="icon" href="images/logo.svg" type="image/svg+xml">
+<link rel="stylesheet" href="docs.css">
+<script src="docs.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="topbar">
+  <div class="topbar-inner">
+    <button class="tool icon-only menu-btn" type="button" data-action="menu" aria-label="Menu" aria-expanded="false"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+    <a class="brand" href="index.html"><img src="images/logo.svg" alt="">DRSM <small>Documentation</small></a>
+    <span class="spacer"></span>
+    <a class="tool primary" href="https://datareel.com/drsm/dashboard/"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg><span>Live demo</span></a>
+    <a class="tool hide-sm" href="https://datareel.com/downloads/drsm/"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg><span>Downloads</span></a>
+    <button class="tool icon-only" type="button" data-action="theme" aria-label="Switch light or dark theme"><svg class="icon sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg><svg class="icon moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+  </div>
+</header>
+<div class="layout">
+  <nav class="sidebar" aria-label="Documentation">
+
+    <h4>Get started</h4><a href="index.html">Overview</a><a href="install.html">Install and set up</a><a href="deployment.html">Deployment setups</a><h4>Using DRSM</h4><a href="dashboard.html">Web dashboard</a><a href="plugins.html">Plugins</a><a href="alerts.html">Thresholds and alerts</a><a href="databases.html">MySQL and Postgres</a><a href="admin.html" class="active" aria-current="page">Day-to-day admin</a><div class="toc"><a href="#daily">Every day</a><a href="#add">Add a host</a><a href="#remove">Remove a host</a><a href="#levels">Change a threshold</a><a href="#messages">Status messages</a><a href="#scripts">Your own scripts</a><a href="#upgrade">Upgrade</a><a href="#trouble">Troubleshooting</a></div><a href="ai-assistants.html">AI assistants</a><h4>Reference</h4><a href="changelog.html">What's new</a><h4>Links</h4><a href="https://datareel.com/drsm/dashboard/">Live demo</a><a href="https://datareel.com/downloads/drsm/">Downloads</a><a href="https://datareel.com/contact.php">Report an issue</a>
+  
+  </nav>
+  <main class="content" id="main">
+<h1>Day-to-day admin</h1>
+<p class="lead">The jobs that come up while DRSM is running: hosts in and out, thresholds, notices for users, upgrades and finding out why something is red. Everything is plain text files and a few scripts, so each job is also easy to hand to an <a href="ai-assistants.html">AI assistant</a>.</p>
+<div class="callout"><p>Commands below use <code>~/drsm</code> and <code>~/.drsm.sh</code>. If your install uses <code>DRSM_CONFIG</code>, put <code>DRSM_CONFIG=&lt;your config&gt;</code> in front of each command. Scripts that change files show a dry run first and need <code>--apply</code>.</p></div>
+
+<h2 id="daily">Every day</h2>
+<ul>
+<li>Open the Overview: the banner and <em>Needs attention</em> list what is wrong, worst first.</li>
+<li>Check that reports are current: a host shown as <em>Stale</em> (purple) means its checks did not run. Look at cron and <code>$LOGdir/drsm_run*.log</code>.</li>
+<li>Alerts go to the addresses in <code>alert.email.list</code> or the site's <code>ALERT_EMAIL</code>, see <a href="alerts.html">Thresholds and alerts</a>.</li>
+</ul>
+
+<h2 id="add">Add a host</h2>
+<h3>Linux host from a host file</h3>
+<pre><code><span class="p">$ </span>cp ~/drsm/etc/hosts/example.conf_example ~/drsm/etc/hosts/web2.conf
+<span class="p">$ </span>vi ~/drsm/etc/hosts/web2.conf          # HOST, DESCRIPTION, IMPACT, GROUP
+<span class="p">$ </span>~/drsm/bin/drsm_run.sh -n -H web2 -v   # one run, no alerts</code></pre>
+<p>The monitor account's SSH key must be in the host's <code>authorized_keys</code>.</p>
+<h3>Linux host from Ansible</h3>
+<p>With <code>ANSIBLE_INVENTORY</code> (or Ansible Automation Platform, <code>ANSIBLE_AAP_URL</code>) set, add the host to a group under one of the <code>ANSIBLE_TIERS</code> groups in Ansible. DRSM checks it from the next run. <code>utils/drsm_ansible_hosts.sh</code> lists what DRSM takes from Ansible. See <a href="plugins.html#ansible">Ansible inventory</a>.</p>
+<h3>Windows host</h3>
+<p>Install the reporting agent. When its first report arrives, <code>utils/wra_hosts.sh</code> (dry run, then <code>--apply</code>) makes its host file. See <a href="plugins.html#windows">Windows hosts</a>.</p>
+<h3>Network device or address</h3>
+<p>A host file with <code>COLLECTOR=none</code>, <code>PLUGINS=""</code> and <code>PROBES="network/ping"</code> (add <code>network/https</code> for a web service).</p>
+
+<h2 id="remove">Remove a host</h2>
+<pre><code><span class="p">$ </span>~/drsm/utils/drsm_remove_host.sh web2              # dry run
+<span class="p">$ </span>~/drsm/utils/drsm_remove_host.sh --apply web2
+<span class="p">$ </span>~/drsm/utils/drsm_remove_host.sh --apply -f retired.txt   # one host per line</code></pre>
+<p>This removes the host file (a copy goes to <code>etc/hosts/removed</code>) and its reports. A host that comes from Ansible is removed from Ansible; with <code>ANSIBLE_EXCLUSIVE=yes</code> its checks stop at once, and <code>drsm_remove_host.sh</code> clears its old reports.</p>
+
+<h2 id="levels">Change a threshold</h2>
+<p>Every plugin setting has a default in <code>plugins/&lt;category&gt;/&lt;name&gt;/plugin.conf</code>. Override it for all hosts in <code>etc/hosts/_defaults.conf</code>, for a site in its site file, or for one host in its host file, as <code>&lt;category&gt;_&lt;name&gt;_&lt;SETTING&gt;=value</code>:</p>
+<pre><code>storage_disk_WARN=85
+storage_disk_SKIP="/mnt/scratch"
+core_cpu_TIMEOUT=60</code></pre>
+
+<h2 id="messages">Status messages</h2>
+<p>Tell everyone about an outage or maintenance: the message scrolls across the top of every page. See <a href="dashboard.html#messages">Status messages</a>.</p>
+<pre><code><span class="p">$ </span>~/drsm/utils/drsm_message.sh --apply add warning "Mail relay maintenance 18:00 to 19:00" --until "2026-11-03 19:00"</code></pre>
+
+<h2 id="scripts">Your own scripts</h2>
+<ul>
+<li>A new check on a host: write a plugin in <code>plugins/local</code>, see <a href="plugins.html#writing">Writing a plugin</a>.</li>
+<li>A script that already writes a report file: list it in <code>$EXTreports</code> to show it on the dashboard with a state, see <a href="dashboard.html#extreports">Reports from your own scripts</a>. Start status lines with <code>ERROR</code>, <code>WARNING</code> or <code>INFO</code> and write a <code>REPORT_ETIME:</code> line with the run time.</li>
+<li>Dashboard settings and menus are in <code>$CONFIGdir/drsm.php</code>, colors in <code>$WWWdir/site/custom.css</code>, see <a href="dashboard.html#customize">Customizing the dashboard</a>.</li>
+</ul>
+
+<h2 id="upgrade">Upgrade</h2>
+<ol>
+<li>Unpack the new release beside the old source.</li>
+<li>Run <code>utils/install.sh</code> from it as the DRSM user. Host files, site files, <code>plugins/local</code>, <code>_defaults.conf</code>, <code>config/drsm.php</code> (the new one is written as <code>drsm.php_install_new</code>) and <code>$WWWdir/site</code> are kept.</li>
+<li>Compare <code>drsm.php_install_new</code> with <code>drsm.php</code> for new settings, read <a href="changelog.html">What's new</a>.</li>
+<li><code>drsm_run.sh -l</code>, then one run with <code>-n</code>.</li>
+</ol>
+
+<h2 id="trouble">Troubleshooting</h2>
+<div class="table-wrap"><table><thead><tr><th>Symptom</th><th>Look at</th></tr></thead><tbody>
+<tr><td>Host is Stale</td><td>Cron, <code>$LOGdir/drsm_run*.log</code>, <code>drsm_run.sh -n -H &lt;host&gt; -v</code></td></tr>
+<tr><td>Host is red</td><td>Its report page: the first ERROR line under its check</td></tr>
+<tr><td>A check is Unknown</td><td>A command in the plugin's <code>REQUIRES</code> is missing on the host</td></tr>
+<tr><td>Host waits for its first report</td><td>It is new, or its report folder is left from a removed host (<code>drsm_remove_host.sh</code>)</td></tr>
+<tr><td>Page blank or wrong</td><td>The Web server error log, <code>php -l</code> on the page</td></tr>
+<tr><td>No alert email</td><td><code>-n</code> on the cron line, the address lists, <a href="alerts.html#relay">mail relay</a></td></tr>
+</tbody></table></div>
+<nav class="pager" aria-label="Previous and next page"><a class="card prev" href="databases.html"><small>Previous</small>MySQL and Postgres</a><a class="card next" href="ai-assistants.html"><small>Next</small>AI assistants</a></nav>
+  </main>
+</div>
+<footer class="foot">DataReel System Monitor (DRSM) 1.30 and later &middot; GNU General Public License v3 &middot; <a href="https://datareel.com/info_drsm.php">datareel.com</a></footer>
+</body>
+</html>

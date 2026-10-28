@@ -39,6 +39,10 @@ All notable changes to the DataReel System Monitor (DRSM) are listed here.
 
 #### Added
 
+- Day-to-day admin (docs/admin.html) and AI assistants
+  (docs/ai-assistants.html: GitHub Copilot, Gemini and Claude setup,
+  approved services, good requests) pages.
+
 - Guides for AI coding assistants: `AGENTS.md`, with
   `.github/copilot-instructions.md`, `GEMINI.md` and `CLAUDE.md`
   pointing to it, `llms.txt`, `llms-full.txt`, and task guides in
