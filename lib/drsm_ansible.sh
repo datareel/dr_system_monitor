@@ -116,3 +116,79 @@ function drsm_ansible_hosts()
         }
       }' "${inv}" | sort
 }
+
+# -----------------------------------------------------------
+# Ansible Tower / AWX inventory. Settings in ~/.drsm.sh:
+#
+#   ANSIBLE_TOWER_URL=https://tower.example.com    # off when empty
+#   ANSIBLE_TOWER_INVENTORY=12                     # inventory ID or name
+#   ANSIBLE_TOWER_TOKEN_FILE=~/.drsm_tower_token   # OAuth2 token, mode 600
+#   ANSIBLE_TOWER_CA_FILE=""                       # CA bundle for a private CA
+#   ANSIBLE_TOWER_CACHE_MINUTES=15                 # reuse a fetched copy
+#
+# The inventory is read from the Tower API (/api/v2/inventories/<id>/
+# script/), turned into an INI file in ${VARdir} and read like a local
+# inventory, with ANSIBLE_TIERS. When Tower cannot be reached the last
+# good copy is used, with a warning. Needs curl and jq. The token is
+# sent from a header file, never on the command line.
+# -----------------------------------------------------------
+
+function drsm_tower_get()
+{
+    # GET Tower API URL $1 into file $2
+    local hdr rc
+    hdr=$(mktemp "${VARdir:-/tmp}/.drsm_tower_hdr.XXXXXX") || return 1
+    chmod 600 "${hdr}"
+    printf 'Authorization: Bearer %s\n' "$(tr -d '[:space:]' < "${ANSIBLE_TOWER_TOKEN_FILE}")" > "${hdr}"
+    local ca=()
+    if [ "${ANSIBLE_TOWER_CA_FILE}" != "" ]; then ca=(--cacert "${ANSIBLE_TOWER_CA_FILE}"); fi
+    ${DRSM_CURL:-curl} -sS --fail --max-time 60 "${ca[@]}" -H "@${hdr}" -H "Accept: application/json" -o "${2}" "${1}"
+    rc=$?
+    rm -f "${hdr}"
+    return ${rc}
+}
+
+function drsm_tower_inventory()
+{
+    # Print the path of an INI copy of the Tower inventory, fetching it
+    # when the cached copy is older than ANSIBLE_TOWER_CACHE_MINUTES
+    local base="${ANSIBLE_TOWER_URL%/}" inv="${ANSIBLE_TOWER_INVENTORY}" id
+    local cache="${VARdir:-/tmp}/ansible_tower_inventory.ini" json tmp
+    local age="${ANSIBLE_TOWER_CACHE_MINUTES:-15}"
+    if [ "${base}" == "" ] || [ "${inv}" == "" ]; then
+	echo "ERROR - set ANSIBLE_TOWER_URL and ANSIBLE_TOWER_INVENTORY" >&2; return 1
+    fi
+    if [ -s "${cache}" ] && [ -n "$(find "${cache}" -mmin "-${age}" 2> /dev/null)" ]; then echo "${cache}"; return 0; fi
+    if ! command -v jq > /dev/null 2>&1; then echo "ERROR - jq is needed to read the Ansible Tower inventory" >&2; return 1; fi
+    if [ ! -r "${ANSIBLE_TOWER_TOKEN_FILE}" ]; then echo "ERROR - Ansible Tower token file ${ANSIBLE_TOWER_TOKEN_FILE} not found" >&2; return 1; fi
+    mkdir -p "$(dirname "${cache}")"
+    json=$(mktemp "${cache}.json.XXXXXX") || return 1
+    tmp="${cache}.tmp"
+    id="${inv}"
+    if [[ ! "${inv}" =~ ^[0-9]+$ ]]; then
+	# Inventory name to ID
+	if drsm_tower_get "${base}/api/v2/inventories/?name=$(jq -rn --arg v "${inv}" '$v|@uri')" "${json}"; then
+	    id=$(jq -r '.results[0].id // empty' "${json}")
+	else
+	    id=""
+	fi
+    fi
+    if [ "${id}" != "" ] && drsm_tower_get "${base}/api/v2/inventories/${id}/script/?hostvars=0" "${json}" \
+	&& jq -r 'to_entries[] | select(.key != "_meta" and .key != "all")
+		  | ("[" + .key + "]"), ((.value.hosts // [])[]),
+		    (if ((.value.children // []) | length) > 0 then ("[" + .key + ":children]"), (.value.children[]) else empty end)' \
+		  "${json}" > "${tmp}" 2> /dev/null && [ -s "${tmp}" ]; then
+	mv -f "${tmp}" "${cache}"
+	rm -f "${json}"
+	echo "${cache}"
+	return 0
+    fi
+    rm -f "${json}" "${tmp}"
+    if [ -s "${cache}" ]; then
+	echo "WARNING - Ansible Tower inventory ${inv} could not be read from ${base}, using the copy from $(date -r "${cache}")" >&2
+	echo "${cache}"
+	return 0
+    fi
+    echo "ERROR - Ansible Tower inventory ${inv} could not be read from ${base}" >&2
+    return 1
+}

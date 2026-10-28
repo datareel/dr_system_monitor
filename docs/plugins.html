@@ -69,6 +69,14 @@ export ANSIBLE_TIERS="production=prod qa=qa dev=dev"   # tier=group[,group]
 export ANSIBLE_DEFAULT_TIER=""                          # tier for other hosts, empty leaves them out
 export ANSIBLE_SHORT_NAMES=yes                          # web1.example.com becomes web1</code></pre>
 <p>Hosts in a group named in <code>ANSIBLE_TIERS</code>, or in any group under it through <code>[group:children]</code> at any depth, are checked as Linux hosts over SSH in that tier, with the <code>_defaults.conf</code> plugins. A host in two tiers goes to the first one listed. A host file with the same short or full name, or the same <code>HOST=</code>, adds settings such as <code>DESCRIPTION</code>, <code>PLUGINS</code> or plugin levels, but the tier always comes from Ansible. Host files for hosts Ansible does not list, such as Windows hosts and network devices, work as before. Check the result with <code>drsm_run.sh -l</code>.</p>
+<h3 id="tower">Ansible Tower or AWX</h3>
+<p>To read the inventory from Ansible Tower (Automation Controller) or AWX instead of a file:</p>
+<pre><code>export ANSIBLE_TOWER_URL=https://tower.example.com
+export ANSIBLE_TOWER_INVENTORY=12                     # ID or name
+export ANSIBLE_TOWER_TOKEN_FILE=~/.drsm_tower_token   # OAuth2 token, mode 600
+export ANSIBLE_TOWER_CA_FILE=""                       # CA bundle for a private CA
+export ANSIBLE_TOWER_CACHE_MINUTES=15</code></pre>
+<p>DRSM fetches the inventory script (<code>/api/v2/inventories/&lt;id&gt;/script/</code>) with <code>curl</code> and <code>jq</code>, keeps an INI copy in <code>$VARdir</code> for the cache time and reads it like a local inventory with <code>ANSIBLE_TIERS</code>. If Tower cannot be reached, the last good copy is used and a warning is printed. A read-only token is enough; it is sent from a header file, not on the command line. <code>utils/drsm_ansible_hosts.sh</code> (<code>-f</code> to fetch now) lists the hosts and tiers DRSM takes from either source.</p>
 <p>INI inventories are read: <code>[group]</code>, <code>[group:children]</code>, numeric ranges such as <code>web[01:03].example.com</code>; <code>[group:vars]</code> and host variables are skipped. YAML inventories are not read; <code>ansible-inventory -i inv.yml --list</code> can show their groups for an INI copy.</p>
 
 <h2 id="sites">Organizations and sites</h2>

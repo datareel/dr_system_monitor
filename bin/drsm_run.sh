@@ -185,6 +185,12 @@ do
 done
 shopt -u nullglob
 
+# Ansible Tower or AWX: fetch the inventory (cached) and read it as a
+# local one
+if [ "${ANSIBLE_TOWER_URL}" != "" ]; then
+    ANSIBLE_INVENTORY=$(drsm_tower_inventory) || exit 1
+fi
+
 # Ansible inventory: its hosts and tiers replace the host list. A host
 # file of the same name (short or full name, or its HOST=) only adds
 # settings. See lib/drsm_ansible.sh.

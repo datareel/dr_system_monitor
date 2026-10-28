@@ -45,6 +45,11 @@ All notable changes to the DataReel System Monitor (DRSM) are listed here.
   of an Ansible INI inventory in the tiers of their groups (nested
   `:children` and host ranges included). Host files only add settings
   for those hosts; other host files work as before (`lib/drsm_ansible.sh`).
+- Ansible Tower and AWX inventories: `ANSIBLE_TOWER_URL`,
+  `ANSIBLE_TOWER_INVENTORY` (ID or name) and a token file. The
+  inventory is fetched with curl and jq, cached, and the last good copy
+  is used when Tower is down. `utils/drsm_ansible_hosts.sh` lists the
+  hosts and tiers from either source.
 
 - `DRSM_CONFIG` names the config file in place of `~/.drsm.sh`, so a
   second DRSM install can run from the same account, for example a new

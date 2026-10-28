@@ -547,6 +547,54 @@ run -n -g dev
 expect "ansible: dev run" "${R}/systems/db1/db1_report.txt" "DESCRIPTION:Ansible group db_dev"
 run -n -g windows
 expect "ansible: host files for other hosts still run" "${R}/systems/win1/win1_report.txt" "HOSTNAME:win1"
+echo "== ansible tower inventory"
+cp "${T}/home/.drsm.sh.noans" "${T}/home/.drsm.sh"
+printf 'secret-token\n' > "${T}/tower_token"; chmod 600 "${T}/tower_token"
+cat > "${T}/tower.json" <<'JSON'
+{"all": {"children": ["ungrouped", "linux_prod", "linux_dev"]},
+ "linux_prod": {"hosts": ["tw1.example.com", "tw2.example.com"]},
+ "linux_dev": {"children": ["lab"]},
+ "lab": {"hosts": ["twdev1"]},
+ "_meta": {"hostvars": {}}}
+JSON
+# curl stand in: answers the name lookup and the inventory script, logs its arguments
+cat > "${T}/fakecurl" <<FAKE
+#!/bin/bash
+echo "\$*" >> "${T}/curl.log"
+out=""; url=""; hdr=""
+while [ \$# -gt 0 ]; do case "\$1" in -o) out="\$2"; shift ;; -H) case "\$2" in @*) hdr="\${2#@}" ;; esac; shift ;; --cacert|--max-time) shift ;; -*) ;; *) url="\$1" ;; esac; shift; done
+grep -q "Bearer secret-token" "\${hdr}" || exit 22
+[ -f "${T}/tower_down" ] && exit 7
+case "\${url}" in
+  *"inventories/?name=NHC%20Linux"*) echo '{"results":[{"id":5}]}' > "\${out}" ;;
+  *"inventories/5/script/"*) cp "${T}/tower.json" "\${out}" ;;
+  *) exit 22 ;;
+esac
+FAKE
+chmod 755 "${T}/fakecurl"
+cat >> "${T}/home/.drsm.sh" <<CONF
+export ANSIBLE_TOWER_URL=https://tower.example.com/
+export ANSIBLE_TOWER_INVENTORY="NHC Linux"
+export ANSIBLE_TOWER_TOKEN_FILE=${T}/tower_token
+export ANSIBLE_TOWER_CACHE_MINUTES=0
+export ANSIBLE_TIERS="production=linux_prod dev=linux_dev"
+CONF
+export DRSM_CURL="${T}/fakecurl"
+run -n -l
+expect "tower: hosts from the inventory script" "${T}/run.log" "tw2 (linux"
+expect "tower: name looked up" "${T}/curl.log" "inventories/?name=NHC%20Linux"
+if grep -q "secret-token" "${T}/curl.log"; then fail "tower: token on the command line"; else pass "tower: token not on the command line"; fi
+run -n -l -g dev
+expect "tower: nested group tier" "${T}/run.log" "twdev1 (linux"
+touch "${T}/tower_down"
+run -n -l
+expect "tower: last good copy when Tower is down" "${T}/run.log" "tw1 (linux"
+expect "tower: warning when Tower is down" "${T}/run.log" "could not be read"
+rm -f "${T}/tower_down" "${T}/tmp/var/ansible_tower_inventory.ini"
+touch "${T}/tower_down"
+run -n -l
+expect "tower: error with no copy" "${T}/run.log" "ERROR - Ansible Tower inventory"
+unset DRSM_CURL
 mv "${T}/home/.drsm.sh.noans" "${T}/home/.drsm.sh"
 rm -f "${T}/hosts/"*.conf
 rm -rf "${T}/sites"; mv "${T}/sites.ans" "${T}/sites"

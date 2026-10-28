@@ -41,6 +41,10 @@ export BACKUP_age=30
 # Ansible inventory as the Linux host list, see PLUGINS.md
 # export ANSIBLE_INVENTORY=/etc/ansible/hosts
 # export ANSIBLE_TIERS="production=prod qa=qa dev=dev"
+# or from Ansible Tower / AWX:
+# export ANSIBLE_TOWER_URL=https://tower.example.com
+# export ANSIBLE_TOWER_INVENTORY=12
+# export ANSIBLE_TOWER_TOKEN_FILE=${HOME}/.drsm_tower_token
 
 # Our DRSM home directory
 export DRSMHOME=${HOME}/drsm

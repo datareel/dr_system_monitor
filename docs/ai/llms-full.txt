@@ -171,7 +171,9 @@ the same prefix when you run a script by hand.
 - Sites that keep Linux hosts in Ansible: set `ANSIBLE_INVENTORY` and
   `ANSIBLE_TIERS` in the config. Then add or move a Linux host in the
   Ansible inventory, not with a host file; a host file only adds
-  settings. `drsm_run.sh -l` shows the result.
+  settings. With Ansible Tower or AWX set `ANSIBLE_TOWER_URL`,
+  `ANSIBLE_TOWER_INVENTORY` and `ANSIBLE_TOWER_TOKEN_FILE` instead.
+  `utils/drsm_ansible_hosts.sh` and `drsm_run.sh -l` show the result.
 
 ## Sites, tiers and links
 
