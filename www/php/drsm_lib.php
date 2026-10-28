@@ -55,6 +55,11 @@ $NAVextra       = array(); // Your own main menu items, each
                         //       array("Name", "/url"), ...))
                         // icon and sub are optional
 $EXTreports     = '';   // Other script reports, see drsm_ext.php
+$METRICSskip    = array(); // Platforms or groups with no resource
+                        // metrics, such as array("windows") for Windows
+                        // agents that send none: their hosts get no
+                        // gauges and are left off the trends page and
+                        // the resource use heat map
 
 Login for access from outside the internal networks is off by
 default, see drsm_auth.php for the $AUTH settings.
@@ -389,7 +394,18 @@ function drsm_load_host($hostdir, $site = DRSM_LEGACY_SITE)
     $host["note"] = "Last report is over " . drsm_age_text($stale * 60) . " old";
   }
   $host["metrics"] = drsm_host_metrics($rep);
+  $host["nometrics"] = drsm_metrics_skipped($host);
+  if($host["nometrics"]) $host["metrics"] = array();
   return $host;
+}
+
+// True for a host whose platform or group is in $METRICSskip
+function drsm_metrics_skipped($host)
+{
+  global $METRICSskip;
+  if(!isset($METRICSskip) || !is_array($METRICSskip) || count($METRICSskip) == 0) return false;
+  $skip = array_map("strtolower", $METRICSskip);
+  return in_array(strtolower($host["platform"]), $skip) || in_array(strtolower($host["group"]), $skip);
 }
 
 /*

@@ -458,6 +458,7 @@ sed -i '$d' "${W}/config/drsm.php"
 cat >> "${W}/config/drsm.php" <<PHPCONF
 \$EXTreports = '${W}/config/ext_reports.conf';
 \$EXTtitle = 'Site reports';
+\$METRICSskip = array("windows");
 \$SITElogo = '/img/logo.png';
 \$NAVextra = array(array("label" => "Classic view", "url" => "/classic/", "icon" => "layout"),
                    array("label" => "Tools", "url" => "/tools/", "sub" => array(array("Time converter", "/tools/utc.php"))),
@@ -480,6 +481,10 @@ expect "extra menu item kept as is" 'href="/classic/"'
 expect "extra submenu" 'href="/tools/utc.php"'
 expect "wide top bar with extra items" 'class="topbar nav-wide"'
 reject "one site still has no picker" 'name="site"'
+render heatmap.php "mode=metrics"
+reject "no metrics for skipped platforms on the heat map" '>winrpt<'
+render trends.php ""
+reject "no metrics for skipped platforms on trends" 'winrpt'
 render extreports.php ""
 expect "ext ok report" "Nightly backups"
 expect "ext warning" '<span class="badge warn">'
