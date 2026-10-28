@@ -38,6 +38,10 @@ the same prefix when you run a script by hand.
 - Remove a host and its reports: `utils/drsm_remove_host.sh <host>`
   (dry run), then `--apply`.
 - From an old `systems.dat` setup: `utils/migrate_systems_dat.sh`.
+- Sites that keep Linux hosts in Ansible: set `ANSIBLE_INVENTORY` and
+  `ANSIBLE_TIERS` in the config. Then add or move a Linux host in the
+  Ansible inventory, not with a host file; a host file only adds
+  settings. `drsm_run.sh -l` shows the result.
 
 ## Sites, tiers and links
 

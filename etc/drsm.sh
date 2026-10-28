@@ -38,6 +38,10 @@ export OFFLINEfile_age=30
 # Age off database and system backups
 export BACKUP_age=30
 
+# Ansible inventory as the Linux host list, see PLUGINS.md
+# export ANSIBLE_INVENTORY=/etc/ansible/hosts
+# export ANSIBLE_TIERS="production=prod qa=qa dev=dev"
+
 # Our DRSM home directory
 export DRSMHOME=${HOME}/drsm
 if [ "$(whoami)" != "${SYSADMIN_USERNAME}" ]; then

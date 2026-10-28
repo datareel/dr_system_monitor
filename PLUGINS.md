@@ -153,6 +153,27 @@ The host file is saved to `etc/hosts/removed` first.
 If `network/ping` fails, the host is reported down and its remote
 plugins are skipped, as the old `system_report.sh` did.
 
+## Ansible inventory
+
+DRSM can take its Linux host list from an Ansible INI inventory. In
+`~/.drsm.sh`:
+
+```
+export ANSIBLE_INVENTORY=/etc/ansible/hosts
+export ANSIBLE_TIERS="production=prod qa=qa dev=dev"   # tier=group[,group]
+export ANSIBLE_DEFAULT_TIER=""                          # tier for other hosts, empty leaves them out
+export ANSIBLE_SHORT_NAMES=yes                          # web1.example.com becomes web1
+```
+
+Hosts in a listed group, or in a group under it through
+`[group:children]` at any depth, are Linux hosts checked over SSH in
+that tier with the `_defaults.conf` plugins; a host in two tiers goes
+to the first tier listed. A host file with the same short or full name
+(or `HOST=`) adds settings, but the tier comes from Ansible. Host files
+for hosts Ansible does not list work as before. Ranges such as
+`web[01:03]` are expanded; `:vars` sections and host variables are
+skipped; YAML inventories are not read. See `lib/drsm_ansible.sh`.
+
 ## Organizations and sites
 
 Hosts can be grouped into organizations and sites, for example one

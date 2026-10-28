@@ -33,6 +33,7 @@ lib/drsm_plugin.sh       helpers every plugin sources (drsm_warn, drsm_crit, ...
 lib/drsm_conf.sh         KEY=value reader for manifests, host and site files
 lib/drsm_sites.sh        organizations, sites, tiers, site.json and links
 lib/drsm_history.sh      metrics history for the trends page
+lib/drsm_ansible.sh      Ansible INI inventory as the host list (ANSIBLE_INVENTORY)
 collectors/              local.sh, ssh-linux.sh, wra.sh (Windows agent reports)
 plugins/<cat>/<name>/    plugin.conf + check.sh (on the host) or probe.sh (from the monitor)
 plugins/local/           site plugins, never overwritten by updates

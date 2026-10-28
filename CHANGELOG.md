@@ -40,6 +40,12 @@ All notable changes to the DataReel System Monitor (DRSM) are listed here.
 
 #### Added
 
+- Ansible inventory as the host list: with `ANSIBLE_INVENTORY` and
+  `ANSIBLE_TIERS` in the config, `drsm_run.sh` checks the Linux hosts
+  of an Ansible INI inventory in the tiers of their groups (nested
+  `:children` and host ranges included). Host files only add settings
+  for those hosts; other host files work as before (`lib/drsm_ansible.sh`).
+
 - `DRSM_CONFIG` names the config file in place of `~/.drsm.sh`, so a
   second DRSM install can run from the same account, for example a new
   release beside an older one other scripts still source.

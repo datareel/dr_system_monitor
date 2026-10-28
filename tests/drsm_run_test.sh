@@ -505,6 +505,52 @@ out=$(cd "${TOPdir}" && bash -c 'source lib/drsm_conf.sh; source lib/drsm_sites.
   drsm_is_site_key ALERT_EMAIL_QA && echo sitekey' 2>&1)
 if [ "${out}" == $'OPS OPS QA production\ndev@x ops@x all@x\nsitekey' ]; then pass "tier names and ALERT_EMAIL_<TIER> fallback"; else fail "tier helpers: ${out}"; fi
 
+echo "== ansible inventory"
+rm -f "${T}/hosts/"*.conf
+rm -rf "${T}/sites.ans"; mv "${T}/sites" "${T}/sites.ans"; mkdir -p "${T}/sites"
+printf 'PLUGINS="core/memory"\nPROBES=""\nCOLLECTOR=local\n' > "${T}/hosts/_defaults.conf"
+cat > "${T}/inventory" <<'INV'
+# test inventory
+[web]
+web1.example.com ansible_python_interpreter=/usr/bin/python3
+app[01:02].example.com
+[db_dev]
+db1.example.com
+[lab]
+lab1
+[prod:children]
+web
+[dev:children]
+db_dev
+[dev_all:children]
+dev
+[all:vars]
+ansible_user=admin
+INV
+printf 'DESCRIPTION="Main web server"\nGROUP=dev\n' > "${T}/hosts/web1.conf"
+printf 'HOST=win1\nPLATFORM=windows\nCOLLECTOR=none\nGROUP=windows\n' > "${T}/hosts/win1.conf"
+cp "${T}/home/.drsm.sh" "${T}/home/.drsm.sh.noans"
+printf 'export ANSIBLE_INVENTORY=%s\nexport ANSIBLE_TIERS="production=prod dev=dev_all"\n' "${T}/inventory" >> "${T}/home/.drsm.sh"
+HOME="${T}/home" bash -c "source ${TOPdir}/lib/drsm_ansible.sh; source ${T}/home/.drsm.sh; drsm_ansible_hosts" > "${T}/ans.txt"
+expect "ansible: child group tier" "${T}/ans.txt" "web1 production web"
+expect "ansible: host range" "${T}/ans.txt" "app02 production web"
+expect "ansible: nested children" "${T}/ans.txt" "db1 dev db_dev"
+if grep -q '^lab1 ' "${T}/ans.txt"; then fail "ansible: host in no tier listed"; else pass "ansible: host in no tier left out"; fi
+if grep -q 'ansible_user' "${T}/ans.txt"; then fail "ansible: vars read as hosts"; else pass "ansible: vars skipped"; fi
+run -n -l
+expect "ansible: -l lists inventory hosts" "${T}/run.log" "app01"
+run -n
+expect "ansible: host file adds settings" "${R}/systems/web1/web1_report.txt" "DESCRIPTION:Main web server"
+expect "ansible: tier from Ansible, not the host file" "${R}/systems/web1/web1_report.txt" "GROUP:production"
+if [ -f "${R}/systems/db1/db1_report.txt" ]; then fail "ansible: dev host in the production run"; else pass "ansible: dev host not in the production run"; fi
+run -n -g dev
+expect "ansible: dev run" "${R}/systems/db1/db1_report.txt" "DESCRIPTION:Ansible group db_dev"
+run -n -g windows
+expect "ansible: host files for other hosts still run" "${R}/systems/win1/win1_report.txt" "HOSTNAME:win1"
+mv "${T}/home/.drsm.sh.noans" "${T}/home/.drsm.sh"
+rm -f "${T}/hosts/"*.conf
+rm -rf "${T}/sites"; mv "${T}/sites.ans" "${T}/sites"
+
 # DRSM_CONFIG names the config in place of ~/.drsm.sh, for a second
 # install in the same account
 mkdir -p "${T}/home2"
