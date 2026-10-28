@@ -32,11 +32,17 @@ You should have received a copy of the GNU General Public License
 along with the DataReel software distribution.  If not, see
 <http://www.gnu.org/licenses/>.
 
-Users guide: how to read the dashboard, for people who only look at
-it. The footer's Help link opens it. A site can replace the guide with
-its own ${SITEincludes}/help_users.php, which is printed inside the
-page layout. Admin documentation is in the docs folder of the DRSM
-install (docs/admin.html and docs/ai-assistants.html).
+Help: help.php is the Users guide (how to read the dashboard, for
+people who only look at it), help.php?p=admin the Admin guide (the
+day-to-day jobs of whoever runs DRSM). The footer's Help link opens
+it. A site can replace either guide with its own
+${SITEincludes}/help_users.php or help_admin.php, which is printed
+inside the page layout. The full admin documentation is in the docs
+folder of the DRSM install, and online at $DOCSurl. Settings in
+config/drsm.php:
+
+$DOCSurl = 'https://datareel.com/drsm/docs/'; // where the docs links go
+$HELPadmin = false;                           // hides the Admin guide
 */
 // ----------------------------------------------------------- //
 // SCRIPT CONTENT STARTS BELOW.
@@ -47,10 +53,31 @@ require_once("../config/drsm.php");
 require_once("{$WWWdir}/php/query_post_validation.php");
 require_once("{$WWWdir}/php/drsm_lib.php");
 
-drsm_page_start("Help", "help");
+$admin_on = !(isset($HELPadmin) && $HELPadmin === false);
+$page = ($admin_on && isset($_GET["p"]) && $_GET["p"] === "admin") ? "admin" : "users";
+$docs = (isset($DOCSurl) && $DOCSurl != "") ? rtrim($DOCSurl, "/") . "/" : "https://datareel.com/drsm/docs/";
+function help_doc($page, $text)
+{
+  global $docs;
+  return "<a href=\"" . h($docs . $page) . "\">" . h($text) . "</a>";
+}
+
+drsm_page_start($page == "admin" ? "Admin guide" : "Help", "help");
 ?>
+<?php if($admin_on) { ?>
+<div class="seg help-tabs" role="tablist" aria-label="Help">
+  <a href="<?php echo h(drsm_url("help.php")); ?>"<?php if($page == "users") echo ' class="active" aria-current="page"'; ?>>Users guide</a>
+  <a href="<?php echo h(drsm_url("help.php") . "?p=admin"); ?>"<?php if($page == "admin") echo ' class="active" aria-current="page"'; ?>>Admin guide</a>
+</div>
+<?php } ?>
 <section class="panel help-page">
-<?php if(isset($SITEincludes) && file_exists("{$SITEincludes}/help_users.php")) {
+<?php if($page == "admin") {
+        if(isset($SITEincludes) && file_exists("{$SITEincludes}/help_admin.php")) {
+          include("{$SITEincludes}/help_admin.php");
+        } else {
+          include("{$WWWdir}/php/help_admin.php");
+        }
+      } else if(isset($SITEincludes) && file_exists("{$SITEincludes}/help_users.php")) {
         include("{$SITEincludes}/help_users.php");
       } else { ?>
   <h1>Users guide</h1>

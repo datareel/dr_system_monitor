@@ -4,6 +4,15 @@ All notable changes to the DataReel System Monitor (DRSM) are listed here.
 
 ## Unreleased
 
+### Added
+
+- Admin guide on the dashboard Help page (help.php?p=admin, a tab next
+  to the Users guide): where things are, adding and removing hosts,
+  thresholds, status messages, your own scripts, upgrades,
+  troubleshooting and AI assistants, with links to the full docs.
+  $DOCSurl sets where the docs links go, $HELPadmin = false hides the
+  guide, and a site's own ${SITEincludes}/help_admin.php replaces it.
+
 ### Planned for the next version
 
 From the NHC dashboard port (their versions are in the NHC package,

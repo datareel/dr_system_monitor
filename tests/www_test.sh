@@ -153,6 +153,10 @@ reject "no bar without messages" 'class="msgbar'
 
 render help.php ""
 expect "users guide" "<h1>Users guide</h1>"
+expect "admin guide tab" 'php/help.php?p=admin">Admin guide'
+render help.php "p=admin"
+expect "admin guide" "<h1>Admin guide</h1>"
+expect "admin guide docs link" 'href="https://datareel.com/drsm/docs/changelog.html"'
 expect "default footer help link" 'href="/drsm/dashboard/php/help.php">Help'
 mkdir -p "${W}/reports/systems/new1"
 render index.php ""

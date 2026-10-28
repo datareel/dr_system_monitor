@@ -866,3 +866,6 @@ td > .tier:first-child { margin-left: 0; }
   .panel, .hero, .kpi, .card { box-shadow: none; }
   pre.report { max-height: none; white-space: pre-wrap; }
 }
+
+/* Help page guide tabs */
+.help-tabs { margin-bottom: 14px; }

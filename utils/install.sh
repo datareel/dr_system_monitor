@@ -174,6 +174,7 @@ drsm_messages.php \
 messages.php \
 extreports.php \
 help.php \
+help_admin.php \
 drsm_sites.php \
 heatmap.php \
 host_status.php \
