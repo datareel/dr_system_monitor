@@ -868,4 +868,13 @@ td > .tier:first-child { margin-left: 0; }
 }
 
 /* Help page guide tabs */
-.help-tabs { margin-bottom: 14px; }
+.help-tabs { margin-bottom: 14px; width: max-content; max-width: 100%; }
+.help-page { line-height: 1.55; }
+.help-page h1 { margin-bottom: 4px; }
+.help-page h2 { margin: 26px 0 8px; padding-top: 14px; border-top: 1px solid var(--border); font-size: 1.15rem; }
+.help-page h3 { margin: 16px 0 4px; font-size: 1rem; }
+.help-page p, .help-page ul, .help-page ol { margin: 6px 0 10px; }
+.help-page pre { background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; overflow-x: auto; margin: 8px 0 12px; }
+.help-page pre code { background: none; padding: 0; font-size: .85rem; white-space: pre; }
+.help-page .table td:first-child { white-space: nowrap; }
+@media (max-width: 700px) { .help-page .table td:first-child { white-space: normal; } }
