@@ -37,7 +37,8 @@
 #   -f  Overwrite host files that already exist
 #   -o  Output directory, default ${DRSMHOME}/etc/hosts
 # With no dat files, converts ${CONFIGdir}/systems.dat as group
-# production and ${CONFIGdir}/dev_systems.dat as group dev.
+# production and ${CONFIGdir}/dev_systems.dat as group dev. Profile
+# scripts are read from the dat file's folder, else ${CONFIGdir}.
 #
 # Custom arguments in a profile script, for example
 # disk_checks.sh '/archive' 85 95, become plugin settings such as
@@ -45,7 +46,7 @@
 #
 # ----------------------------------------------------------- 
 if [ "${BASEdir}" == "" ]; then export BASEdir="${HOME}/drsm"; fi
-if [ -f "${HOME}/.drsm.sh" ]; then CONFIG_FILE="${HOME}/.drsm.sh"; else CONFIG_FILE="${BASEdir}/etc/drsm.sh"; fi
+if [ -f "${DRSM_CONFIG:-${HOME}/.drsm.sh}" ]; then CONFIG_FILE="${DRSM_CONFIG:-${HOME}/.drsm.sh}"; else CONFIG_FILE="${BASEdir}/etc/drsm.sh"; fi
 if [ ! -f "${CONFIG_FILE}" ]; then echo "Missing base config ${CONFIG_FILE}"; exit 1; fi
 # shellcheck source=etc/drsm.sh
 source "${CONFIG_FILE}"
@@ -148,6 +149,9 @@ do
 	fi
 	platform="linux"
 	if [ "${is_linux}" != "YES" ]; then platform="other"; fi
+	# The profile script next to the dat file, else in ${CONFIGdir}
+	profile="$(dirname "${dat}")/${host}_profile.sh"
+	if [ ! -f "${profile}" ]; then profile="${CONFIGdir}/${host}_profile.sh"; fi
 	collector="ssh"
 	if [ "${can_ssh}" != "YES" ]; then collector="none"; fi
 	{
@@ -166,9 +170,9 @@ do
 	    elif [ "${platform}" != "linux" ]; then
 		echo "# Not a Linux host, set PLATFORM and PLUGINS when a collector is available"
 		echo "PLUGINS=\"\""
-	    elif [ -f "${CONFIGdir}/${host}_profile.sh" ]; then
-		echo "# Plugins and settings from ${CONFIGdir}/${host}_profile.sh"
-		profile_settings "${CONFIGdir}/${host}_profile.sh"
+	    elif [ -f "${profile}" ]; then
+		echo "# Plugins and settings from ${profile}"
+		profile_settings "${profile}"
 	    else
 		echo "# PLUGINS comes from _defaults.conf"
 	    fi

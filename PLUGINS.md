@@ -153,6 +153,62 @@ The host file is saved to `etc/hosts/removed` first.
 If `network/ping` fails, the host is reported down and its remote
 plugins are skipped, as the old `system_report.sh` did.
 
+## Ansible inventory
+
+DRSM can take its Linux host list from an Ansible INI inventory. In
+`~/.drsm.sh`:
+
+```
+export ANSIBLE_INVENTORY=/etc/ansible/hosts
+export ANSIBLE_TIERS="production=prod qa=qa dev=dev"   # tier=group[,group]
+export ANSIBLE_DEFAULT_TIER=""                          # tier for other hosts, empty leaves them out
+export ANSIBLE_SHORT_NAMES=yes                          # web1.example.com becomes web1
+export ANSIBLE_EXCLUSIVE=no                             # yes: Linux hosts only from Ansible
+```
+
+With `ANSIBLE_EXCLUSIVE=yes`, Linux host files of hosts the inventory
+does not list are skipped, so removing a host from Ansible stops its
+checks from the next run; Windows and other host files still run, and
+so do probe only hosts (`PLUGINS=""` or `COLLECTOR=none`, such as
+cluster addresses). The
+host's last report stays on the dashboard, shown as not reporting,
+until `utils/drsm_remove_host.sh <host> --apply` removes it.
+
+Hosts in a listed group, or in a group under it through
+`[group:children]` at any depth, are Linux hosts checked over SSH in
+that tier with the `_defaults.conf` plugins; a host in two tiers goes
+to the first tier listed. A host file with the same short or full name
+(or `HOST=`) adds settings, but the tier comes from Ansible. Host files
+for hosts Ansible does not list work as before. Ranges such as
+`web[01:03]` are expanded; `:vars` sections and host variables are
+skipped; YAML inventories are not read. See `lib/drsm_ansible.sh`.
+
+### Ansible Automation Platform or AWX
+
+DRSM can read the inventory from Ansible Automation Platform (AAP,
+formerly Ansible Tower) or AWX instead of a file:
+
+```
+export ANSIBLE_AAP_URL=https://aap.example.com
+export ANSIBLE_AAP_INVENTORY=12                     # ID or name
+export ANSIBLE_AAP_TOKEN_FILE=~/.drsm_aap_token     # OAuth2 token, mode 600
+export ANSIBLE_AAP_CA_FILE=""                       # CA bundle for a private CA
+export ANSIBLE_AAP_CACHE_MINUTES=15
+export ANSIBLE_AAP_API=""                           # empty tries /api/controller/v2, then /api/v2
+export ANSIBLE_TIERS="production=prod qa=qa dev=dev"
+```
+
+The inventory script (`<api>/inventories/<id>/script/`) is fetched
+with curl and jq into an INI copy in `$VARdir`, reused for the cache
+time, and read like a local inventory. AAP 2.5 and later serve the
+controller API at `/api/controller/v2`, older AAP, Tower and AWX at
+`/api/v2`; both are tried. The `ANSIBLE_TOWER_*` names of these
+settings still work. If the platform cannot be reached the last good
+copy is used with a warning. A read-only token is enough;
+it is sent from a header file, never on the command line.
+`utils/drsm_ansible_hosts.sh` (`-f` to fetch now) lists the hosts and
+tiers DRSM takes from either source.
+
 ## Organizations and sites
 
 Hosts can be grouped into organizations and sites, for example one

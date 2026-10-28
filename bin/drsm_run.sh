@@ -53,8 +53,8 @@
 # ----------------------------------------------------------- 
 if [ "${BASEdir}" == "" ]; then export BASEdir="${HOME}/drsm"; fi
 
-if [ -f "${HOME}/.drsm.sh" ]; then
-    CONFIG_FILE="${HOME}/.drsm.sh"
+if [ -f "${DRSM_CONFIG:-${HOME}/.drsm.sh}" ]; then
+    CONFIG_FILE="${DRSM_CONFIG:-${HOME}/.drsm.sh}"
 else
     CONFIG_FILE="${BASEdir}/etc/drsm.sh"
 fi
@@ -74,6 +74,8 @@ source "${DRSMHOME}/lib/drsm_conf.sh"
 source "${DRSMHOME}/lib/drsm_history.sh"
 # shellcheck source=lib/drsm_sites.sh
 source "${DRSMHOME}/lib/drsm_sites.sh"
+# shellcheck source=lib/drsm_ansible.sh
+source "${DRSMHOME}/lib/drsm_ansible.sh"
 
 if [ "${HOSTSdir}" == "" ]; then HOSTSdir="${DRSMHOME}/etc/hosts"; fi
 if [ "${PLUGINSdir}" == "" ]; then PLUGINSdir="${DRSMHOME}/plugins"; fi
@@ -183,6 +185,59 @@ do
 done
 shopt -u nullglob
 
+# Ansible Automation Platform (formerly Tower) or AWX: fetch the
+# inventory (cached) and read it as a local one
+if [ "${ANSIBLE_AAP_URL}${ANSIBLE_TOWER_URL}" != "" ]; then
+    ANSIBLE_INVENTORY=$(drsm_aap_inventory) || exit 1
+fi
+
+# Ansible inventory: its hosts and tiers replace the host list. A host
+# file of the same name (short or full name, or its HOST=) only adds
+# settings. See lib/drsm_ansible.sh.
+if [ "${ANSIBLE_INVENTORY}" != "" ]; then
+    if [ ! -r "${ANSIBLE_INVENTORY}" ]; then
+	echo "ERROR - ANSIBLE_INVENTORY ${ANSIBLE_INVENTORY} not found"
+	exit 1
+    fi
+    declare -A FILEFOR=()
+    for src in "${HOSTSOURCES[@]}"; do
+	f="${src#file:}"
+	b=$(basename "${f}" .conf)
+	FILEFOR[${b,,}]="${f}"
+	b="${b,,}"; FILEFOR[${b%%.*}]="${f}"
+	hv=$(sed -n 's/^HOST=["]*\([^"]*\)["]*$/\1/p' "${f}" | head -1)
+	if [ "${hv}" != "" ]; then FILEFOR[${hv,,}]="${f}"; FILEFOR[${hv%%.*}]="${f}"; fi
+    done
+    declare -A USED=()
+    ANSIBLESOURCES=()
+    while read -r ah at ag; do
+	f="${FILEFOR[${ah}]}"
+	if [ "${f}" != "" ]; then USED[${f}]=1; fi
+	ANSIBLESOURCES+=("ansible:${ah}|${at}|${ag}|${f}")
+    done < <(drsm_ansible_hosts "${ANSIBLE_INVENTORY}")
+    # Host files of hosts Ansible does not list stay as they are, except
+    # Linux ones with ANSIBLE_EXCLUSIVE=yes: then a Linux host leaves
+    # monitoring when it leaves the inventory
+    rest=()
+    for src in "${HOSTSOURCES[@]}"; do
+	f="${src#file:}"
+	if [ "${USED[${f}]}" != "" ]; then continue; fi
+	if [ "${ANSIBLE_EXCLUSIVE,,}" == "yes" ]; then
+	    p=$(sed -n 's/^PLATFORM=["]*\([^"]*\)["]*$/\1/p' "${f}" | head -1)
+	    if [ "${p}" == "" ] && [ -f "${HOSTSdir}/_defaults.conf" ]; then p=$(sed -n 's/^PLATFORM=["]*\([^"]*\)["]*$/\1/p' "${HOSTSdir}/_defaults.conf" | head -1); fi
+	    # Probe only hosts (PLUGINS="" or COLLECTOR=none), such as cluster
+	    # addresses, are not Ansible hosts and stay
+	    if grep -qE '^(PLUGINS=""|COLLECTOR=none)' "${f}"; then p="probe"; fi
+	    if [ "${p,,}" == "" ] || [ "${p,,}" == "linux" ]; then
+		vlog "INFO - ${f} is a Linux host not in ${ANSIBLE_INVENTORY}, skipped (ANSIBLE_EXCLUSIVE)"
+		continue
+	    fi
+	fi
+	rest+=("${src}")
+    done
+    HOSTSOURCES=("${ANSIBLESOURCES[@]}" "${rest[@]}")
+fi
+
 if [ ${#HOSTSOURCES[@]} -eq 0 ]
 then
     dbfile="${CONFIGdir}/systems.dat"
@@ -194,9 +249,43 @@ then
     for entry in "${SYSTEMLIST[@]}"; do HOSTSOURCES+=("dat:${entry}"); done
 fi
 
+function load_host_ansible()
+{
+    # An Ansible inventory host: "host|tier|group|host file or empty"
+    local h t g f fg
+    IFS='|' read -r h t g f <<< "${1}"
+    if [ "${f}" != "" ]; then
+	load_host_file "${f}"
+	fg=$(sed -n 's/^GROUP=["]*\([^"]*\)["]*$/\1/p' "${f}" | head -1)
+	if [ "${fg}" != "" ] && [ "$(drsm_group_canon "${fg}")" != "${t}" ]; then
+	    vlog "INFO - ${f} has GROUP=${fg}, Ansible puts ${h} in ${t}"
+	fi
+    else
+	HCONF=()
+	local site k
+	local -A sconf=()
+	site=$(drsm_default_site)
+	if [ -f "${HOSTSdir}/_defaults.conf" ]; then drsm_read_conf "${HOSTSdir}/_defaults.conf" HCONF; fi
+	drsm_read_site "${site}" sconf
+	for k in "${!sconf[@]}"; do
+	    if ! drsm_is_site_key "${k}"; then HCONF[${k}]="${sconf[${k}]}"; fi
+	done
+	HCONF[SITE]="${site}"
+	HCONF[HOST]="${h}"
+	if [ "${HCONF[PLATFORM]}" == "" ]; then HCONF[PLATFORM]="linux"; fi
+	if [ "${HCONF[COLLECTOR]}" == "" ]; then HCONF[COLLECTOR]="ssh"; fi
+	HCONF[SOURCE]="${ANSIBLE_INVENTORY}"
+    fi
+    HCONF[GROUP]=$(drsm_group_canon "${t}")
+    if [ "${HCONF[DESCRIPTION]}" == "" ]; then HCONF[DESCRIPTION]="Ansible group ${g}"; fi
+    if [ "${HCONF[IMPACT]}" == "" ]; then HCONF[IMPACT]="${h} is affected"; fi
+    if [ "${HCONF[PLUGINS]}" == "" ] && [ "${f}" == "" ]; then HCONF[PLUGINS]="${DRSM_DEFAULT_PLUGINS}"; fi
+}
+
 function load_host()
 {
     case "${1}" in
+	ansible:*) load_host_ansible "${1#ansible:}" ;;
 	file:*) load_host_file "${1#file:}" ;;
 	dat:*) load_host_entry "${1#dat:}" ;;
     esac
@@ -654,6 +743,10 @@ fi
 if [ "${ssfx}" != "" ]; then
     drsm_write_site_json "${runsite}"
     drsm_write_org_json "${runsite%%/*}"
+elif [ -f "$(drsm_site_file "${runsite}")" ]; then
+    # A single-site install with etc/sites/default/default.site gets
+    # site.json in ${REPORTdir} too, for its name and Site links
+    drsm_write_site_json "${runsite}"
 fi
 
 function send_alert()

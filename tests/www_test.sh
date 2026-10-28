@@ -128,6 +128,36 @@ expect "host table" 'id="host-table"'
 render readreport.php "n=db1"
 expect "plugin section" 'id="p-core-load"'
 expect "error line styled" 'class="l-err"'
+# Status messages
+cat > "${W}/config/messages.conf" <<'MSG'
+# test messages
+info | Maintenance tonight <b> | /maint.html | 2099-01-01 00:00 |
+critical | Core switch down | | | pin
+warning | Old notice | | 2000-01-01 00:00 |
+info | Bad link | javascript:alert(1) | |
+MSG
+render index.php ""
+expect "message bar on every page" 'class="msgbar msgbar-critical"'
+expect "pinned critical message" '<div class="msg-pinned"><a class="msg msg-critical"'
+expect "message text escaped" 'Maintenance tonight &lt;b&gt;'
+expect "message link" 'href="/maint.html"'
+reject "ended message hidden" 'Old notice'
+reject "bad link dropped" 'javascript:alert'
+expect "no link goes to the messages page" 'php/messages.php#m'
+render messages.php ""
+expect "messages page" "Core switch down"
+expect "ended messages listed apart" "Ended messages (1)"
+rm -f "${W}/config/messages.conf"
+render index.php ""
+reject "no bar without messages" 'class="msgbar'
+
+render help.php ""
+expect "users guide" "<h1>Users guide</h1>"
+expect "default footer help link" 'href="/drsm/dashboard/php/help.php">Help'
+mkdir -p "${W}/reports/systems/new1"
+render index.php ""
+expect "new host waits for its first report" "Waiting for the first report"
+rmdir "${W}/reports/systems/new1"
 render readreport.php "n=old1"
 expect "legacy report shown" 'old1 disk is at 90%'
 mkdir -p "${W}/reports/systems/winrpt"
@@ -435,6 +465,92 @@ expect "trends grouped by site" 'class="site-row"'
 expect "trends site totals" "Acme Corp / Branch total"
 
 echo "== Web only demo package"
+# Other script reports ($EXTreports), Site links on a one-site
+# install, a logo and extra menu items ($SITElogo, $NAVextra)
+printf 'ETIME:%s\nall backups good\n' "$(date +%s)" > "${T}/ext_ok.txt"
+printf 'WARNING - cert expires in 20 days <b>\n' > "${T}/ext_warn.txt"
+printf 'ETIME:1000000000\nok\n' > "${T}/ext_old.txt"
+printf 'ERROR - blade fan\n' > "${T}/ext_err.txt"
+printf 'REPORT_ETIME:1000000000\nall good\n' > "${T}/ext_rold.txt"
+cat > "${W}/config/ext_reports.conf" <<EXT
+# comment
+[backup] Backups
+Nightly backups | ${T}/ext_ok.txt | | 60
+Certificates | ${T}/ext_warn.txt
+Old report | ${T}/ext_old.txt | | 60
+Old report 2 | ${T}/ext_rold.txt | | 60
+Blades | ${T}/ext_ok.txt | /blades/ | | ${T}/ext_err.txt
+[links] Links
+Missing | ${T}/ext_missing.txt
+Console | - | https://console.example.com/
+Scan | ${T}/ext_warn.txt | | | -
+EXT
+cp "${W}/config/drsm.php" "${T}/drsm.php.saved"
+sed -i '$d' "${W}/config/drsm.php"
+cat >> "${W}/config/drsm.php" <<PHPCONF
+\$EXTreports = '${W}/config/ext_reports.conf';
+\$EXTtitle = 'Site reports';
+\$METRICSskip = array("windows");
+\$NAVhome = array("label" => "Status", "url" => "/status/", "icon" => "check");
+\$NAVurl = array("hosts" => "/my/hosts.php");
+\$NAVsub = array("heatmap" => array(array("Wall display", "/my/wall.php")));
+\$SITEfooter = 'Example Ops Monitor';
+\$SITEhelp = '/my/help.php';
+\$SITElogo = '/img/logo.png';
+\$NAVextra = array(array("label" => "Classic view", "url" => "/classic/", "icon" => "layout"),
+                   array("label" => "Tools", "url" => "/tools/", "sub" => array(array("Time converter", "/tools/utc.php"))),
+                   array("label" => ""));
+?>
+PHPCONF
+# Only the default site for these
+if [ -d "${W}/reports/orgs" ]; then mv "${W}/reports/orgs" "${T}/orgs.saved"; fi
+mv "${T}/sites" "${T}/sites.saved"
+mkdir -p "${T}/sites/default"
+printf 'NAME="Head office"\nLINK="Consoles/Storage|https://storage.example.com/"\n' > "${T}/sites/default/default.site"
+HOME="${T}/home" bash "${TOPdir}/bin/drsm_run.sh" -n -s default/default > "${T}/run.log" 2>&1
+if [ -f "${W}/reports/site.json" ] && grep -q 'storage.example.com' "${W}/reports/site.json"; then pass "default site.json written with links"; else fail "default site.json not written"; fi
+render index.php ""
+expect "site reports panel" "Site reports"
+expect "site reports section state" "4 of 5 need attention"
+expect "site links on one site" 'https://storage.example.com/'
+expect "logo" 'class="brand-logo" src="/img/logo.png"'
+expect "extra menu item kept as is" 'href="/classic/"'
+expect "extra submenu" 'href="/tools/utc.php"'
+expect "wide top bar with extra items" 'class="topbar nav-wide"'
+expect "NAVhome first in the menu" 'href="/status/" title="Status"'
+expect "NAVhome is the brand link" '<a class="brand" href="/status/"'
+expect "NAVurl sends a built in item elsewhere" 'href="/my/hosts.php" title="Hosts"'
+expect "NAVsub replaces a submenu" 'href="/my/wall.php">Wall display'
+reject "NAVsub drops the old submenu" 'mode=metrics">Resource use'
+expect "SITEfooter" 'Example Ops Monitor'
+expect "SITEhelp link" 'href="/my/help.php">Help'
+render extreports.php "s=backup"
+if [ "$(grep -c 'Report is older than 1 hour' "${T}/page.html")" -ge 2 ]; then pass "ext REPORT_ETIME read"; else fail "ext REPORT_ETIME not read"; fi
+reject "one site still has no picker" 'name="site"'
+render heatmap.php "mode=metrics"
+reject "no metrics for skipped platforms on the heat map" '>winrpt<'
+render trends.php ""
+reject "no metrics for skipped platforms on trends" 'winrpt'
+render extreports.php ""
+expect "ext ok report" "Nightly backups"
+expect "ext warning" '<span class="badge warn">'
+expect "ext stale" "Report is older than 1 hour"
+expect "ext status file error links to its page" 'href="/blades/"'
+expect "ext missing file" "Report file is missing"
+expect "ext plain link" 'href="https://console.example.com/"'
+expect "ext no-state report" '<span class="muted">Report</span>'
+render extreports.php "s=links"
+reject "one section only" "Nightly backups"
+render extreports.php "v=backup-1"
+expect "ext report shown and escaped" 'cert expires in 20 days &lt;b&gt;'
+render extreports.php "v=../../etc/passwd"
+expect "ext only listed files" "No such report"
+cp "${T}/drsm.php.saved" "${W}/config/drsm.php"
+rm -f "${W}/reports/site.json"
+rm -rf "${T}/sites"
+mv "${T}/sites.saved" "${T}/sites"
+if [ -d "${T}/orgs.saved" ]; then mv "${T}/orgs.saved" "${W}/reports/orgs"; fi
+
 bash "${TOPdir}/utils/make_web_demo.sh" -s -o "${T}/demo" > "${T}/demo.log" 2>&1
 W="${T}/demo/dashboard"
 (cd "${W}" && php -d error_reporting=-1 -d display_errors=stderr index.php > "${T}/page.html" 2> "${T}/page.err")

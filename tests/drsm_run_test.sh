@@ -241,6 +241,7 @@ if ! grep -q "ERROR - .*Old:Win32/Fixture" "${O}"; then pass "threats older than
 expect "old threat still listed" "${O}" "${old_day}T04:00:00Z  1116  threat detected  Old:Win32/Fixture"
 expect "check in summary first" "${G}" "Agent 3.2 reported 10 minutes ago"
 expect "host details from plugins" "${G}" "DETAIL Hardware=4 CPUs, 15.6 GB memory"
+expect "agent named by its report" "${G}" "DETAIL Agent=Windows report agent"
 expect "program list" "${G}" "  Mozilla Firefox (x64 en-US) 140.0"
 expect "hotfix list" "${G}" "  2026-09-09"
 expect "uptime under a day in hours" "${G}" "up 1 day"
@@ -324,6 +325,12 @@ remove --apply good1
 if [ ! -e "${R}/systems/good1" ]; then pass "reports removed for a host with no host file"; else fail "good1 reports still there"; fi
 if remove ../web1; then fail "path accepted as a host name"; else pass "path refused as a host name"; fi
 if remove nosuchhost; then fail "unknown host accepted"; else pass "unknown host is an error"; fi
+mkdir -p "${R}/systems/gone1" "${R}/systems/gone2"
+printf '# retired\ngone1\n\ngone2  # old box\n' > "${T}/gone.txt"
+remove -f "${T}/gone.txt"
+if [ -d "${R}/systems/gone1" ] && grep -q "== gone2" "${T}/remove.log"; then pass "remove -f dry run lists every host"; else fail "remove -f dry run: $(head -3 "${T}/remove.log")"; fi
+remove --apply -f "${T}/gone.txt"
+if [ ! -e "${R}/systems/gone1" ] && [ ! -e "${R}/systems/gone2" ]; then pass "remove -f removes every host in the list"; else fail "remove -f left reports"; fi
 
 echo "== organizations and sites"
 rm -f "${T}/hosts/"*.conf
@@ -356,6 +363,7 @@ if ! grep -q "Start of web" "${R}/system_health_report.txt"; then pass "default 
 expect "site.json names the site" "${HQ}/site.json" '"org":"acme","site":"hq","name":"Head office","location":"Springfield"'
 expect "site.json lists the host" "${HQ}/site.json" '"host":"web","group":"production"'
 expect "site.json stale limit" "${BR}/site.json" '"stale_minutes":30'
+expect "site.json with no stale limit leaves the dashboard's" "${HQ}/site.json" '"stale_minutes":0'
 expect "org.json" "${R}/orgs/acme/org.json" '{"org":"acme","name":"Acme Corp","contact":"ops@acme.test","sites":["branch","hq"]}'
 if [ ! -d "${R}/orgs/beta/lab" ]; then pass "another collector's site is skipped"; else fail "beta/lab ran on this collector"; fi
 if [ -f "${T}/tmp/logs/drsm_run_acme_hq_all.log" ] && [ -f "${T}/tmp/logs/drsm_run_all.log" ]; then pass "log file per site"; else fail "no per site log files"; fi
@@ -504,6 +512,163 @@ out=$(cd "${TOPdir}" && bash -c 'source lib/drsm_conf.sh; source lib/drsm_sites.
   echo "$(drsm_site_alert_email S dev) $(drsm_site_alert_email S production) $(drsm_site_alert_email S qa)"
   drsm_is_site_key ALERT_EMAIL_QA && echo sitekey' 2>&1)
 if [ "${out}" == $'OPS OPS QA production\ndev@x ops@x all@x\nsitekey' ]; then pass "tier names and ALERT_EMAIL_<TIER> fallback"; else fail "tier helpers: ${out}"; fi
+
+echo "== status messages"
+M="${T}/www/config/messages.conf"
+function msg() { HOME="${T}/home" bash "${TOPdir}/utils/drsm_message.sh" "$@" > "${T}/msg.log" 2>&1; }
+msg add critical "Core switch down" --pin
+if [ ! -f "${M}" ] && grep -q "Dry run" "${T}/msg.log"; then pass "message add is a dry run"; else fail "message add wrote without --apply"; fi
+msg --apply add critical "Core switch down" --pin
+msg --apply add info "Maintenance tonight" --link /maint.html --until "2099-01-01 00:00"
+msg --apply add warning "Old notice" --until "2000-01-01 00:00"
+expect "message saved" "${M}" "critical | Core switch down |  |  | pin"
+if msg --apply add info "a|b"; then fail "message with | accepted"; else pass "message with | refused"; fi
+if msg --apply add info "x" --link "javascript:alert(1)"; then fail "bad link accepted"; else pass "bad link refused"; fi
+msg list
+expect "message list ended" "${T}/msg.log" "ended"
+msg --apply clean
+if grep -q "Old notice" "${M}"; then fail "clean kept an ended message"; else pass "clean removes ended messages"; fi
+msg --apply remove 1
+if grep -q "Core switch" "${M}"; then fail "remove 1 kept the message"; else pass "remove by number"; fi
+rm -f "${M}" "${M}.bak"
+
+echo "== ansible inventory"
+rm -f "${T}/hosts/"*.conf
+rm -rf "${T}/sites.ans"; mv "${T}/sites" "${T}/sites.ans"; mkdir -p "${T}/sites"
+printf 'PLUGINS="core/memory"\nPROBES=""\nCOLLECTOR=local\n' > "${T}/hosts/_defaults.conf"
+cat > "${T}/inventory" <<'INV'
+# test inventory
+[web]
+web1.example.com ansible_python_interpreter=/usr/bin/python3
+app[01:02].example.com
+[db_dev]
+db1.example.com
+[lab]
+lab1
+[prod:children]
+web
+[dev:children]
+db_dev
+[dev_all:children]
+dev
+[all:vars]
+ansible_user=admin
+INV
+printf 'DESCRIPTION="Main web server"\nGROUP=dev\n' > "${T}/hosts/web1.conf"
+printf 'HOST=win1\nPLATFORM=windows\nCOLLECTOR=none\nGROUP=windows\n' > "${T}/hosts/win1.conf"
+cp "${T}/home/.drsm.sh" "${T}/home/.drsm.sh.noans"
+printf 'export ANSIBLE_INVENTORY=%s\nexport ANSIBLE_TIERS="production=prod dev=dev_all"\n' "${T}/inventory" >> "${T}/home/.drsm.sh"
+HOME="${T}/home" bash -c "source ${TOPdir}/lib/drsm_ansible.sh; source ${T}/home/.drsm.sh; drsm_ansible_hosts" > "${T}/ans.txt"
+expect "ansible: child group tier" "${T}/ans.txt" "web1 production web"
+expect "ansible: host range" "${T}/ans.txt" "app02 production web"
+expect "ansible: nested children" "${T}/ans.txt" "db1 dev db_dev"
+if grep -q '^lab1 ' "${T}/ans.txt"; then fail "ansible: host in no tier listed"; else pass "ansible: host in no tier left out"; fi
+if grep -q 'ansible_user' "${T}/ans.txt"; then fail "ansible: vars read as hosts"; else pass "ansible: vars skipped"; fi
+run -n -l
+expect "ansible: -l lists inventory hosts" "${T}/run.log" "app01"
+run -n
+expect "ansible: host file adds settings" "${R}/systems/web1/web1_report.txt" "DESCRIPTION:Main web server"
+expect "ansible: tier from Ansible, not the host file" "${R}/systems/web1/web1_report.txt" "GROUP:production"
+if [ -f "${R}/systems/db1/db1_report.txt" ]; then fail "ansible: dev host in the production run"; else pass "ansible: dev host not in the production run"; fi
+run -n -g dev
+expect "ansible: dev run" "${R}/systems/db1/db1_report.txt" "DESCRIPTION:Ansible group db_dev"
+run -n -g windows
+expect "ansible: host files for other hosts still run" "${R}/systems/win1/win1_report.txt" "HOSTNAME:win1"
+printf 'DESCRIPTION="Retired"\n' > "${T}/hosts/old1.conf"
+run -n -l
+expect "ansible: Linux host file not in Ansible still runs by default" "${T}/run.log" "old1 (linux"
+printf 'DESCRIPTION="Cluster address"\nPLUGINS=""\n' > "${T}/hosts/vip1.conf"
+printf 'export ANSIBLE_EXCLUSIVE=yes\n' >> "${T}/home/.drsm.sh"
+run -n -l
+if grep -q "old1 (linux" "${T}/run.log"; then fail "ansible: ANSIBLE_EXCLUSIVE kept a Linux host not in Ansible"; else pass "ansible: ANSIBLE_EXCLUSIVE drops Linux hosts not in Ansible"; fi
+expect "ansible: ANSIBLE_EXCLUSIVE keeps probe only hosts" "${T}/run.log" "vip1 (linux"
+run -n -l -g windows
+expect "ansible: ANSIBLE_EXCLUSIVE keeps other platforms" "${T}/run.log" "win1 (windows"
+echo "== ansible automation platform inventory (old ANSIBLE_TOWER_* names)"
+cp "${T}/home/.drsm.sh.noans" "${T}/home/.drsm.sh"
+printf 'secret-token\n' > "${T}/tower_token"; chmod 600 "${T}/tower_token"
+cat > "${T}/tower.json" <<'JSON'
+{"all": {"children": ["ungrouped", "linux_prod", "linux_dev"]},
+ "linux_prod": {"hosts": ["tw1.example.com", "tw2.example.com"]},
+ "linux_dev": {"children": ["lab"]},
+ "lab": {"hosts": ["twdev1"]},
+ "_meta": {"hostvars": {}}}
+JSON
+# curl stand in: answers the name lookup and the inventory script, logs its arguments
+cat > "${T}/fakecurl" <<FAKE
+#!/bin/bash
+echo "\$*" >> "${T}/curl.log"
+out=""; url=""; hdr=""
+while [ \$# -gt 0 ]; do case "\$1" in -o) out="\$2"; shift ;; -H) case "\$2" in @*) hdr="\${2#@}" ;; esac; shift ;; --cacert|--max-time) shift ;; -*) ;; *) url="\$1" ;; esac; shift; done
+grep -q "Bearer secret-token" "\${hdr}" || exit 22
+[ -f "${T}/tower_down" ] && exit 7
+case "\${url}" in *"/api/controller/"*) [ -f "${T}/old_api" ] && exit 22 ;; esac
+case "\${url}" in
+  *"inventories/?name=NHC%20Linux"*) echo '{"results":[{"id":5}]}' > "\${out}" ;;
+  *"inventories/5/script/"*) cp "${T}/tower.json" "\${out}" ;;
+  *) exit 22 ;;
+esac
+FAKE
+chmod 755 "${T}/fakecurl"
+cat >> "${T}/home/.drsm.sh" <<CONF
+export ANSIBLE_TOWER_URL=https://tower.example.com/
+export ANSIBLE_TOWER_INVENTORY="NHC Linux"
+export ANSIBLE_TOWER_TOKEN_FILE=${T}/tower_token
+export ANSIBLE_TOWER_CACHE_MINUTES=0
+export ANSIBLE_TIERS="production=linux_prod dev=linux_dev"
+CONF
+export DRSM_CURL="${T}/fakecurl"
+run -n -l
+expect "tower: hosts from the inventory script" "${T}/run.log" "tw2 (linux"
+expect "tower: name looked up" "${T}/curl.log" "inventories/?name=NHC%20Linux"
+if grep -q "secret-token" "${T}/curl.log"; then fail "tower: token on the command line"; else pass "tower: token not on the command line"; fi
+run -n -l -g dev
+expect "tower: nested group tier" "${T}/run.log" "twdev1 (linux"
+touch "${T}/tower_down"
+run -n -l
+expect "tower: last good copy when Tower is down" "${T}/run.log" "tw1 (linux"
+expect "tower: warning when Tower is down" "${T}/run.log" "could not be read"
+rm -f "${T}/tower_down" "${T}/tmp/var/ansible_aap_inventory.ini"
+touch "${T}/tower_down"
+run -n -l
+expect "tower: error with no copy" "${T}/run.log" "ERROR - Ansible Automation Platform inventory"
+rm -f "${T}/tower_down"
+expect "aap: AAP 2.5 API path tried first" "${T}/curl.log" "/api/controller/v2/inventories/"
+# AAP names, an older platform that only has /api/v2
+cp "${T}/home/.drsm.sh.noans" "${T}/home/.drsm.sh"
+cat >> "${T}/home/.drsm.sh" <<CONF
+export ANSIBLE_AAP_URL=https://aap.example.com
+export ANSIBLE_AAP_INVENTORY=5
+export ANSIBLE_AAP_TOKEN_FILE=${T}/tower_token
+export ANSIBLE_AAP_CACHE_MINUTES=0
+export ANSIBLE_TIERS="production=linux_prod dev=linux_dev"
+CONF
+touch "${T}/old_api"; : > "${T}/curl.log"
+run -n -l
+expect "aap: inventory by ID on the /api/v2 path" "${T}/run.log" "tw1 (linux"
+expect "aap: fell back to /api/v2" "${T}/curl.log" "aap.example.com/api/v2/inventories/5/script/"
+DRSM_CONFIG="${T}/home/.drsm.sh" HOME="${T}/home" bash "${TOPdir}/utils/drsm_ansible_hosts.sh" > "${T}/ah.log" 2>&1
+expect "aap: drsm_ansible_hosts.sh lists the tiers" "${T}/ah.log" "production: 2 hosts"
+rm -f "${T}/old_api"
+unset DRSM_CURL
+mv "${T}/home/.drsm.sh.noans" "${T}/home/.drsm.sh"
+rm -f "${T}/hosts/"*.conf
+rm -rf "${T}/sites"; mv "${T}/sites.ans" "${T}/sites"
+
+# DRSM_CONFIG names the config in place of ~/.drsm.sh, for a second
+# install in the same account
+mkdir -p "${T}/home2"
+cp "${T}/home/.drsm.sh" "${T}/drsm2.sh"
+if HOME="${T}/home2" DRSM_CONFIG="${T}/drsm2.sh" bash "${TOPdir}/bin/drsm_run.sh" -l > "${T}/run2.log" 2>&1 && ! grep -q "Missing base config" "${T}/run2.log"; then
+    pass "DRSM_CONFIG used when ~/.drsm.sh is missing"
+else
+    fail "DRSM_CONFIG not used: $(head -2 "${T}/run2.log")"
+fi
+if HOME="${T}/home2" bash "${TOPdir}/bin/drsm_run.sh" -l 2>&1 | grep -q "Missing base config"; then
+    pass "no config without DRSM_CONFIG"
+else
+    fail "a config was found without DRSM_CONFIG"
+fi
 
 echo ""
 if [ ${failures} -eq 0 ]; then echo "All tests passed"; exit 0; fi

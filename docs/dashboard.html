@@ -23,7 +23,7 @@
 </header>
 <div class="layout">
   <nav class="sidebar" aria-label="Documentation">
-    <h4>Get started</h4><a href="index.html">Overview</a><a href="install.html">Install and set up</a><a href="deployment.html">Deployment setups</a><h4>Using DRSM</h4><a href="dashboard.html" class="active" aria-current="page">Web dashboard</a><div class="toc"><a href="#overview">Overview</a><a href="#orgs">Organizations</a><a href="#tiers">Tiers</a><a href="#links">Site links</a><a href="#heatmap">Heat map</a><a href="#hosts">Hosts and reports</a><a href="#connectivity">Connectivity</a><a href="#trends">Trends</a><a href="#anywhere">Phones and wall screens</a><a href="#customize">Customizing</a><a href="#webonly">Web only package</a><a href="#login">Login from outside</a><a href="#security">Security</a></div><a href="plugins.html">Plugins</a><a href="alerts.html">Thresholds and alerts</a><a href="databases.html">MySQL and Postgres</a><h4>Reference</h4><a href="changelog.html">What's new</a><h4>Links</h4><a href="https://datareel.com/drsm/dashboard/">Live demo</a><a href="https://datareel.com/downloads/drsm/">Downloads</a><a href="https://datareel.com/contact.php">Report an issue</a>
+    <h4>Get started</h4><a href="index.html">Overview</a><a href="install.html">Install and set up</a><a href="deployment.html">Deployment setups</a><h4>Using DRSM</h4><a href="dashboard.html" class="active" aria-current="page">Web dashboard</a><div class="toc"><a href="#overview">Overview</a><a href="#orgs">Organizations</a><a href="#tiers">Tiers</a><a href="#links">Site links</a><a href="#heatmap">Heat map</a><a href="#hosts">Hosts and reports</a><a href="#connectivity">Connectivity</a><a href="#trends">Trends</a><a href="#anywhere">Phones and wall screens</a><a href="#customize">Customizing</a><a href="#webonly">Web only package</a><a href="#login">Login from outside</a><a href="#security">Security</a></div><a href="plugins.html">Plugins</a><a href="alerts.html">Thresholds and alerts</a><a href="databases.html">MySQL and Postgres</a><a href="admin.html">Day-to-day admin</a><a href="ai-assistants.html">AI assistants</a><h4>Reference</h4><a href="changelog.html">What's new</a><h4>Links</h4><a href="https://datareel.com/drsm/dashboard/">Live demo</a><a href="https://datareel.com/downloads/drsm/">Downloads</a><a href="https://datareel.com/contact.php">Report an issue</a>
   </nav>
   <main class="content" id="main">
 <h1>Web dashboard</h1>
@@ -100,7 +100,40 @@
 <p>Add settings to <code>$CONFIGdir/drsm.php</code>:</p>
 <pre><code>$SITEtitle = 'MY System Monitor';  // Name in the top bar
 $REFRESHseconds = 60;              // Auto refresh, 0 turns it off
-$STALEminutes = 60;                // Report age that counts as not reporting, 0 turns it off</code></pre>
+$STALEminutes = 60;                // Report age that counts as not reporting, 0 turns it off
+$SITElogo = '/images/logo.png';    // Logo before the name in the top bar
+$METRICSskip = array("windows");   // No gauges or trends for these platforms or groups
+$NAVhome = array("label" =&gt; "Status", "url" =&gt; "/dashboard/status.php", "icon" =&gt; "check");
+$NAVurl = array("hosts" =&gt; "/dashboard/myhosts.php");     // built in item to your page
+$NAVsub = array("heatmap" =&gt; array(array("Wall", "/dashboard/wall.php")));
+$SITEfooter = 'Example Ops Monitor';  // footer name
+$SITEhelp = '';                    // footer Help link: unset = built in Users guide, '' = none
+$NAVextra = array(                 // Your own top bar menu items
+  array("label" =&gt; "Classic view", "url" =&gt; "/classic/", "icon" =&gt; "layout"),
+  array("label" =&gt; "Tools", "url" =&gt; "/tools/",
+        "sub" =&gt; array(array("Time converter", "/tools/utc.php"))));</code></pre>
+<p>A single-site install shows a <strong>Site links</strong> menu when <code>etc/sites/default/default.site</code> has <code>LINK=</code> lines, the same lines as a site file in a <a href="#orgs">multi-site</a> setup. <code>bin/drsm_run.sh</code> writes them to <code>$REPORTdir/site.json</code>.</p>
+<h3 id="messages">Status messages</h3>
+<p>Post a notice for everyone, such as a planned outage or a known problem, and it scrolls across the top of every page, in large type in wall display mode. Critical messages come first; <code>--pin</code> keeps one in view instead of scrolling. Each message links to a details page, or to the list of messages (<code>php/messages.php</code>). Ended messages drop off by themselves.</p>
+<pre><code>$ ~/drsm/utils/drsm_message.sh add critical "Core switch down, network team on site" --pin
+$ ~/drsm/utils/drsm_message.sh --apply add info "Patching tonight 22:00 to 02:00" \
+      --link https://wiki.example.com/patching --until "2026-11-02 02:00"
+$ ~/drsm/utils/drsm_message.sh list
+$ ~/drsm/utils/drsm_message.sh --apply remove 1
+$ ~/drsm/utils/drsm_message.sh --apply clean       # drop ended messages</code></pre>
+<p>Without <code>--apply</code> the script shows the change and saves nothing. The messages are lines in <code>$CONFIGdir/messages.conf</code> (or <code>$MESSAGESfile</code>): <code>level | message | link | until | options</code>.</p>
+<h3 id="extreports">Reports from your own scripts</h3>
+<p>Backup, patching, certificate, SNMP and other checks that write a text file can show on the dashboard with a state. List them in a file and set <code>$EXTreports</code> to its path. They get a menu item, a page with a section for each <code>[id] Title</code> line, and a panel on the Overview.</p>
+<pre><code>$EXTreports = '/var/www/html/dashboard/config/ext_reports.conf';
+$EXTtitle = 'Site reports';        // Menu and page name, default Other reports
+
+# Title | report file | link | max age minutes | status file
+[backups] Backups and patching
+PROD backups | /var/www/html/sysadmin/backup/prod_summary.txt | | 1440
+SSL certificates | /var/www/html/sysadmin/ssl/all_certs.txt | | 1440 | /var/www/html/sysadmin/ssl/errors.txt
+[consoles] Consoles
+Storage console | - | https://storage.example.com/</code></pre>
+<p>A report is <strong>Error</strong> when its file is missing or a line has ERROR or FAILED, <strong>Warning</strong> when a line has WARNING, and <strong>Stale</strong> when it is older than the max age (from its <code>ETIME:</code> line, else the file time). An empty link shows the file inside the dashboard; <code>-</code> as the file makes a plain link with no state, and <code>-</code> as the status file shows the report with no state. Only files listed there can be shown.</p>
 <p>For colors and styles, edit <code>$WWWdir/site/custom.css</code>, which loads after the DRSM styles. Colors are CSS variables:</p>
 <pre><code>:root { --accent: #e11d48; }</code></pre>
 <p>To replace the header and footer, add <code>page_header.php</code> and <code>page_footer.php</code> to <code>$WWWdir/site</code>. The header must print <code>drsm_head_assets()</code> to keep the styles and scripts, and leave <code>&lt;main&gt;</code> open:</p>

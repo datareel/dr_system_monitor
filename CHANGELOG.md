@@ -12,6 +12,103 @@ All notable changes to the DataReel System Monitor (DRSM) are listed here.
   sites or a whole organization: the org links of each organization
   the user may see, by tier. The Site links menu for one site is
   unchanged.
+- Reports from your own scripts: list text reports in a file named by
+  `$EXTreports` and they show on a new page (extreports.php), in the
+  top bar and in an Overview panel, with the ERROR, FAILED and WARNING
+  rule of the older dashboard includes and an optional max age.
+- `$METRICSskip`, for example `array("windows")`, names platforms or
+  groups that send no resource metrics: their hosts get no gauges and
+  are left off the trends page and the resource use heat map.
+- Status messages: notices posted with `utils/drsm_message.sh` (info,
+  warning, critical, optional link, end time and pin) scroll across the
+  top of every page, in large type in wall display mode; `messages.php`
+  lists them. Ended messages drop off by themselves.
+- `$NAVhome` adds your own main page as the first menu item and the
+  brand link; `$NAVurl` sends built in menu items to your own pages and
+  `$NAVsub` replaces their submenus.
+- `$SITEfooter` names the site in the footer, and the footer has a Help
+  link to a new Users guide (php/help.php, replace it with
+  `site/help_users.php`, or set `$SITEhelp` to your own page or '').
+- `$SITElogo` puts a logo in the top bar and `$NAVextra` adds your own
+  top bar menu items with optional submenus.
+- A single-site install shows the Site links menu when
+  `etc/sites/default/default.site` has LINK lines; drsm_run.sh writes
+  them to `$REPORTdir/site.json`.
+
+### Documentation
+
+#### Added
+
+- Day-to-day admin (docs/admin.html) and AI assistants
+  (docs/ai-assistants.html: GitHub Copilot, Gemini and Claude setup,
+  approved services, good requests) pages.
+
+- Guides for AI coding assistants: `AGENTS.md`, with
+  `.github/copilot-instructions.md`, `GEMINI.md` and `CLAUDE.md`
+  pointing to it, `llms.txt`, `llms-full.txt`, and task guides in
+  `docs/ai` (maintain a site, write a plugin, change the dashboard),
+  linked from the docs Overview page. `docs/ai/make_llms.sh` rebuilds
+  `llms-full.txt`; `tests/docs_test.sh` checks it is current.
+
+### Scripts
+
+#### Added
+
+- Ansible inventory as the host list: with `ANSIBLE_INVENTORY` and
+  `ANSIBLE_TIERS` in the config, `drsm_run.sh` checks the Linux hosts
+  of an Ansible INI inventory in the tiers of their groups (nested
+  `:children` and host ranges included). Host files only add settings
+  for those hosts; other host files work as before (`lib/drsm_ansible.sh`).
+  `ANSIBLE_EXCLUSIVE=yes` skips Linux host files of hosts not in the
+  inventory, so a host removed from Ansible leaves monitoring.
+- Ansible Automation Platform (formerly Ansible Tower) and AWX
+  inventories: `ANSIBLE_AAP_URL`, `ANSIBLE_AAP_INVENTORY` (ID or name)
+  and a token file (`ANSIBLE_TOWER_*` names also accepted). The
+  inventory is fetched with curl and jq from `/api/controller/v2`
+  (AAP 2.5 and later) or `/api/v2`, cached, and the last good copy is
+  used when the platform is down. `utils/drsm_ansible_hosts.sh` lists the
+  hosts and tiers from either source.
+
+- `DRSM_CONFIG` names the config file in place of `~/.drsm.sh`, so a
+  second DRSM install can run from the same account, for example a new
+  release beside an older one other scripts still source.
+  utils/install.sh keeps a config in `$DRSMHOME/etc/drsm.sh` that
+  `DRSM_CONFIG` names.
+- utils/migrate_systems_dat.sh reads `<host>_profile.sh` from the dat
+  file's folder first, so an old install's files can be converted with
+  a new install's config.
+- utils/wra_hosts.sh `-p` sets the plugins of the new host files, for
+  agents older than 3.3 that send no PERFORMANCE section.
+
+### Planned for the next version
+
+From the NHC dashboard port (their versions are in the NHC package,
+DEVIATIONS.md D1, D3, D4, D6, D10, D14):
+
+- Service group tiles: a status page of configured groups (Linux,
+  Windows, storage, network, phones and so on), each with a health
+  gauge and its reports, fed by host groups and report files cut into
+  items (blocks, lines, one item per file).
+- Heat map flow wall display: every report of every group in one
+  mosaic, problems pulsing, a gauge per group, full screen.
+- Hosts page with sections by tier and platform (Linux PROD/DEV/QA,
+  Windows laptops and other Windows, network, consoles).
+- Report viewer: script report files and folders shown inside the
+  dashboard layout, with a plain file link.
+- Overview paging or lazy host cards for sites with hundreds of hosts.
+
+### Fixed
+
+- site.json no longer carries a 60 minute stale limit for sites whose
+  site file sets none, which overrode the dashboard's `$STALEminutes`
+  (hosts checked hourly showed as not reporting).
+- Other script reports read the report time from `REPORT_ETIME:` lines
+  as well as `ETIME:`.
+- A host with a report folder but no report yet shows as Unknown,
+  "Waiting for the first report", not as an error.
+- The Windows host page names the agent from its report's first line,
+  so other and older agents are not called DataReel Reporting Agent.
+- utils/drsm_remove_host.sh `-f list` removes every host in a file.
 
 ## 1.32-beta2 - 2026-10-27
 

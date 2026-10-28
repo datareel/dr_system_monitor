@@ -50,6 +50,8 @@ $ranges = drsm_trend_ranges();
 $range = (isset($_GET['r']) && isset($ranges[$_GET['r']])) ? $_GET['r'] : "30d";
 $scope = isset($_GET['h']) ? drsm_scope() : drsm_scope_from_request();
 $hosts = drsm_load_hosts($scope);
+// Hosts with no metrics ($METRICSskip) are left off
+foreach($hosts as $k => $hst) if(!empty($hst["nometrics"])) unset($hosts[$k]);
 
 // One host: h=<host> with site=<org>/<site>, or h=<org>/<site>/<host>
 $hostkey = "";

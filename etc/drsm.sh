@@ -1,5 +1,7 @@
 #!/bin/bash
 # DRSM master configuration file
+# Copy to ~/.drsm.sh, or set DRSM_CONFIG to the path of this file to
+# run a second DRSM install from the same account.
 
 # Name of your site
 export SITEID="DRSM"
@@ -35,6 +37,15 @@ export HISTORYdays=730
 export OFFLINEfile_age=30
 # Age off database and system backups
 export BACKUP_age=30
+
+# Ansible inventory as the Linux host list, see PLUGINS.md
+# export ANSIBLE_INVENTORY=/etc/ansible/hosts
+# export ANSIBLE_TIERS="production=prod qa=qa dev=dev"
+# export ANSIBLE_EXCLUSIVE=yes
+# or from Ansible Automation Platform (formerly Tower) or AWX:
+# export ANSIBLE_AAP_URL=https://aap.example.com
+# export ANSIBLE_AAP_INVENTORY=12
+# export ANSIBLE_AAP_TOKEN_FILE=${HOME}/.drsm_aap_token
 
 # Our DRSM home directory
 export DRSMHOME=${HOME}/drsm

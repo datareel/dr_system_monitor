@@ -281,7 +281,8 @@ function drsm_all_sites()
     }
   }
   if(count($sites) == 0 || drsm_dir_has_hosts("{$REPORTdir}/systems")) {
-    $sites = array(DRSM_LEGACY_SITE => drsm_site_record(DRSM_LEGACY_SITE, null, null)) + $sites;
+    // site.json is there when the default site has a site file
+    $sites = array(DRSM_LEGACY_SITE => drsm_site_record(DRSM_LEGACY_SITE, drsm_read_json("{$REPORTdir}/site.json"), null)) + $sites;
   }
   $cache = $sites;
   return $cache;

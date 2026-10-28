@@ -81,7 +81,10 @@ ips=$(wra_section "IP ADDRESS" "${REPORT}" | sed -n 's/^IPv4 Address: *//p' | tr
 ago="${hours} hours ago"
 if [ ${hours} -eq 0 ]; then ago="$((age / 60)) minutes ago"; elif [ ${hours} -eq 1 ]; then ago="1 hour ago"; fi
 echo "Agent ${version:-unknown} reported ${ago}${ips:+, IP ${ips}}"
-drsm_detail "Agent" "DataReel Reporting Agent ${version:-unknown}"
+# The agent names itself in the first line ("<name> from host <host>")
+agentname=$(head -1 "${REPORT}" | tr -d '\r' | sed -n 's/^\(.*[^ ]\) from host .*/\1/p')
+agentname="${agentname% report}"
+drsm_detail "Agent" "${agentname:-DataReel Reporting Agent} ${version:-unknown}"
 if [ "${ips}" != "" ]; then drsm_detail "IP address" "${ips// /, }"; fi
 echo "Agent version: ${version:-unknown}"
 echo "Reported host name: ${reported}"

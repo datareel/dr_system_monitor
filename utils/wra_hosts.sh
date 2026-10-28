@@ -33,7 +33,7 @@
 # Reporting Agent, one per report in the agent reports directory.
 # Existing host files are never changed. Dry run unless --apply.
 #
-# Usage: wra_hosts.sh [--apply] [-d reports dir] [-g group] [-s org/site] [-o output dir]
+# Usage: wra_hosts.sh [--apply] [-d reports dir] [-g group] [-s org/site] [-p plugins] [-o output dir]
 #   --apply  Write the host files, default is to list what would be written
 #   -d       Agent reports directory, default WRA_REPORTS_DIR from the
 #            site file with -s, else _defaults.conf, else
@@ -41,6 +41,9 @@
 #   -g       Host group, default production
 #   -s       Site of the hosts, written as SITE=. The host files are
 #            named <org>_<site>_<host>.conf.
+#   -p       PLUGINS for the host files, default every Windows plugin.
+#            Agents older than 3.3 send no PERFORMANCE section, leave
+#            out windows/resources for them.
 #   -o       Output directory, default ${HOSTSdir} or ${DRSMHOME}/etc/hosts
 #
 # Put the shared Windows settings in _defaults.conf, for example
@@ -49,7 +52,7 @@
 #
 # ----------------------------------------------------------- 
 if [ "${BASEdir}" == "" ]; then export BASEdir="${HOME}/drsm"; fi
-if [ -f "${HOME}/.drsm.sh" ]; then CONFIG_FILE="${HOME}/.drsm.sh"; else CONFIG_FILE="${BASEdir}/etc/drsm.sh"; fi
+if [ -f "${DRSM_CONFIG:-${HOME}/.drsm.sh}" ]; then CONFIG_FILE="${DRSM_CONFIG:-${HOME}/.drsm.sh}"; else CONFIG_FILE="${BASEdir}/etc/drsm.sh"; fi
 if [ ! -f "${CONFIG_FILE}" ]; then echo "Missing base config ${CONFIG_FILE}"; exit 1; fi
 # shellcheck source=etc/drsm.sh
 source "${CONFIG_FILE}"
@@ -63,6 +66,7 @@ group="production"
 outdir="${HOSTSdir:-${DRSMHOME}/etc/hosts}"
 reportsdir=""
 site=""
+plugins="windows/checkin windows/defender windows/patches windows/apps windows/resources"
 function usage() { sed -n '/^# Usage:/,/^#   -o/p' "$0" | sed 's/^# \{0,1\}//'; exit 1; }
 while [ $# -gt 0 ]; do
     case "${1}" in
@@ -70,6 +74,7 @@ while [ $# -gt 0 ]; do
 	-d) reportsdir="${2}"; shift ;;
 	-g) group="${2}"; shift ;;
 	-s) site="${2,,}"; shift ;;
+	-p) plugins="${2}"; shift ;;
 	-o) outdir="${2}"; shift ;;
 	*) usage ;;
     esac
@@ -126,7 +131,7 @@ PLATFORM=windows
 COLLECTOR=wra
 # Laptops move between networks, so no ping probe
 PROBES=""
-PLUGINS="windows/checkin windows/defender windows/patches windows/apps windows/resources"
+PLUGINS="${plugins}"
 HOST
     if [ "${site}" != "" ]; then sed -i "s|^GROUP=.*|&\nSITE=${site}|" "${conf}"; fi
 done

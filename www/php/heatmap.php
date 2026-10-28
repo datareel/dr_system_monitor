@@ -219,7 +219,8 @@ foreach($sets as $sid => $set) {
 <?php   } else if($mode == "status") {
           drsm_heat_status($set, $multi && !$bysite);
         } else {
-          drsm_heat_metrics($set, $multi && !$bysite);
+          // Hosts with no metrics ($METRICSskip) are left off
+          drsm_heat_metrics(array_filter($set, function($hst) { return empty($hst["nometrics"]); }), $multi && !$bysite);
         } ?>
 <?php   // The legend goes under the last map
         if($nset == count($sets) && count($hosts) > 0) { ?>
