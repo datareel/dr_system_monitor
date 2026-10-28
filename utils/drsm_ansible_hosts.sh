@@ -31,11 +31,11 @@
 # <http://www.gnu.org/licenses/>.
 #
 # List the hosts DRSM takes from the Ansible inventory (ANSIBLE_INVENTORY)
-# or Ansible Tower / AWX (ANSIBLE_TOWER_URL), with their tier and group,
+# or Ansible Automation Platform / AWX (ANSIBLE_AAP_URL), with their tier and group,
 # to check ANSIBLE_TIERS. Reads only, changes nothing.
 #
 # Usage: drsm_ansible_hosts.sh [-f]
-#   -f  Fetch from Tower now, not from the cached copy
+#   -f  Fetch from the platform now, not from the cached copy
 #
 # -----------------------------------------------------------
 if [ "${BASEdir}" == "" ]; then export BASEdir="${HOME}/drsm"; fi
@@ -46,14 +46,15 @@ source "${CONFIG_FILE}"
 # shellcheck source=lib/drsm_ansible.sh
 source "${DRSMHOME}/lib/drsm_ansible.sh"
 
-if [ "${1}" == "-f" ]; then ANSIBLE_TOWER_CACHE_MINUTES=0; fi
-if [ "${ANSIBLE_TOWER_URL}" != "" ]; then
-    ANSIBLE_INVENTORY=$(drsm_tower_inventory) || exit 1
-    echo "Source: Ansible Tower ${ANSIBLE_TOWER_URL} inventory ${ANSIBLE_TOWER_INVENTORY} (copy ${ANSIBLE_INVENTORY})"
+drsm_aap_settings
+if [ "${1}" == "-f" ]; then ANSIBLE_AAP_CACHE_MINUTES=0; fi
+if [ "${ANSIBLE_AAP_URL}" != "" ]; then
+    ANSIBLE_INVENTORY=$(drsm_aap_inventory) || exit 1
+    echo "Source: Ansible Automation Platform ${ANSIBLE_AAP_URL} inventory ${ANSIBLE_AAP_INVENTORY} (copy ${ANSIBLE_INVENTORY})"
 elif [ "${ANSIBLE_INVENTORY}" != "" ]; then
     echo "Source: ${ANSIBLE_INVENTORY}"
 else
-    echo "Neither ANSIBLE_INVENTORY nor ANSIBLE_TOWER_URL is set in ${CONFIG_FILE}"
+    echo "Neither ANSIBLE_INVENTORY nor ANSIBLE_AAP_URL is set in ${CONFIG_FILE}"
     exit 1
 fi
 echo "Tiers: ${ANSIBLE_TIERS:-production=prod qa=qa dev=dev}"

@@ -185,10 +185,10 @@ do
 done
 shopt -u nullglob
 
-# Ansible Tower or AWX: fetch the inventory (cached) and read it as a
-# local one
-if [ "${ANSIBLE_TOWER_URL}" != "" ]; then
-    ANSIBLE_INVENTORY=$(drsm_tower_inventory) || exit 1
+# Ansible Automation Platform (formerly Tower) or AWX: fetch the
+# inventory (cached) and read it as a local one
+if [ "${ANSIBLE_AAP_URL}${ANSIBLE_TOWER_URL}" != "" ]; then
+    ANSIBLE_INVENTORY=$(drsm_aap_inventory) || exit 1
 fi
 
 # Ansible inventory: its hosts and tiers replace the host list. A host

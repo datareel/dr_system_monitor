@@ -174,24 +174,28 @@ for hosts Ansible does not list work as before. Ranges such as
 `web[01:03]` are expanded; `:vars` sections and host variables are
 skipped; YAML inventories are not read. See `lib/drsm_ansible.sh`.
 
-### Ansible Tower or AWX
+### Ansible Automation Platform or AWX
 
-DRSM can read the inventory from Ansible Tower (Automation Controller)
-or AWX instead of a file:
+DRSM can read the inventory from Ansible Automation Platform (AAP,
+formerly Ansible Tower) or AWX instead of a file:
 
 ```
-export ANSIBLE_TOWER_URL=https://tower.example.com
-export ANSIBLE_TOWER_INVENTORY=12                     # ID or name
-export ANSIBLE_TOWER_TOKEN_FILE=~/.drsm_tower_token   # OAuth2 token, mode 600
-export ANSIBLE_TOWER_CA_FILE=""                       # CA bundle for a private CA
-export ANSIBLE_TOWER_CACHE_MINUTES=15
+export ANSIBLE_AAP_URL=https://aap.example.com
+export ANSIBLE_AAP_INVENTORY=12                     # ID or name
+export ANSIBLE_AAP_TOKEN_FILE=~/.drsm_aap_token     # OAuth2 token, mode 600
+export ANSIBLE_AAP_CA_FILE=""                       # CA bundle for a private CA
+export ANSIBLE_AAP_CACHE_MINUTES=15
+export ANSIBLE_AAP_API=""                           # empty tries /api/controller/v2, then /api/v2
 export ANSIBLE_TIERS="production=prod qa=qa dev=dev"
 ```
 
-The inventory script (`/api/v2/inventories/<id>/script/`) is fetched
+The inventory script (`<api>/inventories/<id>/script/`) is fetched
 with curl and jq into an INI copy in `$VARdir`, reused for the cache
-time, and read like a local inventory. If Tower cannot be reached the
-last good copy is used with a warning. A read-only token is enough;
+time, and read like a local inventory. AAP 2.5 and later serve the
+controller API at `/api/controller/v2`, older AAP, Tower and AWX at
+`/api/v2`; both are tried. The `ANSIBLE_TOWER_*` names of these
+settings still work. If the platform cannot be reached the last good
+copy is used with a warning. A read-only token is enough;
 it is sent from a header file, never on the command line.
 `utils/drsm_ansible_hosts.sh` (`-f` to fetch now) lists the hosts and
 tiers DRSM takes from either source.
