@@ -171,6 +171,7 @@ drsm_auth.php \
 drsm_lib.php \
 drsm_ext.php \
 extreports.php \
+help.php \
 drsm_sites.php \
 heatmap.php \
 host_status.php \

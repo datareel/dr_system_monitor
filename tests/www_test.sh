@@ -128,6 +128,13 @@ expect "host table" 'id="host-table"'
 render readreport.php "n=db1"
 expect "plugin section" 'id="p-core-load"'
 expect "error line styled" 'class="l-err"'
+render help.php ""
+expect "users guide" "<h1>Users guide</h1>"
+expect "default footer help link" 'href="/drsm/dashboard/php/help.php">Help'
+mkdir -p "${W}/reports/systems/new1"
+render index.php ""
+expect "new host waits for its first report" "Waiting for the first report"
+rmdir "${W}/reports/systems/new1"
 render readreport.php "n=old1"
 expect "legacy report shown" 'old1 disk is at 90%'
 mkdir -p "${W}/reports/systems/winrpt"
@@ -441,12 +448,14 @@ printf 'ETIME:%s\nall backups good\n' "$(date +%s)" > "${T}/ext_ok.txt"
 printf 'WARNING - cert expires in 20 days <b>\n' > "${T}/ext_warn.txt"
 printf 'ETIME:1000000000\nok\n' > "${T}/ext_old.txt"
 printf 'ERROR - blade fan\n' > "${T}/ext_err.txt"
+printf 'REPORT_ETIME:1000000000\nall good\n' > "${T}/ext_rold.txt"
 cat > "${W}/config/ext_reports.conf" <<EXT
 # comment
 [backup] Backups
 Nightly backups | ${T}/ext_ok.txt | | 60
 Certificates | ${T}/ext_warn.txt
 Old report | ${T}/ext_old.txt | | 60
+Old report 2 | ${T}/ext_rold.txt | | 60
 Blades | ${T}/ext_ok.txt | /blades/ | | ${T}/ext_err.txt
 [links] Links
 Missing | ${T}/ext_missing.txt
@@ -459,6 +468,11 @@ cat >> "${W}/config/drsm.php" <<PHPCONF
 \$EXTreports = '${W}/config/ext_reports.conf';
 \$EXTtitle = 'Site reports';
 \$METRICSskip = array("windows");
+\$NAVhome = array("label" => "Status", "url" => "/status/", "icon" => "check");
+\$NAVurl = array("hosts" => "/my/hosts.php");
+\$NAVsub = array("heatmap" => array(array("Wall display", "/my/wall.php")));
+\$SITEfooter = 'Example Ops Monitor';
+\$SITEhelp = '/my/help.php';
 \$SITElogo = '/img/logo.png';
 \$NAVextra = array(array("label" => "Classic view", "url" => "/classic/", "icon" => "layout"),
                    array("label" => "Tools", "url" => "/tools/", "sub" => array(array("Time converter", "/tools/utc.php"))),
@@ -474,12 +488,21 @@ HOME="${T}/home" bash "${TOPdir}/bin/drsm_run.sh" -n -s default/default > "${T}/
 if [ -f "${W}/reports/site.json" ] && grep -q 'storage.example.com' "${W}/reports/site.json"; then pass "default site.json written with links"; else fail "default site.json not written"; fi
 render index.php ""
 expect "site reports panel" "Site reports"
-expect "site reports section state" "3 of 4 need attention"
+expect "site reports section state" "4 of 5 need attention"
 expect "site links on one site" 'https://storage.example.com/'
 expect "logo" 'class="brand-logo" src="/img/logo.png"'
 expect "extra menu item kept as is" 'href="/classic/"'
 expect "extra submenu" 'href="/tools/utc.php"'
 expect "wide top bar with extra items" 'class="topbar nav-wide"'
+expect "NAVhome first in the menu" 'href="/status/" title="Status"'
+expect "NAVhome is the brand link" '<a class="brand" href="/status/"'
+expect "NAVurl sends a built in item elsewhere" 'href="/my/hosts.php" title="Hosts"'
+expect "NAVsub replaces a submenu" 'href="/my/wall.php">Wall display'
+reject "NAVsub drops the old submenu" 'mode=metrics">Resource use'
+expect "SITEfooter" 'Example Ops Monitor'
+expect "SITEhelp link" 'href="/my/help.php">Help'
+render extreports.php "s=backup"
+if [ "$(grep -c 'Report is older than 1 hour' "${T}/page.html")" -ge 2 ]; then pass "ext REPORT_ETIME read"; else fail "ext REPORT_ETIME not read"; fi
 reject "one site still has no picker" 'name="site"'
 render heatmap.php "mode=metrics"
 reject "no metrics for skipped platforms on the heat map" '>winrpt<'

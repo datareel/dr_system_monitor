@@ -8,6 +8,9 @@ $drsm_title = (isset($PAGEtitle) && $PAGEtitle != "") ? "{$PAGEtitle} - {$SITEti
 $drsm_state = (isset($PAGEstate) && $PAGEstate != "") ? $PAGEstate : "";
 $drsm_sites = drsm_sites();
 $drsm_nav = array();
+// Your own main page first ($NAVhome), the brand link goes to it too
+$drsm_home = drsm_nav_home();
+if($drsm_home !== null) $drsm_nav["home"] = array($drsm_home["label"], $drsm_home["url"], $drsm_home["icon"], null, true);
 // The Organizations page leads when there is more than one site. Its
 // links clear the site picker scope, so it always opens on every site.
 if(count($drsm_sites) > 1) $drsm_nav["orgs"] = array("Organizations", "orgs.php", "building", array("site" => ""));
@@ -36,6 +39,20 @@ if(drsm_ext_enabled()) {
   foreach(drsm_ext_sections() as $sid => $sec) $drsm_sub["ext"][] = array($sec["title"], drsm_url("extreports.php", array("s" => $sid)));
   if(count($drsm_sub["ext"]) < 2) unset($drsm_sub["ext"]);
 }
+// Built in items sent to your own pages ($NAVurl), submenus replaced
+// ($NAVsub), see drsm_lib.php
+global $NAVurl, $NAVsub;
+if(isset($NAVurl) && is_array($NAVurl)) {
+  foreach($NAVurl as $k => $u) if(isset($drsm_nav[$k]) && is_string($u) && $u != "") { $drsm_nav[$k][1] = $u; $drsm_nav[$k][4] = true; }
+}
+if(isset($NAVsub) && is_array($NAVsub)) {
+  foreach($NAVsub as $k => $list) {
+    if(!isset($drsm_nav[$k]) || !is_array($list)) continue;
+    $drsm_sub[$k] = array();
+    foreach($list as $s) if(is_array($s) && count($s) >= 2) $drsm_sub[$k][] = array((string)$s[0], (string)$s[1]);
+    if(count($drsm_sub[$k]) == 0) unset($drsm_sub[$k]);
+  }
+}
 // Site menu items from config/drsm.php $NAVextra, see drsm_lib.php
 foreach(drsm_nav_extra() as $key => $item) {
   $drsm_nav[$key] = array($item["label"], $item["url"], $item["icon"], null, true);
@@ -59,7 +76,7 @@ foreach(drsm_nav_extra() as $key => $item) {
 <a class="skip" href="#main">Skip to content</a>
 <header class="topbar<?php if(count($drsm_nav) > 6) echo " nav-wide"; ?>">
   <div class="topbar-inner">
-    <a class="brand" href="<?php echo h(count($drsm_sites) > 1 ? drsm_url("orgs.php", array("site" => "")) : drsm_url("index.php")); ?>">
+    <a class="brand" href="<?php echo h($drsm_home !== null ? $drsm_home["url"] : (count($drsm_sites) > 1 ? drsm_url("orgs.php", array("site" => "")) : drsm_url("index.php"))); ?>">
 <?php if(isset($SITElogo) && $SITElogo != "") { ?>
       <img class="brand-logo" src="<?php echo h($SITElogo); ?>" alt="" aria-hidden="true">
 <?php } ?>

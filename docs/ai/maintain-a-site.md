@@ -76,7 +76,7 @@ items), `$EXTreports` (reports from your own scripts), `$AUTH...`
 
 1. Open the host page (Hosts, then the host). Each plugin section shows
    its own lines; the first ERROR line is the cause.
-2. "No report posted": the host has a host file but no run has written
+2. "Waiting for the first report": the host has a host file but no run has written
    its report yet, or the group's cron line is missing.
 3. "Not reporting" / Stale: the report is older than `$STALEminutes`
    (or the site's `STALE_MINUTES`). Check cron and the run log in

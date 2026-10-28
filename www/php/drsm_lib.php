@@ -49,11 +49,24 @@ $DEMObuilt      = 0;    // Sample data build time, set by
                         // utils/make_web_demo.sh so report times
                         // stay recent on a live demo
 $SITElogo       = '';   // Logo image URL shown before the site name
+$SITEfooter     = 'DataReel System Monitor'; // Name in the page footer
+$SITEhelp       = null; // Footer Help link: unset is the built in
+                        // users guide (php/help.php), '' hides it, or
+                        // your own page
 $NAVextra       = array(); // Your own main menu items, each
                         // array("label" => "Windows", "url" => "/windows/",
                         //       "icon" => "windows", "sub" => array(
                         //       array("Name", "/url"), ...))
                         // icon and sub are optional
+$NAVhome        = array(); // Your own main page as the first menu item
+                        // and the brand link: array("label" => "Status",
+                        // "url" => "/dashboard/status.php", "icon" => "check");
+                        // its page uses drsm_page_start($title, "home")
+$NAVurl         = array(); // Send built in menu items elsewhere, by key:
+                        // overview, heatmap, hosts, trends, checks, ext
+                        // array("hosts" => "/dashboard/myhosts.php")
+$NAVsub         = array(); // Replace a built in submenu, by key:
+                        // array("heatmap" => array(array("Wall", "/wall.php")))
 $EXTreports     = '';   // Other script reports, see drsm_ext.php
 $METRICSskip    = array(); // Platforms or groups with no resource
                         // metrics, such as array("windows") for Windows
@@ -356,8 +369,9 @@ function drsm_load_host($hostdir, $site = DRSM_LEGACY_SITE)
   );
 
   if(!$rep["exists"]) {
-    $host["state"] = "ERROR";
-    $host["note"] = "No report posted";
+    // A new host before its first run, or a report folder left behind
+    $host["state"] = "UNKNOWN";
+    $host["note"] = "Waiting for the first report";
     return $host;
   }
 
@@ -724,13 +738,22 @@ function drsm_page_start($title, $active, $state = "")
 
 function drsm_page_end()
 {
-  global $SITEincludes, $WWWdir, $WWWvpath, $SITEtitle;
+  global $SITEincludes, $WWWdir, $WWWvpath, $SITEtitle, $SITEfooter, $SITEhelp;
   if(isset($SITEincludes) && file_exists("{$SITEincludes}/page_footer.php")) {
     include_once("{$SITEincludes}/page_footer.php");
   }
   else {
     include_once("{$WWWdir}/php/default_footer.php");
   }
+}
+
+// $NAVhome cleaned, or null
+function drsm_nav_home()
+{
+  global $NAVhome;
+  if(!isset($NAVhome) || !is_array($NAVhome) || !isset($NAVhome["url"]) || $NAVhome["url"] == "") return null;
+  return array("label" => isset($NAVhome["label"]) && $NAVhome["label"] != "" ? (string)$NAVhome["label"] : "Home",
+               "url" => (string)$NAVhome["url"], "icon" => isset($NAVhome["icon"]) ? (string)$NAVhome["icon"] : "grid");
 }
 
 // Main menu items from $NAVextra, cleaned: key => array("label",

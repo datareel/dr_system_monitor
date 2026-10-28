@@ -241,6 +241,7 @@ if ! grep -q "ERROR - .*Old:Win32/Fixture" "${O}"; then pass "threats older than
 expect "old threat still listed" "${O}" "${old_day}T04:00:00Z  1116  threat detected  Old:Win32/Fixture"
 expect "check in summary first" "${G}" "Agent 3.2 reported 10 minutes ago"
 expect "host details from plugins" "${G}" "DETAIL Hardware=4 CPUs, 15.6 GB memory"
+expect "agent named by its report" "${G}" "DETAIL Agent=Windows report agent"
 expect "program list" "${G}" "  Mozilla Firefox (x64 en-US) 140.0"
 expect "hotfix list" "${G}" "  2026-09-09"
 expect "uptime under a day in hours" "${G}" "up 1 day"
@@ -324,6 +325,12 @@ remove --apply good1
 if [ ! -e "${R}/systems/good1" ]; then pass "reports removed for a host with no host file"; else fail "good1 reports still there"; fi
 if remove ../web1; then fail "path accepted as a host name"; else pass "path refused as a host name"; fi
 if remove nosuchhost; then fail "unknown host accepted"; else pass "unknown host is an error"; fi
+mkdir -p "${R}/systems/gone1" "${R}/systems/gone2"
+printf '# retired\ngone1\n\ngone2  # old box\n' > "${T}/gone.txt"
+remove -f "${T}/gone.txt"
+if [ -d "${R}/systems/gone1" ] && grep -q "== gone2" "${T}/remove.log"; then pass "remove -f dry run lists every host"; else fail "remove -f dry run: $(head -3 "${T}/remove.log")"; fi
+remove --apply -f "${T}/gone.txt"
+if [ ! -e "${R}/systems/gone1" ] && [ ! -e "${R}/systems/gone2" ]; then pass "remove -f removes every host in the list"; else fail "remove -f left reports"; fi
 
 echo "== organizations and sites"
 rm -f "${T}/hosts/"*.conf
@@ -356,6 +363,7 @@ if ! grep -q "Start of web" "${R}/system_health_report.txt"; then pass "default 
 expect "site.json names the site" "${HQ}/site.json" '"org":"acme","site":"hq","name":"Head office","location":"Springfield"'
 expect "site.json lists the host" "${HQ}/site.json" '"host":"web","group":"production"'
 expect "site.json stale limit" "${BR}/site.json" '"stale_minutes":30'
+expect "site.json with no stale limit leaves the dashboard's" "${HQ}/site.json" '"stale_minutes":0'
 expect "org.json" "${R}/orgs/acme/org.json" '{"org":"acme","name":"Acme Corp","contact":"ops@acme.test","sites":["branch","hq"]}'
 if [ ! -d "${R}/orgs/beta/lab" ]; then pass "another collector's site is skipped"; else fail "beta/lab ran on this collector"; fi
 if [ -f "${T}/tmp/logs/drsm_run_acme_hq_all.log" ] && [ -f "${T}/tmp/logs/drsm_run_all.log" ]; then pass "log file per site"; else fail "no per site log files"; fi

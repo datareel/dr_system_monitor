@@ -19,6 +19,12 @@ All notable changes to the DataReel System Monitor (DRSM) are listed here.
 - `$METRICSskip`, for example `array("windows")`, names platforms or
   groups that send no resource metrics: their hosts get no gauges and
   are left off the trends page and the resource use heat map.
+- `$NAVhome` adds your own main page as the first menu item and the
+  brand link; `$NAVurl` sends built in menu items to your own pages and
+  `$NAVsub` replaces their submenus.
+- `$SITEfooter` names the site in the footer, and the footer has a Help
+  link to a new Users guide (php/help.php, replace it with
+  `site/help_users.php`, or set `$SITEhelp` to your own page or '').
 - `$SITElogo` puts a logo in the top bar and `$NAVextra` adds your own
   top bar menu items with optional submenus.
 - A single-site install shows the Site links menu when
@@ -65,6 +71,19 @@ All notable changes to the DataReel System Monitor (DRSM) are listed here.
   a new install's config.
 - utils/wra_hosts.sh `-p` sets the plugins of the new host files, for
   agents older than 3.3 that send no PERFORMANCE section.
+
+### Fixed
+
+- site.json no longer carries a 60 minute stale limit for sites whose
+  site file sets none, which overrode the dashboard's `$STALEminutes`
+  (hosts checked hourly showed as not reporting).
+- Other script reports read the report time from `REPORT_ETIME:` lines
+  as well as `ETIME:`.
+- A host with a report folder but no report yet shows as Unknown,
+  "Waiting for the first report", not as an error.
+- The Windows host page names the agent from its report's first line,
+  so other and older agents are not called DataReel Reporting Agent.
+- utils/drsm_remove_host.sh `-f list` removes every host in a file.
 
 ## 1.32-beta2 - 2026-10-27
 

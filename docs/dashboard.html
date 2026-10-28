@@ -103,6 +103,11 @@ $REFRESHseconds = 60;              // Auto refresh, 0 turns it off
 $STALEminutes = 60;                // Report age that counts as not reporting, 0 turns it off
 $SITElogo = '/images/logo.png';    // Logo before the name in the top bar
 $METRICSskip = array("windows");   // No gauges or trends for these platforms or groups
+$NAVhome = array("label" =&gt; "Status", "url" =&gt; "/dashboard/status.php", "icon" =&gt; "check");
+$NAVurl = array("hosts" =&gt; "/dashboard/myhosts.php");     // built in item to your page
+$NAVsub = array("heatmap" =&gt; array(array("Wall", "/dashboard/wall.php")));
+$SITEfooter = 'Example Ops Monitor';  // footer name
+$SITEhelp = '';                    // footer Help link: unset = built in Users guide, '' = none
 $NAVextra = array(                 // Your own top bar menu items
   array("label" =&gt; "Classic view", "url" =&gt; "/classic/", "icon" =&gt; "layout"),
   array("label" =&gt; "Tools", "url" =&gt; "/tools/",

@@ -48,7 +48,8 @@ report:
 - link: where the title goes. Empty shows the file in the dashboard
   (extreports.php?v=<id>). A link may also be a page or folder.
 - max age minutes: STALE when the report is older, 0 or empty is off.
-  The time is the report's ETIME: line, else the file time.
+  The time is the report's ETIME: or REPORT_ETIME: line, else the
+  file time.
 - status file: read for the state in place of the report file, for
   scripts that write a separate errors file. - shows the report with
   no state.
@@ -131,7 +132,7 @@ function drsm_ext_state($it)
   $fp = @fopen($it["status"], "r");
   $n = 0;
   while($fp && ($buf = fgets($fp, 4096)) !== false && $n++ < 200000) {
-    if($etime == 0 && preg_match('/^\s*ETIME:\s*([0-9]{9,11})/', $buf, $m)) $etime = (int)$m[1];
+    if($etime == 0 && preg_match('/^\s*(?:REPORT_)?ETIME:\s*([0-9]{9,11})/', $buf, $m)) $etime = (int)$m[1];
     if(strpos($buf, "ERROR") !== false || strpos($buf, "FAILED") !== false) $state = "ERROR";
     else if($state == "OK" && strpos($buf, "WARNING") !== false) $state = "WARNING";
   }
@@ -140,7 +141,7 @@ function drsm_ext_state($it)
     // The time of the report itself, not of its errors file
     $fp = @fopen($it["file"], "r");
     for($i = 0; $fp && $i < 50 && ($buf = fgets($fp, 4096)) !== false; $i++) {
-      if(preg_match('/^\s*ETIME:\s*([0-9]{9,11})/', $buf, $m)) { $etime = (int)$m[1]; break; }
+      if(preg_match('/^\s*(?:REPORT_)?ETIME:\s*([0-9]{9,11})/', $buf, $m)) { $etime = (int)$m[1]; break; }
     }
     if($fp) fclose($fp);
   }

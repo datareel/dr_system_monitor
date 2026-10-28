@@ -33,6 +33,7 @@
 # Stop monitoring a host and remove its reports. Dry run unless --apply.
 #
 # Usage: drsm_remove_host.sh [--apply] [--remote] [--keep-reports] [org/site/]host
+#        drsm_remove_host.sh [--apply] [--remote] [--keep-reports] -f list
 #   --apply         Remove the files, default is to list what would go
 #   --remote        Also remove the plugin bundle (${DRSM_REMOTE_BASE},
 #                   default drsm_agent) and the older ${REMOTEdir} check
@@ -41,6 +42,8 @@
 #   host            Host file name in ${HOSTSdir} without .conf, or the
 #                   HOST= value inside it. Use org/site/host when two
 #                   sites have a host with that name.
+#   -f list         A file with one host per line (# starts a comment),
+#                   each removed as above
 #
 # Removed:
 #   ${HOSTSdir}/<host>.conf, saved first to ${HOSTSdir}/removed/
@@ -72,17 +75,36 @@ apply="0"
 remote="0"
 keep="0"
 name=""
+list=""
 function usage() { sed -n '/^# Usage:/,/^#                   sites have a host/p' "$0" | sed 's/^# \{0,1\}//'; exit 1; }
 while [ $# -gt 0 ]; do
     case "${1}" in
 	--apply) apply="1" ;;
 	--remote) remote="1" ;;
 	--keep-reports) keep="1" ;;
+	-f) list="${2}"; shift ;;
 	-*) usage ;;
 	*) if [ "${name}" != "" ]; then usage; fi; name="${1}" ;;
     esac
     shift
 done
+if [ "${list}" != "" ]; then
+    # One run of this script for each host in the list
+    if [ "${name}" != "" ] || [ ! -r "${list}" ]; then usage; fi
+    opts=()
+    if [ "${apply}" == "1" ]; then opts+=(--apply); fi
+    if [ "${remote}" == "1" ]; then opts+=(--remote); fi
+    if [ "${keep}" == "1" ]; then opts+=(--keep-reports); fi
+    rv=0
+    while IFS= read -r h || [ -n "${h}" ]; do
+	h="${h%%#*}"
+	h="${h//[[:space:]]/}"
+	if [ "${h}" == "" ]; then continue; fi
+	echo "== ${h}"
+	bash "$0" "${opts[@]}" "${h}" || rv=1
+    done < "${list}"
+    exit ${rv}
+fi
 if [ "${name}" == "" ]; then usage; fi
 # org/site/host names the site
 wantsite=""

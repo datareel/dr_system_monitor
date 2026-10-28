@@ -361,7 +361,8 @@ function drsm_write_site_json()
 	printf '"name":%s,"location":%s,' "$(drsm_json_str "${sc[NAME]:-${site#*/}}")" "$(drsm_json_str "${sc[LOCATION]}")"
 	# The org name too, for dashboards that only get this site's folder
 	printf '"org_name":%s,"org_contact":%s,' "$(drsm_json_str "${oc[NAME]:-${site%%/*}}")" "$(drsm_json_str "${oc[CONTACT]}")"
-	printf '"collector":%s,"time":%s,"stale_minutes":%s,' "$(drsm_json_str "$(drsm_collector_id)")" "$(date +%s)" "${stale}"
+	# 0 when the site file sets none: the dashboard's $STALEminutes applies
+	printf '"collector":%s,"time":%s,"stale_minutes":%s,' "$(drsm_json_str "$(drsm_collector_id)")" "$(date +%s)" "${sc[STALE_MINUTES]:-0}"
 	printf '"counts":{"ok":%s,"warning":%s,"error":%s,"stale":%s},' "${n[ok]}" "${n[warning]}" "${n[error]}" "${n[stale]}"
 	# Site links, and the org's links for every site of the org
 	printf '"links":%s,"org_links":%s,' "$(drsm_links_json "$(drsm_site_file "${site}")")" "$(drsm_links_json "$(drsm_org_file "${site%%/*}")")"
