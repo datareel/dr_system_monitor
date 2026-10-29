@@ -311,7 +311,7 @@ expect "clusters table on the heat map" 'class="heat clusters"'
 expect "heat map link cell shows the drops" '<span class="hcell-text">2 links</span>'
 expect "heat map drops cell" 'clusters.php?c=node1%2Bnode2#cl-strips'
 render heatmap.php "mode=metrics"
-reject "no clusters table on resource use" 'class="heat clusters"'
+expect "clusters table on resource use too" 'class="heat clusters"'
 render readreport.php "n=n1"
 reject "page data hidden on the host page" 'DRCM node|'
 expect "host page links to the cluster page" 'Cluster diagram, keep alive timeline and events'

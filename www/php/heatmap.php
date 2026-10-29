@@ -241,14 +241,13 @@ drsm_page_start("Heat map", "heatmap", $overall);
   </div>
 </section>
 
-<?php if($mode == "status") {
-  $clusters = drsm_clusters($hosts);
-  if(count($clusters) > 0) { ?>
+<?php // Clusters first in both views, so the map shows everything
+$clusters = drsm_clusters($hosts);
+if(count($clusters) > 0) { ?>
 <section class="panel flush">
 <?php drsm_heat_clusters($clusters); ?>
 </section>
-<?php }
-} ?>
+<?php } ?>
 <?php $nset = 0;
 foreach($sets as $sid => $set) {
   $nset++; ?>
