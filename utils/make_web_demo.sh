@@ -104,6 +104,8 @@ cat > "${D}/config/drsm.php" <<PHPCONF
 \$CONFIGdir = \$WWWdir . '/config';
 \$SITEincludes = \$WWWdir . '/site';
 \$SITEtitle = '${title}';
+// \$LRAreportsDir is not set: OpenSCAP HTML reports from the Linux
+// agent are only on the server that receives the agent uploads
 PHPCONF
 if [ "${sample}" == "1" ]; then
     cat >> "${D}/config/drsm.php" <<PHPCONF

@@ -11,7 +11,7 @@ File: AGENTS.md
 DRSM (DataReel System Monitor) monitors Linux and Windows hosts and
 shows them on a PHP dashboard. The checks are BASH plugins, run by
 `bin/drsm_run.sh` from cron on one monitor host: on the host itself,
-on Linux hosts over SSH, or from Windows agent report files. Each run
+on Linux hosts over SSH, or from Windows and Linux agent report files. Each run
 writes plain text report files; the PHP pages only read those files.
 There is no database and no daemon.
 
@@ -42,7 +42,7 @@ lib/drsm_conf.sh         KEY=value reader for manifests, host and site files
 lib/drsm_sites.sh        organizations, sites, tiers, site.json and links
 lib/drsm_history.sh      metrics history for the trends page
 lib/drsm_ansible.sh      Ansible INI inventory as the host list (ANSIBLE_INVENTORY)
-collectors/              local.sh, ssh-linux.sh, wra.sh (Windows agent reports)
+collectors/              local.sh, ssh-linux.sh, wra.sh (Windows agent reports), lra.sh (Linux agent reports)
 plugins/<cat>/<name>/    plugin.conf + check.sh (on the host) or probe.sh (from the monitor)
 plugins/local/           site plugins, never overwritten by updates
 etc/drsm.sh              config template, copied to ~/.drsm.sh (or named by DRSM_CONFIG)
@@ -51,11 +51,11 @@ etc/sites/               <org>.org and <org>/<site>.site files
 www/php/                 dashboard pages; drsm_lib.php is the shared code
 www/css/drsm.css, www/js/drsm.js   one stylesheet and one script, no framework
 utils/install.sh         installs code to $DRSMHOME and pages to $WWWdir
-utils/                   migrate_systems_dat.sh, wra_hosts.sh, new_plugin.sh, drsm_web_sync.sh, ...
+utils/                   migrate_systems_dat.sh, wra_hosts.sh, lra_hosts.sh, new_plugin.sh, drsm_web_sync.sh, ...
 tests/*.sh               all tests, plain BASH; run every one before a change is done
 docs/*.html              user documentation (hand written HTML)
 docs/ai/                 these guides; docs/ai/make_llms.sh rebuilds llms-full.txt
-PLUGINS.md               full plugin, host file, site and Windows reference
+PLUGINS.md               full plugin, host file, site, Windows and Linux agent reference
 CHANGELOG.md             add every change under "Unreleased"
 ```
 
@@ -71,6 +71,15 @@ Installed layout: code in `$DRSMHOME` (default `~/drsm`), dashboard in
   `UNKNOWN - text`, `METRIC name{labels}=value` and
   `DETAIL name=value` lines, plus any free text, and exits 0 OK,
   1 WARNING, 2 ERROR, 3 UNKNOWN.
+- Lines a page reads but people do not, `DRCM kind|...` from
+  `cluster/drcm` and `VULN kind|...` from `linux/vulnerabilities`, are
+  hidden on the host page (`drsm_line_level()` returns `DATA`). The
+  VULN lines are `summary`, `advisory`, `unfixed`, `compliance` and
+  `rule`; PLUGINS.md "Linux agent hosts" has their fields.
+- Agent hosts: the `wra` and `lra` collectors run the `windows/*` and
+  `linux/*` plugins on the monitor host against the host's last agent
+  report (`DRSM_WRA_REPORT`, `DRSM_LRA_REPORT`); nothing connects to
+  the host.
 - The runner wraps each plugin in `=== <cat>/<name> [STATE] <secs>s ===`
   and adds `HOSTNAME:`, `ETIME:`, `GROUP:` and other header lines.
 - The pages find problems by the `ERROR - ` and `WARNING - ` prefixes
@@ -152,7 +161,7 @@ the same prefix when you run a script by hand.
 - One file per host: `$DRSMHOME/etc/hosts/<host>.conf` with `HOST`,
   `DESCRIPTION`, `IMPACT`, `GROUP` (`production`/`ops`, `dev`, `qa` or
   your own, such as `windows`), `PLATFORM`, `COLLECTOR` (`ssh`,
-  `local`, `wra`, `none`), `PROBES`, `PLUGINS`, `ENABLED=no` to pause.
+  `local`, `wra`, `lra`, `none`), `PROBES`, `PLUGINS`, `ENABLED=no` to pause.
 - Shared values go in `etc/hosts/_defaults.conf`; a host file lists only
   what differs.
 - Plugin settings: `<category>_<name>_<SETTING>=value`, for example
@@ -165,6 +174,12 @@ the same prefix when you run a script by hand.
 - Windows hosts: `utils/wra_hosts.sh` (dry run, then `--apply`) makes a
   host file per agent report. Use `-g` for the group and `-p` for the
   plugins; leave out `windows/resources` for agents older than 3.3.
+- Linux hosts DRSM cannot reach over SSH run the DataReel Reporting
+  Agent for Linux: `utils/lra_hosts.sh` (dry run, then `--apply`)
+  makes a host file per agent report with `COLLECTOR=lra` and the
+  `linux/*` plugins. Set `LRA_REPORTS_DIR` in `_defaults.conf`. Keep
+  `PLUGINS` in those host files, or the core plugins from
+  `_defaults.conf` would check the monitor host.
 - Remove a host and its reports: `utils/drsm_remove_host.sh <host>`
   (dry run), then `--apply`.
 - From an old `systems.dat` setup: `utils/migrate_systems_dat.sh`.

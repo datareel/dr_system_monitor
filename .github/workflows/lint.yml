@@ -57,3 +57,6 @@ jobs:
 
       - name: Login tests
         run: bash tests/auth_test.sh
+
+      - name: Linux agent host tests
+        run: bash tests/lra_test.sh

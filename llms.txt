@@ -1,6 +1,6 @@
 # DRSM (DataReel System Monitor)
 
-> DRSM monitors Linux and Windows hosts with BASH plugins run from cron by bin/drsm_run.sh (locally, over SSH, or from Windows agent reports) and shows the plain text reports on a PHP dashboard. No database, no daemon. GPLv3.
+> DRSM monitors Linux and Windows hosts with BASH plugins run from cron by bin/drsm_run.sh (locally, over SSH, or from Windows and Linux agent reports) and shows the plain text reports on a PHP dashboard. No database, no daemon. GPLv3.
 
 Configuration is plain KEY=value files (etc/hosts, etc/sites) and config/drsm.php; change those, not the installed code. Plugins print INFO/WARNING/ERROR/UNKNOWN lines and exit 0-3. PHP must stay 7.2 compatible and escape output with h(). Run tests/*.sh after every change.
 
@@ -13,7 +13,7 @@ Configuration is plain KEY=value files (etc/hosts, etc/sites) and config/drsm.ph
 
 ## Reference
 
-- [PLUGINS.md](PLUGINS.md): Plugins, host files, organizations and sites, tiers, links, Windows hosts
+- [PLUGINS.md](PLUGINS.md): Plugins, host files, organizations and sites, tiers, links, Windows hosts, Linux agent hosts
 - [README.txt](README.txt): Install, Web server setup, alerts, utilities
 - [CHANGELOG.md](CHANGELOG.md): Changes by release
 - [HTML documentation](docs/index.html): Install, plugins, dashboard, alerts, deployment, with screenshots

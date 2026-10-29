@@ -25,6 +25,10 @@ $drsm_nav += array(
 if(drsm_clusters_present()) {
   $drsm_nav = array_slice($drsm_nav, 0, count($drsm_nav) - 1, true) + array("clusters" => array("Clusters", "clusters.php", "link")) + array_slice($drsm_nav, -1, 1, true);
 }
+// Vulnerabilities only when a host runs the linux/vulnerabilities plugin
+if(drsm_vulns_present()) {
+  $drsm_nav = array_slice($drsm_nav, 0, count($drsm_nav) - 1, true) + array("vulnerabilities" => array("Vulnerabilities", "vulnerabilities.php", "lock")) + array_slice($drsm_nav, -1, 1, true);
+}
 // Submenus: page views a menu item can open straight into
 $drsm_sub = array();
 if(isset($drsm_nav["orgs"])) {
@@ -59,6 +63,8 @@ if(isset($NAVsub) && is_array($NAVsub)) {
 }
 // Site menu items from config/drsm.php $NAVextra, see drsm_lib.php
 foreach(drsm_nav_extra() as $key => $item) {
+  // An older $NAVextra entry for the Vulnerabilities page, now built in
+  if(isset($drsm_nav["vulnerabilities"]) && preg_match('#/php/vulnerabilities\.php$#', $item["url"])) continue;
   $drsm_nav[$key] = array($item["label"], $item["url"], $item["icon"], null, true);
   if(count($item["sub"]) > 0) $drsm_sub[$key] = $item["sub"];
 }

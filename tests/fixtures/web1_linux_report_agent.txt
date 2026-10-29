@@ -1,0 +1,352 @@
+DataReel Reporting Agent report from host web1
+VERSION: 1.0-beta1
+PLATFORM: linux
+HOSTNAME: web1
+ETIME: 1793248707
+DATETIME: Thu Oct 29 00:38:27 2026
+
+SYSTEM:
+os_name="Red Hat Enterprise Linux 10.2 (Coughlan)"
+os_id=rhel
+os_version=10.2
+kernel=6.12.0-211.64.1.el10_2.x86_64
+arch=x86_64
+hostname=web1.example.com
+vendor="Dell Inc."
+product="PowerEdge R650"
+asset_tag="none"
+bios_version="1.0.0"
+virtualization=none
+machine_id=0123456789abcdef0123456789abcdef
+timezone=America/New_York
+END SYSTEM
+
+IP ADDRESS:
+interface=eno1 family=inet address=203.0.113.10
+interface=virbr0 family=inet address=10.0.0.1
+END IP ADDRESS
+
+PERFORMANCE:
+cpu_count=8
+cpu_used_pct=4.2
+cpu_iowait_pct=0.0
+cpu_steal_pct=0.0
+cpu_sample_seconds=5
+load_1=1.26
+load_5=1.50
+load_15=1.82
+mem_total_mb=63729
+mem_available_mb=30069
+mem_used_pct=52.8
+swap_total_mb=131067
+swap_used_mb=5663
+swap_used_pct=4.3
+process_count=546
+uptime_seconds=1597355
+END PERFORMANCE
+
+DISK USAGE:
+mount="/" device=/dev/mapper/vg00_rhel-root fstype=xfs size_mb=3678890 used_mb=1683879 free_mb=1995011 used_pct=45.8 inodes_used_pct=1.0
+mount="/DOSBIOS" device=/dev/sda3 fstype=vfat size_mb=1021 used_mb=0 free_mb=1021 used_pct=0.0
+mount="/boot" device=/dev/sda2 fstype=xfs size_mb=1984 used_mb=899 free_mb=1085 used_pct=45.3 inodes_used_pct=0.0
+mount="/boot/efi" device=/dev/sda1 fstype=vfat size_mb=598 used_mb=8 free_mb=589 used_pct=1.3
+END DISK USAGE
+
+NETWORK:
+adapter="eno1" speed_mbps=1000 rx_bytes=106401970881 tx_bytes=14883409888 rx_packets=97587030 tx_packets=46176462 rx_errors=0 tx_errors=0 rx_discards=164 tx_discards=0 collisions=0 virtual=0
+adapter="virbr0" speed_mbps=10000 rx_bytes=57753085221 tx_bytes=23607032024 rx_packets=6108350 tx_packets=9003102 rx_errors=0 tx_errors=0 rx_discards=0 tx_discards=20 collisions=0 virtual=1
+adapter="vnet0" speed_mbps=10000 rx_bytes=57838602121 tx_bytes=24085570565 rx_packets=6108350 tx_packets=20154164 rx_errors=0 tx_errors=0 rx_discards=0 tx_discards=104562 collisions=0 virtual=1
+END NETWORK
+
+USERS:
+user="admin" tty="pts/0" from="198.51.100.7" login=1793240000
+END USERS
+
+ACCOUNTS:
+account="root" uid=0 home="/root" shell=/bin/bash
+account="admin" uid=1000 home="/home/admin" shell=/bin/bash
+END ACCOUNTS
+
+SECURITY:
+selinux=enforcing
+firewalld=active
+firewalld_default_zone=public
+auditd=active
+sshd=active
+fips=0
+automatic_updates=inactive
+END SECURITY
+
+FAILED SERVICES:
+unit=kdump.service
+END FAILED SERVICES
+
+UPDATES:
+last_install_etime=1792972270
+last_install="2026-10-25 19:51:10 EDT"
+running_kernel=6.12.0-211.64.1.el10_2.x86_64
+newest_kernel=6.12.0-211.64.1.el10_2.x86_64
+reboot_required=0
+check=ok
+pending_count=168
+update package=ImageMagick.x86_64 version=1:7.1.2.34-1.el10_2 repo=epel
+update package=ImageMagick-libs.x86_64 version=1:7.1.2.34-1.el10_2 repo=epel
+update package=NetworkManager.x86_64 version=1:1.56.0-3.el10_2 repo=rhel-10-for-x86_64-baseos-rpms
+update package=NetworkManager-adsl.x86_64 version=1:1.56.0-3.el10_2 repo=rhel-10-for-x86_64-baseos-rpms
+update package=NetworkManager-bluetooth.x86_64 version=1:1.56.0-3.el10_2 repo=rhel-10-for-x86_64-baseos-rpms
+update package=NetworkManager-libnm.x86_64 version=1:1.56.0-3.el10_2 repo=rhel-10-for-x86_64-baseos-rpms
+update package=NetworkManager-tui.x86_64 version=1:1.56.0-3.el10_2 repo=rhel-10-for-x86_64-baseos-rpms
+update package=NetworkManager-wifi.x86_64 version=1:1.56.0-3.el10_2 repo=rhel-10-for-x86_64-baseos-rpms
+update package=NetworkManager-wwan.x86_64 version=1:1.56.0-3.el10_2 repo=rhel-10-for-x86_64-baseos-rpms
+update package=amd-gpu-firmware.noarch version=20260929-23.4.el10_2 repo=rhel-10-for-x86_64-appstream-rpms
+update package=amd-ucode-firmware.noarch version=20260929-23.4.el10_2 repo=rhel-10-for-x86_64-baseos-rpms
+update package=atheros-firmware.noarch version=20260929-23.4.el10_2 repo=rhel-10-for-x86_64-baseos-rpms
+update package=bind-libs.x86_64 version=32:9.18.33-15.el10_2.13 repo=rhel-10-for-x86_64-appstream-rpms
+update package=bind-license.noarch version=32:9.18.33-15.el10_2.13 repo=rhel-10-for-x86_64-appstream-rpms
+update package=bind-utils.x86_64 version=32:9.18.33-15.el10_2.13 repo=rhel-10-for-x86_64-appstream-rpms
+update package=brcmfmac-firmware.noarch version=20260929-23.4.el10_2 repo=rhel-10-for-x86_64-baseos-rpms
+update package=brotli.x86_64 version=1.1.0-8.el10_2.1 repo=rhel-10-for-x86_64-appstream-rpms
+update package=brotli-devel.x86_64 version=1.1.0-8.el10_2.1 repo=rhel-10-for-x86_64-appstream-rpms
+update package=bubblewrap.x86_64 version=0.10.0-5.el10_2 repo=rhel-10-for-x86_64-baseos-rpms
+update package=buildah.x86_64 version=2:1.43.1-7.el10_2 repo=rhel-10-for-x86_64-appstream-rpms
+update package=ca-certificates.noarch version=2026.2.92_v9.0.319-100.3.el10_2 repo=rhel-10-for-x86_64-baseos-rpms
+update package=cirrus-audio-firmware.noarch version=20260929-23.4.el10_2 repo=rhel-10-for-x86_64-baseos-rpms
+update package=crun.x86_64 version=1.30.1-2.el10_2 repo=rhel-10-for-x86_64-appstream-rpms
+update package=curl.x86_64 version=8.12.1-4.el10_2.7 repo=rhel-10-for-x86_64-baseos-rpms
+update package=emacs.x86_64 version=1:29.4-14.el10_2.4 repo=rhel-10-for-x86_64-appstream-rpms
+update package=emacs-common.x86_64 version=1:29.4-14.el10_2.4 repo=rhel-10-for-x86_64-appstream-rpms
+update package=emacs-filesystem.noarch version=1:29.4-14.el10_2.4 repo=rhel-10-for-x86_64-baseos-rpms
+update package=expat.x86_64 version=2.7.3-1.el10_2.7 repo=rhel-10-for-x86_64-baseos-rpms
+update package=expat-devel.x86_64 version=2.7.3-1.el10_2.7 repo=rhel-10-for-x86_64-appstream-rpms
+update package=firefox.x86_64 version=153.5.0-1.el10_2 repo=rhel-10-for-x86_64-appstream-rpms
+update package=flatpak.x86_64 version=1.16.0-9.el10_2.6 repo=rhel-10-for-x86_64-appstream-rpms
+update package=flatpak-libs.x86_64 version=1.16.0-9.el10_2.6 repo=rhel-10-for-x86_64-appstream-rpms
+update package=flatpak-selinux.noarch version=1.16.0-9.el10_2.6 repo=rhel-10-for-x86_64-appstream-rpms
+update package=flatpak-session-helper.x86_64 version=1.16.0-9.el10_2.6 repo=rhel-10-for-x86_64-appstream-rpms
+update package=gcc-toolset-15-gcc.x86_64 version=15.2.1-7.1.el10_2 repo=rhel-10-for-x86_64-appstream-rpms
+update package=gcc-toolset-15-gcc-c++.x86_64 version=15.2.1-7.1.el10_2 repo=rhel-10-for-x86_64-appstream-rpms
+update package=gcc-toolset-15-libatomic-devel.x86_64 version=15.2.1-7.1.el10_2 repo=rhel-10-for-x86_64-appstream-rpms
+update package=gcc-toolset-15-libstdc++-devel.x86_64 version=15.2.1-7.1.el10_2 repo=rhel-10-for-x86_64-appstream-rpms
+update package=gd.x86_64 version=2.3.3-20.el10_2.1 repo=rhel-10-for-x86_64-appstream-rpms
+update package=gh.x86_64 version=2.103.3-1 repo=gh-cli
+update package=ghostscript.x86_64 version=10.02.1-16.el10_2.3 repo=rhel-10-for-x86_64-appstream-rpms
+update package=ghostscript-tools-fonts.noarch version=10.02.1-16.el10_2.3 repo=rhel-10-for-x86_64-appstream-rpms
+update package=ghostscript-tools-printing.noarch version=10.02.1-16.el10_2.3 repo=rhel-10-for-x86_64-appstream-rpms
+update package=glibc.x86_64 version=2.39-145.el10_2 repo=rhel-10-for-x86_64-baseos-rpms
+update package=glibc-all-langpacks.x86_64 version=2.39-145.el10_2 repo=rhel-10-for-x86_64-baseos-rpms
+update package=glibc-common.x86_64 version=2.39-145.el10_2 repo=rhel-10-for-x86_64-baseos-rpms
+update package=glibc-devel.x86_64 version=2.39-145.el10_2 repo=rhel-10-for-x86_64-appstream-rpms
+update package=glibc-gconv-extra.x86_64 version=2.39-145.el10_2 repo=rhel-10-for-x86_64-baseos-rpms
+update package=glibc-static.x86_64 version=2.39-145.el10_2 repo=codeready-builder-for-rhel-10-x86_64-rpms
+update package=glycin-loaders.x86_64 version=1.0.1-1.el10_2.2 repo=rhel-10-for-x86_64-appstream-rpms
+update package=google-chrome-stable.x86_64 version=156.0.8078.73-1 repo=google-chrome
+update package=hplip.x86_64 version=3.26.6-1.el10_2.3 repo=rhel-10-for-x86_64-appstream-rpms
+update package=hplip-common.x86_64 version=3.26.6-1.el10_2.3 repo=rhel-10-for-x86_64-appstream-rpms
+update package=hplip-libs.x86_64 version=3.26.6-1.el10_2.3 repo=rhel-10-for-x86_64-appstream-rpms
+update package=httpd.x86_64 version=2.4.63-13.el10_2.8 repo=rhel-10-for-x86_64-appstream-rpms
+update package=httpd-core.x86_64 version=2.4.63-13.el10_2.8 repo=rhel-10-for-x86_64-appstream-rpms
+update package=httpd-devel.x86_64 version=2.4.63-13.el10_2.8 repo=rhel-10-for-x86_64-appstream-rpms
+update package=httpd-filesystem.noarch version=2.4.63-13.el10_2.8 repo=rhel-10-for-x86_64-appstream-rpms
+update package=httpd-manual.noarch version=2.4.63-13.el10_2.8 repo=rhel-10-for-x86_64-appstream-rpms
+update package=httpd-tools.x86_64 version=2.4.63-13.el10_2.8 repo=rhel-10-for-x86_64-appstream-rpms
+update package=insights-core.noarch version=3.8.4-1.el10_2 repo=rhel-10-for-x86_64-appstream-rpms
+update package=insights-core-selinux.noarch version=3.8.4-1.el10_2 repo=rhel-10-for-x86_64-appstream-rpms
+update package=intel-audio-firmware.noarch version=20260929-23.4.el10_2 repo=rhel-10-for-x86_64-baseos-rpms
+update package=intel-gpu-firmware.noarch version=20260929-23.4.el10_2 repo=rhel-10-for-x86_64-appstream-rpms
+update package=intel-vsc-firmware.noarch version=20260929-23.4.el10_2 repo=rhel-10-for-x86_64-baseos-rpms
+update package=ipp-usb.x86_64 version=0.9.27-7.el10_2.4 repo=rhel-10-for-x86_64-appstream-rpms
+update package=iwlwifi-dvm-firmware.noarch version=20260929-23.4.el10_2 repo=rhel-10-for-x86_64-baseos-rpms
+update package=iwlwifi-mvm-firmware.noarch version=20260929-23.4.el10_2 repo=rhel-10-for-x86_64-baseos-rpms
+update package=kernel.x86_64 version=6.12.0-211.69.1.el10_2 repo=rhel-10-for-x86_64-baseos-rpms
+update package=kernel-core.x86_64 version=6.12.0-211.69.1.el10_2 repo=rhel-10-for-x86_64-baseos-rpms
+update package=kernel-devel.x86_64 version=6.12.0-211.69.1.el10_2 repo=rhel-10-for-x86_64-appstream-rpms
+update package=kernel-headers.x86_64 version=6.12.0-211.69.1.el10_2 repo=rhel-10-for-x86_64-appstream-rpms
+update package=kernel-modules.x86_64 version=6.12.0-211.69.1.el10_2 repo=rhel-10-for-x86_64-baseos-rpms
+update package=kernel-modules-core.x86_64 version=6.12.0-211.69.1.el10_2 repo=rhel-10-for-x86_64-baseos-rpms
+update package=kernel-modules-extra.x86_64 version=6.12.0-211.69.1.el10_2 repo=rhel-10-for-x86_64-baseos-rpms
+update package=kernel-modules-extra-matched.x86_64 version=6.12.0-211.69.1.el10_2 repo=rhel-10-for-x86_64-baseos-rpms
+update package=kernel-tools.x86_64 version=6.12.0-211.69.1.el10_2 repo=rhel-10-for-x86_64-baseos-rpms
+update package=kernel-tools-libs.x86_64 version=6.12.0-211.69.1.el10_2 repo=rhel-10-for-x86_64-baseos-rpms
+update package=libX11.x86_64 version=1.8.10-1.el10_2.1 repo=rhel-10-for-x86_64-appstream-rpms
+update package=libX11-common.noarch version=1.8.10-1.el10_2.1 repo=rhel-10-for-x86_64-appstream-rpms
+update package=libX11-devel.x86_64 version=1.8.10-1.el10_2.1 repo=rhel-10-for-x86_64-appstream-rpms
+update package=libX11-xcb.x86_64 version=1.8.10-1.el10_2.1 repo=rhel-10-for-x86_64-appstream-rpms
+update package=libXi.x86_64 version=1.8.1-7.el10_2.1 repo=rhel-10-for-x86_64-appstream-rpms
+update package=libXi-devel.x86_64 version=1.8.1-7.el10_2.1 repo=rhel-10-for-x86_64-appstream-rpms
+update package=libXrender.x86_64 version=0.9.11-8.el10_2.1 repo=rhel-10-for-x86_64-appstream-rpms
+update package=libXrender-devel.x86_64 version=0.9.11-8.el10_2.1 repo=rhel-10-for-x86_64-appstream-rpms
+update package=libXtst.x86_64 version=1.2.4-8.el10_2.1 repo=rhel-10-for-x86_64-appstream-rpms
+update package=libXtst-devel.x86_64 version=1.2.4-8.el10_2.1 repo=rhel-10-for-x86_64-appstream-rpms
+update package=libaom.x86_64 version=3.15.2-1.el10_2 repo=epel
+update package=libbrotli.x86_64 version=1.1.0-8.el10_2.1 repo=rhel-10-for-x86_64-baseos-rpms
+update package=libcurl.x86_64 version=8.12.1-4.el10_2.7 repo=rhel-10-for-x86_64-baseos-rpms
+update package=libcurl-devel.x86_64 version=8.12.1-4.el10_2.7 repo=rhel-10-for-x86_64-appstream-rpms
+update package=libertas-firmware.noarch version=20260929-23.4.el10_2 repo=rhel-10-for-x86_64-baseos-rpms
+update package=libgs.x86_64 version=10.02.1-16.el10_2.3 repo=rhel-10-for-x86_64-appstream-rpms
+update package=libibverbs.x86_64 version=1:61.0-2.el10_2 repo=rhel-10-for-x86_64-baseos-rpms
+update package=libinstpatch.x86_64 version=1.1.8-3.el10_2 repo=epel
+update package=librdmacm.x86_64 version=1:61.0-2.el10_2 repo=rhel-10-for-x86_64-baseos-rpms
+update package=libreswan.x86_64 version=5.3.3-1.el10_2 repo=rhel-10-for-x86_64-appstream-rpms
+update package=libreswan-minimal.x86_64 version=5.3.3-1.el10_2 repo=rhel-10-for-x86_64-appstream-rpms
+update package=librsvg2.x86_64 version=2.57.1-9.el10_2.10 repo=rhel-10-for-x86_64-appstream-rpms
+update package=librsvg2-tools.x86_64 version=2.57.1-9.el10_2.10 repo=rhel-10-for-x86_64-appstream-rpms
+update package=libsane-hpaio.x86_64 version=3.26.6-1.el10_2.3 repo=rhel-10-for-x86_64-appstream-rpms
+update package=libsoup3.x86_64 version=3.6.5-3.el10_2.20 repo=rhel-10-for-x86_64-appstream-rpms
+update package=libsoup3-devel.x86_64 version=3.6.5-3.el10_2.20 repo=rhel-10-for-x86_64-appstream-rpms
+update package=linux-firmware.noarch version=20260929-23.4.el10_2 repo=rhel-10-for-x86_64-baseos-rpms
+update package=linux-firmware-whence.noarch version=20260929-23.4.el10_2 repo=rhel-10-for-x86_64-baseos-rpms
+update package=lrzsz.x86_64 version=0.12.20-69.el10_2 repo=rhel-10-for-x86_64-baseos-rpms
+update package=mod_lua.x86_64 version=2.4.63-13.el10_2.8 repo=rhel-10-for-x86_64-appstream-rpms
+update package=mod_ssl.x86_64 version=1:2.4.63-13.el10_2.8 repo=rhel-10-for-x86_64-appstream-rpms
+update package=mt7xxx-firmware.noarch version=20260929-23.4.el10_2 repo=rhel-10-for-x86_64-baseos-rpms
+update package=netronome-firmware.noarch version=20260929-23.4.el10_2 repo=rhel-10-for-x86_64-baseos-rpms
+update package=nvidia-gpu-firmware.noarch version=20260929-23.4.el10_2 repo=rhel-10-for-x86_64-appstream-rpms
+update package=nxpwireless-firmware.noarch version=20260929-23.4.el10_2 repo=rhel-10-for-x86_64-baseos-rpms
+update package=openexr-libs.x86_64 version=3.1.10-8.el10_2.5 repo=rhel-10-for-x86_64-appstream-rpms
+update package=openssh.x86_64 version=9.9p1-29.el10_2 repo=rhel-10-for-x86_64-baseos-rpms
+update package=openssh-clients.x86_64 version=9.9p1-29.el10_2 repo=rhel-10-for-x86_64-baseos-rpms
+update package=openssh-server.x86_64 version=9.9p1-29.el10_2 repo=rhel-10-for-x86_64-baseos-rpms
+update package=pcre2.x86_64 version=10.44-1.5.el10_2 repo=rhel-10-for-x86_64-baseos-rpms
+update package=pcre2-devel.x86_64 version=10.44-1.5.el10_2 repo=rhel-10-for-x86_64-appstream-rpms
+update package=pcre2-syntax.noarch version=10.44-1.5.el10_2 repo=rhel-10-for-x86_64-baseos-rpms
+update package=pcre2-utf16.x86_64 version=10.44-1.5.el10_2 repo=rhel-10-for-x86_64-appstream-rpms
+update package=pcre2-utf32.x86_64 version=10.44-1.5.el10_2 repo=rhel-10-for-x86_64-appstream-rpms
+update package=perl-URI.noarch version=5.27-3.el10_2.1 repo=rhel-10-for-x86_64-appstream-rpms
+update package=php8.4-bcmath.x86_64 version=8.4.27-1.el10_2 repo=rhel-10-for-x86_64-appstream-rpms
+update package=php8.4-cli.x86_64 version=8.4.27-1.el10_2 repo=rhel-10-for-x86_64-appstream-rpms
+update package=php8.4-common.x86_64 version=8.4.27-1.el10_2 repo=rhel-10-for-x86_64-appstream-rpms
+update package=php8.4-fpm.x86_64 version=8.4.27-1.el10_2 repo=rhel-10-for-x86_64-appstream-rpms
+update package=php8.4-gd.x86_64 version=8.4.27-1.el10_2 repo=rhel-10-for-x86_64-appstream-rpms
+update package=php8.4-gmp.x86_64 version=8.4.27-1.el10_2 repo=rhel-10-for-x86_64-appstream-rpms
+update package=php8.4-intl.x86_64 version=8.4.27-1.el10_2 repo=rhel-10-for-x86_64-appstream-rpms
+update package=php8.4-mbstring.x86_64 version=8.4.27-1.el10_2 repo=rhel-10-for-x86_64-appstream-rpms
+update package=php8.4-mysqlnd.x86_64 version=8.4.27-1.el10_2 repo=rhel-10-for-x86_64-appstream-rpms
+update package=php8.4-opcache.x86_64 version=8.4.27-1.el10_2 repo=rhel-10-for-x86_64-appstream-rpms
+update package=php8.4-pdo.x86_64 version=8.4.27-1.el10_2 repo=rhel-10-for-x86_64-appstream-rpms
+update package=php8.4-process.x86_64 version=8.4.27-1.el10_2 repo=rhel-10-for-x86_64-appstream-rpms
+update package=php8.4-xml.x86_64 version=8.4.27-1.el10_2 repo=rhel-10-for-x86_64-appstream-rpms
+update package=podman.x86_64 version=7:5.8.2-11.el10_2 repo=rhel-10-for-x86_64-appstream-rpms
+update package=python3-perf.x86_64 version=6.12.0-211.69.1.el10_2 repo=rhel-10-for-x86_64-appstream-rpms
+update package=python3-urllib3.noarch version=1.26.19-4.el10_2.2 repo=rhel-10-for-x86_64-baseos-rpms
+update package=qt5-qtbase.x86_64 version=5.15.18-2.el10_2 repo=epel
+update package=qt5-qtbase-common.noarch version=5.15.18-2.el10_2 repo=epel
+update package=qt5-qtbase-devel.x86_64 version=5.15.18-2.el10_2 repo=epel
+update package=qt5-qtbase-examples.x86_64 version=5.15.18-2.el10_2 repo=epel
+update package=qt5-qtbase-gui.x86_64 version=5.15.18-2.el10_2 repo=epel
+update package=qt5-qtbase-mysql.x86_64 version=5.15.18-2.el10_2 repo=epel
+update package=qt5-qtbase-odbc.x86_64 version=5.15.18-2.el10_2 repo=epel
+update package=qt5-qtbase-postgresql.x86_64 version=5.15.18-2.el10_2 repo=epel
+update package=qt5-qtbase-private-devel.x86_64 version=5.15.18-2.el10_2 repo=epel
+update package=realtek-firmware.noarch version=20260929-23.4.el10_2 repo=rhel-10-for-x86_64-baseos-rpms
+update package=rhc.x86_64 version=1:0.3.8-8.el10_2 repo=rhel-10-for-x86_64-appstream-rpms
+update package=rpcbind.x86_64 version=1.2.7-3.el10_2.1 repo=rhel-10-for-x86_64-baseos-rpms
+update package=rsvg-pixbuf-loader.x86_64 version=2.57.1-9.el10_2.10 repo=rhel-10-for-x86_64-appstream-rpms
+update package=sequoia-sq.x86_64 version=1.4.0.1-4.el10_2 repo=rhel-10-for-x86_64-appstream-rpms
+update package=sg3_utils.x86_64 version=1.48-7.el10_2.2 repo=rhel-10-for-x86_64-baseos-rpms
+update package=sg3_utils-libs.x86_64 version=1.48-7.el10_2.2 repo=rhel-10-for-x86_64-baseos-rpms
+update package=skopeo.x86_64 version=2:1.22.2-6.el10_2 repo=rhel-10-for-x86_64-appstream-rpms
+update package=swtpm.x86_64 version=0.9.0-6.el10_2 repo=rhel-10-for-x86_64-appstream-rpms
+update package=swtpm-libs.x86_64 version=0.9.0-6.el10_2 repo=rhel-10-for-x86_64-appstream-rpms
+update package=swtpm-selinux.noarch version=0.9.0-6.el10_2 repo=rhel-10-for-x86_64-appstream-rpms
+update package=swtpm-tools.x86_64 version=0.9.0-6.el10_2 repo=rhel-10-for-x86_64-appstream-rpms
+update package=thunderbird.x86_64 version=153.5.0-1.el10_2 repo=rhel-10-for-x86_64-appstream-rpms
+update package=tiwilink-firmware.noarch version=20260929-23.4.el10_2 repo=rhel-10-for-x86_64-baseos-rpms
+update package=virtio-win.noarch version=1.9.62-0.el10_2 repo=rhel-10-for-x86_64-appstream-rpms
+update package=xdg-dbus-proxy.x86_64 version=0.1.5-4.el10_2.1 repo=rhel-10-for-x86_64-appstream-rpms
+update package=xdg-terminal-exec.noarch version=0.14.3-1.el10_2 repo=epel
+update package=xorg-x11-server-Xwayland.x86_64 version=24.1.9-4.el10_2.4 repo=rhel-10-for-x86_64-appstream-rpms
+update package=xorg-x11-server-Xwayland-devel.x86_64 version=24.1.9-4.el10_2.4 repo=codeready-builder-for-rhel-10-x86_64-rpms
+update package=yggdrasil.x86_64 version=0.4.9.2-1.el10_2.4 repo=rhel-10-for-x86_64-appstream-rpms
+END UPDATES
+
+VULNERABILITIES:
+source=dnf
+feed=dnf updateinfo
+scan_etime=1793247749
+scan_seconds=13
+status=ok
+critical=1 important=43 moderate=9 low=0 unknown=1 total=54 cves=270
+advisory id=RHSA-2026:88455 severity=Critical issued=2026-10-22 cves=CVE-2026-114406 packages=ca-certificates-2026.2.92_v9.0.319-100.3.el10_2.noarch title="Critical: ca-certificates security update"
+advisory id=RHSA-2026:91612 severity=Important issued=2026-10-28 cves=CVE-2026-94286 packages=libXtst-1.2.4-8.el10_2.1.x86_64,libXtst-devel-1.2.4-8.el10_2.1.x86_64 title="Important: libXtst security update"
+advisory id=RHSA-2026:91565 severity=Important issued=2026-10-27 cves=CVE-2026-53236,CVE-2026-53388,CVE-2026-63978,CVE-2026-63979,CVE-2026-64027,CVE-2026-64109,CVE-2026-64523,CVE-2026-68136,CVE-2026-68338,CVE-2026-72083,CVE-2026-74515,CVE-2026-74631,CVE-2026-80824,CVE-2026-89638,CVE-2026-89777,CVE-2026-93262 packages=kernel-6.12.0-211.69.1.el10_2.x86_64,kernel-core-6.12.0-211.69.1.el10_2.x86_64,kernel-devel-6.12.0-211.69.1.el10_2.x86_64,kernel-headers-6.12.0-211.69.1.el10_2.x86_64,kernel-modules-6.12.0-211.69.1.el10_2.x86_64,kernel-modules-core-6.12.0-211.69.1.el10_2.x86_64,kernel-modules-extra-6.12.0-211.69.1.el10_2.x86_64,kernel-modules-extra-matched-6.12.0-211.69.1.el10_2.x86_64,kernel-tools-6.12.0-211.69.1.el10_2.x86_64,kernel-tools-libs-6.12.0-211.69.1.el10_2.x86_64,python3-perf-6.12.0-211.69.1.el10_2.x86_64 title="Important: kernel security, bug fix, and enhancement update"
+advisory id=RHSA-2026:91366 severity=Important issued=2026-10-27 cves=CVE-2026-88806 packages=libX11-1.8.10-1.el10_2.1.x86_64,libX11-common-1.8.10-1.el10_2.1.noarch,libX11-devel-1.8.10-1.el10_2.1.x86_64,libX11-xcb-1.8.10-1.el10_2.1.x86_64 title="Important: libX11 security update"
+advisory id=RHSA-2026:91138 severity=Important issued=2026-10-27 cves=CVE-2026-111943,CVE-2026-78669,CVE-2026-94440 packages=yggdrasil-0.4.9.2-1.el10_2.4.x86_64 title="Important: yggdrasil security update"
+advisory id=RHSA-2026:91003 severity=Important issued=2026-10-27 cves=CVE-2026-88807 packages=libXrender-0.9.11-8.el10_2.1.x86_64,libXrender-devel-0.9.11-8.el10_2.1.x86_64 title="Important: libXrender security update"
+advisory id=RHSA-2026:90895 severity=Important issued=2026-10-27 cves=CVE-2026-45186 packages=thunderbird-153.5.0-1.el10_2.x86_64 title="Important: thunderbird security, bug fix, and enhancement update"
+advisory id=RHSA-2026:90887 severity=Important issued=2026-10-27 cves=CVE-2026-96269 packages=emacs-1:29.4-14.el10_2.4.x86_64,emacs-common-1:29.4-14.el10_2.4.x86_64,emacs-filesystem-1:29.4-14.el10_2.4.noarch title="Important: emacs security update"
+advisory id=RHSA-2026:90523 severity=Important issued=2026-10-26 cves=CVE-2026-94422 packages=xdg-dbus-proxy-0.1.5-4.el10_2.1.x86_64 title="Important: xdg-dbus-proxy security update"
+advisory id=RHSA-2026:90449 severity=Important issued=2026-10-26 cves=CVE-2026-111497 packages=brotli-1.1.0-8.el10_2.1.x86_64,brotli-devel-1.1.0-8.el10_2.1.x86_64,libbrotli-1.1.0-8.el10_2.1.x86_64 title="Important: brotli security update"
+advisory id=RHSA-2026:89923 severity=Important issued=2026-10-26 cves=CVE-2026-77205,CVE-2026-77207,CVE-2026-94453 packages=libreswan-5.3.3-1.el10_2.x86_64,libreswan-minimal-5.3.3-1.el10_2.x86_64 title="Important: libreswan security update"
+advisory id=RHSA-2026:89860 severity=Important issued=2026-10-26 cves=CVE-2026-46729,CVE-2026-48005,CVE-2026-56153,CVE-2026-56154,CVE-2026-63045,CVE-2026-63292,CVE-2026-63686,CVE-2026-63718,CVE-2026-73636,CVE-2026-73637,CVE-2026-93546 packages=httpd-2.4.63-13.el10_2.8.x86_64,httpd-core-2.4.63-13.el10_2.8.x86_64,httpd-devel-2.4.63-13.el10_2.8.x86_64,httpd-filesystem-2.4.63-13.el10_2.8.noarch,httpd-manual-2.4.63-13.el10_2.8.noarch,httpd-tools-2.4.63-13.el10_2.8.x86_64,mod_lua-2.4.63-13.el10_2.8.x86_64,mod_ssl-1:2.4.63-13.el10_2.8.x86_64 title="Important: httpd security update"
+advisory id=RHSA-2026:89849 severity=Important issued=2026-10-26 cves=CVE-2026-97023,CVE-2026-97024 packages=flatpak-1.16.0-9.el10_2.6.x86_64,flatpak-libs-1.16.0-9.el10_2.6.x86_64,flatpak-selinux-1.16.0-9.el10_2.6.noarch,flatpak-session-helper-1.16.0-9.el10_2.6.x86_64 title="Important: flatpak security update"
+advisory id=RHSA-2026:89832 severity=Important issued=2026-10-26 cves=CVE-2026-111943,CVE-2026-78667,CVE-2026-78669,CVE-2026-97031 packages=rhc-1:0.3.8-8.el10_2.x86_64 title="Important: rhc security update"
+advisory id=RHSA-2026:89761 severity=Important issued=2026-10-25 cves=CVE-2025-11395,CVE-2026-111943,CVE-2026-78667 packages=skopeo-2:1.22.2-6.el10_2.x86_64 title="Important: skopeo security update"
+advisory id=RHSA-2026:89758 severity=Important issued=2026-10-25 cves=CVE-2026-109704,CVE-2026-109705,CVE-2026-109706,CVE-2026-109707,CVE-2026-109708,CVE-2026-109709,CVE-2026-109711,CVE-2026-109712,CVE-2026-109713,CVE-2026-109715,CVE-2026-109716,CVE-2026-109717,CVE-2026-109718,CVE-2026-109719,CVE-2026-109720,CVE-2026-109721,CVE-2026-109722,CVE-2026-109723,CVE-2026-109724,CVE-2026-109725,CVE-2026-109726,CVE-2026-109727,CVE-2026-109728,CVE-2026-109729,CVE-2026-109730,CVE-2026-109732,CVE-2026-109740,CVE-2026-45186,CVE-2026-77214 packages=firefox-153.5.0-1.el10_2.x86_64 title="Important: firefox security, bug fix, and enhancement update"
+advisory id=RHSA-2026:88477 severity=Important issued=2026-10-22 cves=CVE-2025-38147,CVE-2026-64048,CVE-2026-64114,CVE-2026-64266,CVE-2026-64481,CVE-2026-64572,CVE-2026-68202,CVE-2026-68236,CVE-2026-68245,CVE-2026-68278,CVE-2026-68448,CVE-2026-80536,CVE-2026-80590,CVE-2026-80887,CVE-2026-89791,CVE-2026-89811,CVE-2026-93817,CVE-2026-97493 packages=kernel-6.12.0-211.68.1.el10_2.x86_64,kernel-core-6.12.0-211.68.1.el10_2.x86_64,kernel-devel-6.12.0-211.68.1.el10_2.x86_64,kernel-headers-6.12.0-211.68.1.el10_2.x86_64,kernel-modules-6.12.0-211.68.1.el10_2.x86_64,kernel-modules-core-6.12.0-211.68.1.el10_2.x86_64,kernel-modules-extra-6.12.0-211.68.1.el10_2.x86_64,kernel-modules-extra-matched-6.12.0-211.68.1.el10_2.x86_64,kernel-tools-6.12.0-211.68.1.el10_2.x86_64,kernel-tools-libs-6.12.0-211.68.1.el10_2.x86_64,python3-perf-6.12.0-211.68.1.el10_2.x86_64 title="Important: kernel security, bug fix, and enhancement update"
+advisory id=RHSA-2026:88336 severity=Important issued=2026-10-22 cves=CVE-2026-111943,CVE-2026-78667,CVE-2026-78669 packages=podman-7:5.8.2-11.el10_2.x86_64 title="Important: podman security update"
+advisory id=RHSA-2026:88280 severity=Important issued=2026-10-22 cves=CVE-2026-111943,CVE-2026-78667,CVE-2026-78669,CVE-2026-97031 packages=ipp-usb-0.9.27-7.el10_2.4.x86_64 title="Important: golang-github-openprinting-ipp-usb security update"
+advisory id=RHSA-2026:88262 severity=Important issued=2026-10-22 cves=CVE-2025-11395,CVE-2026-111943,CVE-2026-78667,CVE-2026-78669 packages=buildah-2:1.43.1-7.el10_2.x86_64 title="Important: buildah security update"
+advisory id=RHSA-2026:88248 severity=Important issued=2026-10-22 cves=CVE-2026-102633,CVE-2026-77214 packages=expat-2.7.3-1.el10_2.7.x86_64,expat-devel-2.7.3-1.el10_2.7.x86_64 title="Important: expat security update"
+advisory id=RHSA-2026:88202 severity=Important issued=2026-10-22 cves=CVE-2026-94603 packages=podman-7:5.8.2-10.el10_2.x86_64 title="Important: podman security update"
+advisory id=RHSA-2026:87071 severity=Important issued=2026-10-21 cves=CVE-2026-109618,CVE-2026-109619,CVE-2026-91765 packages=php8.4-bcmath-8.4.27-1.el10_2.x86_64,php8.4-cli-8.4.27-1.el10_2.x86_64,php8.4-common-8.4.27-1.el10_2.x86_64,php8.4-fpm-8.4.27-1.el10_2.x86_64,php8.4-gd-8.4.27-1.el10_2.x86_64,php8.4-gmp-8.4.27-1.el10_2.x86_64,php8.4-intl-8.4.27-1.el10_2.x86_64,php8.4-mbstring-8.4.27-1.el10_2.x86_64,php8.4-mysqlnd-8.4.27-1.el10_2.x86_64,php8.4-opcache-8.4.27-1.el10_2.x86_64,php8.4-pdo-8.4.27-1.el10_2.x86_64,php8.4-process-8.4.27-1.el10_2.x86_64,php8.4-xml-8.4.27-1.el10_2.x86_64 title="Important: php8.4 security update"
+advisory id=RHSA-2026:86841 severity=Important issued=2026-10-21 cves=CVE-2026-96889 packages=librsvg2-2.57.1-9.el10_2.10.x86_64,librsvg2-tools-2.57.1-9.el10_2.10.x86_64,rsvg-pixbuf-loader-2.57.1-9.el10_2.10.x86_64 title="Important: librsvg2 security update"
+advisory id=RHSA-2026:86331 severity=Important issued=2026-10-20 cves=CVE-2026-96889 packages=glycin-loaders-1.0.1-1.el10_2.2.x86_64 title="Important: glycin-loaders security update"
+advisory id=RHSA-2026:86056 severity=Important issued=2026-10-20 cves=CVE-2026-105840,CVE-2026-105841 packages=lrzsz-0.12.20-69.el10_2.x86_64 title="Important: lrzsz security, bug fix, and enhancement update"
+advisory id=RHSA-2026:85930 severity=Important issued=2026-10-20 cves=CVE-2026-97687,CVE-2026-97689 packages=python3-urllib3-1.26.19-4.el10_2.2.noarch title="Important: python-urllib3 security update"
+advisory id=RHSA-2026:85848 severity=Important issued=2026-10-20 cves=CVE-2026-93599,CVE-2026-93657 packages=sequoia-sq-1.4.0.1-4.el10_2.x86_64 title="Important: rust-sequoia-sq security update"
+advisory id=RHSA-2026:85321 severity=Important issued=2026-10-19 cves=CVE-2026-31678,CVE-2026-52917,CVE-2026-52935,CVE-2026-63801,CVE-2026-63962,CVE-2026-63971,CVE-2026-68117,CVE-2026-68162,CVE-2026-68300,CVE-2026-68315,CVE-2026-74509,CVE-2026-74588,CVE-2026-74752,CVE-2026-89631,CVE-2026-89633,CVE-2026-98256,CVE-2026-98260,CVE-2026-99999 packages=kernel-6.12.0-211.67.1.el10_2.x86_64,kernel-core-6.12.0-211.67.1.el10_2.x86_64,kernel-devel-6.12.0-211.67.1.el10_2.x86_64,kernel-headers-6.12.0-211.67.1.el10_2.x86_64,kernel-modules-6.12.0-211.67.1.el10_2.x86_64,kernel-modules-core-6.12.0-211.67.1.el10_2.x86_64,kernel-modules-extra-6.12.0-211.67.1.el10_2.x86_64,kernel-modules-extra-matched-6.12.0-211.67.1.el10_2.x86_64,kernel-tools-6.12.0-211.67.1.el10_2.x86_64,kernel-tools-libs-6.12.0-211.67.1.el10_2.x86_64,python3-perf-6.12.0-211.67.1.el10_2.x86_64 title="Important: kernel security, bug fix, and enhancement update"
+advisory id=RHSA-2026:85308 severity=Important issued=2026-10-19 cves=CVE-2026-87766 packages=bubblewrap-0.10.0-5.el10_2.x86_64 title="Important: bubblewrap security update"
+advisory id=RHSA-2026:85191 severity=Important issued=2026-10-19 cves=CVE-2026-88812,CVE-2026-93516,CVE-2026-93517,CVE-2026-93518,CVE-2026-93519,CVE-2026-93520,CVE-2026-93521,CVE-2026-93522,CVE-2026-93523 packages=xorg-x11-server-Xwayland-24.1.9-4.el10_2.4.x86_64,xorg-x11-server-Xwayland-devel-24.1.9-4.el10_2.4.x86_64 title="Important: xorg-x11-server-Xwayland security update"
+advisory id=RHSA-2026:84796 severity=Important issued=2026-10-19 cves=CVE-2026-34544,CVE-2026-59184,CVE-2026-59189,CVE-2026-59981,CVE-2026-59982 packages=openexr-libs-3.1.10-8.el10_2.5.x86_64 title="Important: openexr security update"
+advisory id=RHSA-2026:84591 severity=Important issued=2026-10-18 cves=CVE-2026-77219,CVE-2026-79992,CVE-2026-96442 packages=emacs-1:29.4-14.el10_2.3.x86_64,emacs-common-1:29.4-14.el10_2.3.x86_64,emacs-filesystem-1:29.4-14.el10_2.3.noarch title="Important: emacs security update"
+advisory id=RHSA-2026:83618 severity=Important issued=2026-10-15 cves=CVE-2026-102555,CVE-2026-102556,CVE-2026-102557,CVE-2026-102558,CVE-2026-102559,CVE-2026-102560 packages=libsoup3-3.6.5-3.el10_2.20.x86_64,libsoup3-devel-3.6.5-3.el10_2.20.x86_64 title="Important: libsoup3 security update"
+advisory id=RHSA-2026:83561 severity=Important issued=2026-10-15 cves=CVE-2026-94640 packages=rpcbind-1.2.7-3.el10_2.1.x86_64 title="Important: rpcbind security update"
+advisory id=RHSA-2026:83551 severity=Important issued=2026-10-15 cves=CVE-2026-101258,CVE-2026-103226 packages=ghostscript-10.02.1-16.el10_2.3.x86_64,ghostscript-tools-fonts-10.02.1-16.el10_2.3.noarch,ghostscript-tools-printing-10.02.1-16.el10_2.3.noarch,libgs-10.02.1-16.el10_2.3.x86_64 title="Important: ghostscript security update"
+advisory id=RHSA-2026:83207 severity=Important issued=2026-10-14 cves=CVE-2026-45859,CVE-2026-46319,CVE-2026-53011,CVE-2026-63899,CVE-2026-63974,CVE-2026-64030,CVE-2026-64032,CVE-2026-64162,CVE-2026-68140,CVE-2026-68377,CVE-2026-72262,CVE-2026-74574,CVE-2026-74641,CVE-2026-80985,CVE-2026-89526,CVE-2026-89689,CVE-2026-89894,CVE-2026-90036,CVE-2026-93207,CVE-2026-93228 packages=kernel-6.12.0-211.66.1.el10_2.x86_64,kernel-core-6.12.0-211.66.1.el10_2.x86_64,kernel-devel-6.12.0-211.66.1.el10_2.x86_64,kernel-headers-6.12.0-211.66.1.el10_2.x86_64,kernel-modules-6.12.0-211.66.1.el10_2.x86_64,kernel-modules-core-6.12.0-211.66.1.el10_2.x86_64,kernel-modules-extra-6.12.0-211.66.1.el10_2.x86_64,kernel-modules-extra-matched-6.12.0-211.66.1.el10_2.x86_64,kernel-tools-6.12.0-211.66.1.el10_2.x86_64,kernel-tools-libs-6.12.0-211.66.1.el10_2.x86_64,python3-perf-6.12.0-211.66.1.el10_2.x86_64 title="Important: kernel security, bug fix, and enhancement update"
+advisory id=RHSA-2026:82883 severity=Important issued=2026-10-14 cves=CVE-2025-43023,CVE-2026-91097,CVE-2026-91098,CVE-2026-91099,CVE-2026-91100,CVE-2026-91101,CVE-2026-91102,CVE-2026-91103,CVE-2026-91104,CVE-2026-91105,CVE-2026-91106 packages=hplip-3.26.6-1.el10_2.3.x86_64,hplip-common-3.26.6-1.el10_2.3.x86_64,hplip-libs-3.26.6-1.el10_2.3.x86_64,libsane-hpaio-3.26.6-1.el10_2.3.x86_64 title="Important: hplip security, bug fix, and enhancement update"
+advisory id=RHSA-2026:81522 severity=Important issued=2026-10-12 cves=CVE-2026-103111,CVE-2026-86145,CVE-2026-89156,CVE-2026-89157,CVE-2026-89158,CVE-2026-89160,CVE-2026-89161 packages=pcre2-10.44-1.5.el10_2.x86_64,pcre2-devel-10.44-1.5.el10_2.x86_64,pcre2-syntax-10.44-1.5.el10_2.noarch,pcre2-utf16-10.44-1.5.el10_2.x86_64,pcre2-utf32-10.44-1.5.el10_2.x86_64 title="Important: pcre2 security update"
+advisory id=RHSA-2026:81518 severity=Important issued=2026-10-12 cves=CVE-2026-9672 packages=gd-2.3.3-20.el10_2.1.x86_64 title="Important: gd security update"
+advisory id=RHSA-2026:81406 severity=Important issued=2026-10-12 cves=CVE-2026-43332,CVE-2026-63925,CVE-2026-64191,CVE-2026-64385,CVE-2026-64507,CVE-2026-64508,CVE-2026-68123,CVE-2026-72289,CVE-2026-72318,CVE-2026-80521,CVE-2026-89970 packages=kernel-6.12.0-211.65.1.el10_2.x86_64,kernel-core-6.12.0-211.65.1.el10_2.x86_64,kernel-devel-6.12.0-211.65.1.el10_2.x86_64,kernel-headers-6.12.0-211.65.1.el10_2.x86_64,kernel-modules-6.12.0-211.65.1.el10_2.x86_64,kernel-modules-core-6.12.0-211.65.1.el10_2.x86_64,kernel-modules-extra-6.12.0-211.65.1.el10_2.x86_64,kernel-modules-extra-matched-6.12.0-211.65.1.el10_2.x86_64,kernel-tools-6.12.0-211.65.1.el10_2.x86_64,kernel-tools-libs-6.12.0-211.65.1.el10_2.x86_64,python3-perf-6.12.0-211.65.1.el10_2.x86_64 title="Important: kernel security, bug fix, and enhancement update"
+advisory id=RHSA-2026:80674 severity=Important issued=2026-10-12 cves=CVE-2026-100756,CVE-2026-100757,CVE-2026-100758,CVE-2026-100759,CVE-2026-100762,CVE-2026-100766,CVE-2026-100767,CVE-2026-100769,CVE-2026-100770,CVE-2026-100771,CVE-2026-100772,CVE-2026-100773,CVE-2026-100774,CVE-2026-100775,CVE-2026-100776,CVE-2026-100777,CVE-2026-100778,CVE-2026-100779,CVE-2026-100780,CVE-2026-100781,CVE-2026-100782,CVE-2026-100783,CVE-2026-100784,CVE-2026-100785,CVE-2026-100786,CVE-2026-100788,CVE-2026-100789,CVE-2026-100790,CVE-2026-100791,CVE-2026-100792,CVE-2026-100794,CVE-2026-100797,CVE-2026-100801,CVE-2026-100803,CVE-2026-100807,CVE-2026-100811,CVE-2026-100818,CVE-2026-100819,CVE-2026-100820,CVE-2026-100821,CVE-2026-100832,CVE-2026-96869 packages=thunderbird-140.17.0-1.el10_2.x86_64 title="Important: thunderbird security update"
+advisory id=RHSA-2026:80498 severity=Important issued=2026-10-11 cves=CVE-2026-90616,CVE-2026-96275,CVE-2026-96280,CVE-2026-96808 packages=flatpak-1.16.0-9.el10_2.4.x86_64,flatpak-libs-1.16.0-9.el10_2.4.x86_64,flatpak-selinux-1.16.0-9.el10_2.4.noarch,flatpak-session-helper-1.16.0-9.el10_2.4.x86_64 title="Important: flatpak security update"
+advisory id=FEDORA-EPEL-2026-bc4c703f3c severity=Important issued=2026-10-25 cves=CVE-2026-56208 packages=libaom-3.15.2-1.el10_2.x86_64 title="aom-3.15.2-1.el10_2"
+advisory id=RHSA-2026:91004 severity=Moderate issued=2026-10-27 cves=CVE-2026-93543 packages=libXi-1.8.1-7.el10_2.1.x86_64,libXi-devel-1.8.1-7.el10_2.1.x86_64 title="Moderate: libXi security update"
+advisory id=RHSA-2026:90328 severity=Moderate issued=2026-10-26 cves=CVE-2026-19662 packages=bind-libs-32:9.18.33-15.el10_2.13.x86_64,bind-license-32:9.18.33-15.el10_2.13.noarch,bind-utils-32:9.18.33-15.el10_2.13.x86_64 title="Moderate: bind security update"
+advisory id=RHSA-2026:89891 severity=Moderate issued=2026-10-26 cves=CVE-2026-102010 packages=gcc-toolset-15-gcc-15.2.1-7.1.el10_2.x86_64,gcc-toolset-15-gcc-c++-15.2.1-7.1.el10_2.x86_64,gcc-toolset-15-libatomic-devel-15.2.1-7.1.el10_2.x86_64,gcc-toolset-15-libstdc++-devel-15.2.1-7.1.el10_2.x86_64 title="Moderate: gcc-toolset-15-gcc security update"
+advisory id=RHSA-2026:85847 severity=Moderate issued=2026-10-20 cves=CVE-2026-59997,CVE-2026-59998,CVE-2026-60000 packages=openssh-9.9p1-29.el10_2.x86_64,openssh-clients-9.9p1-29.el10_2.x86_64,openssh-server-9.9p1-29.el10_2.x86_64 title="Moderate: openssh security update"
+advisory id=RHSA-2026:84753 severity=Moderate issued=2026-10-19 cves=CVE-2026-18374,CVE-2026-77117,CVE-2026-80489,CVE-2026-8674 packages=glibc-2.39-145.el10_2.x86_64,glibc-all-langpacks-2.39-145.el10_2.x86_64,glibc-common-2.39-145.el10_2.x86_64,glibc-devel-2.39-145.el10_2.x86_64,glibc-gconv-extra-2.39-145.el10_2.x86_64,glibc-static-2.39-145.el10_2.x86_64 title="Moderate: glibc security update"
+advisory id=RHSA-2026:84587 severity=Moderate issued=2026-10-18 cves=CVE-2026-19953 packages=perl-URI-5.27-3.el10_2.1.noarch title="Moderate: perl-URI security update"
+advisory id=RHSA-2026:80512 severity=Moderate issued=2026-10-11 cves=CVE-2026-10536,CVE-2026-5545,CVE-2026-6253,CVE-2026-6429,CVE-2026-7168 packages=curl-8.12.1-4.el10_2.7.x86_64,libcurl-8.12.1-4.el10_2.7.x86_64,libcurl-devel-8.12.1-4.el10_2.7.x86_64 title="Moderate: curl security update"
+advisory id=FEDORA-EPEL-2026-51d9c325a9 severity=Moderate issued=2026-10-20 cves=CVE-2026-111136 packages=libinstpatch-1.1.8-3.el10_2.x86_64 title="libinstpatch-1.1.8-3.el10_2"
+advisory id=FEDORA-EPEL-2026-073f2ee92c severity=Moderate issued=2026-10-21 cves=CVE-2026-19248 packages=qt5-qtbase-5.15.18-2.el10_2.x86_64,qt5-qtbase-common-5.15.18-2.el10_2.noarch,qt5-qtbase-devel-5.15.18-2.el10_2.x86_64,qt5-qtbase-examples-5.15.18-2.el10_2.x86_64,qt5-qtbase-gui-5.15.18-2.el10_2.x86_64,qt5-qtbase-mysql-5.15.18-2.el10_2.x86_64,qt5-qtbase-odbc-5.15.18-2.el10_2.x86_64,qt5-qtbase-postgresql-5.15.18-2.el10_2.x86_64,qt5-qtbase-private-devel-5.15.18-2.el10_2.x86_64 title="qt5-qtbase-5.15.18-2.el10_2"
+advisory id=FEDORA-EPEL-2026-379589e329 severity=Unknown issued=2026-10-24 cves=CVE-2025-55212,CVE-2025-57803,CVE-2025-57807,CVE-2025-65955,CVE-2026-105825,CVE-2026-105827 packages=ImageMagick-1:7.1.2.34-1.el10_2.x86_64,ImageMagick-libs-1:7.1.2.34-1.el10_2.x86_64 title="ImageMagick-7.1.2.34-1.el10_2"
+END VULNERABILITIES
+
+INSTALLED PACKAGES:
+package=7zip version=0:26.04-1.el10_2 arch=x86_64 installed=1792376667
+package=7zip-standalone version=0:26.04-1.el10_2 arch=x86_64 installed=1792376667
+package=IP2Location version=0:8.6.1-6.el10_0 arch=x86_64 installed=1766163784
+package=IP2Location-libs version=0:8.6.1-6.el10_0 arch=x86_64 installed=1766163784
+package=ImageMagick version=1:7.1.1.47-1.el10_1 arch=x86_64 installed=1766096270
+package=ImageMagick-libs version=1:7.1.1.47-1.el10_1 arch=x86_64 installed=1766096264
+package=Judy version=0:1.0.5-38.el10 arch=x86_64 installed=1766096256
+package=LibRaw version=0:0.21.4-3.el10_2 arch=x86_64 installed=1789788462
+package=ModemManager version=0:1.22.0-7.el10 arch=x86_64 installed=1766035411
+package=ModemManager-glib version=0:1.22.0-7.el10 arch=x86_64 installed=1766035399
+package=NetworkManager version=1:1.56.0-2.el10_2 arch=x86_64 installed=1786158175
+package=NetworkManager-adsl version=1:1.56.0-2.el10_2 arch=x86_64 installed=1786158233
+package=NetworkManager-bluetooth version=1:1.56.0-2.el10_2 arch=x86_64 installed=1786158233
+package=NetworkManager-libnm version=1:1.56.0-2.el10_2 arch=x86_64 installed=1786158175
+package=NetworkManager-libreswan version=0:1.2.30-1.el10 arch=x86_64 installed=1779230238
+package=NetworkManager-tui version=1:1.56.0-2.el10_2 arch=x86_64 installed=1786158233
+package=NetworkManager-wifi version=1:1.56.0-2.el10_2 arch=x86_64 installed=1786158233
+package=NetworkManager-wwan version=1:1.56.0-2.el10_2 arch=x86_64 installed=1786158176
+package=PackageKit version=0:1.2.8-8.el10_2 arch=x86_64 installed=1779229911
+package=PackageKit-command-not-found version=0:1.2.8-8.el10_2 arch=x86_64 installed=1779230238
+package=PackageKit-glib version=0:1.2.8-8.el10_2 arch=x86_64 installed=1779229879
+package=PackageKit-gstreamer-plugin version=0:1.2.8-8.el10_2 arch=x86_64 installed=1779230246
+package=PackageKit-gtk3-module version=0:1.2.8-8.el10_2 arch=x86_64 installed=1779230246
+package=SDL3 version=0:3.2.4-1.el10 arch=x86_64 installed=1766073007
+package=aalib-libs version=0:1.4.0-0.52.rc5.el10_0 arch=x86_64 installed=1766101556
+END INSTALLED PACKAGES
+

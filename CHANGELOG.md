@@ -20,6 +20,26 @@ All notable changes to the DataReel System Monitor (DRSM) are listed here.
 
 ### Added
 
+- Linux agent hosts (beta): Linux hosts that run the DataReel
+  Reporting Agent for Linux (drra 1.0-beta1, RHEL 8, 9 and 10) push a
+  report every 15 minutes over HTTPS, so DRSM can monitor hosts it
+  cannot reach over SSH. The SSH plugins stay the clientless mode.
+  New lra collector (COLLECTOR=lra, LRA_REPORTS_DIR, LRA_NAME),
+  plugins linux/checkin, linux/resources (core and storage metric
+  names, so trends work unchanged), linux/updates, linux/security and
+  linux/vulnerabilities, utils/lra_hosts.sh (dry run unless --apply)
+  and etc/hosts/linux_agent.conf_example. See PLUGINS.md "Linux agent
+  hosts".
+- Vulnerabilities page (vulnerabilities.php, drsm_vulns.php): the
+  security advisories and CVEs from each Linux agent host's daily
+  OpenSCAP OVAL (RHEL 8, 9), CSAF/VEX (RHEL 10) or dnf scan, fleet and
+  host views, severity filter, CVEs with no fix yet, compliance
+  results. The menu item shows once a host runs linux/vulnerabilities;
+  an older $NAVextra entry for the page is dropped. scap_report.php
+  serves the agent's OpenSCAP HTML reports with a sandbox
+  Content-Security-Policy where $LRAreportsDir is set, only for hosts
+  in the visitor's sites. "VULN kind|..." plugin lines are page data
+  and are hidden on the host page. Tests in tests/lra_test.sh.
 - cluster/drcm plugin for DataReel Cluster Manager (DRCM) clusters, run
   on every node: drcm_server and tunnel units running, cm_stat nodes
   Down, failed over resources, one resource on two owners (split

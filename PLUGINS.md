@@ -18,6 +18,7 @@ lib/drsm_job.sh            runs plugins on the target, with timeouts
 collectors/local.sh        runs plugins on the monitor host itself
 collectors/ssh-linux.sh    copies and runs plugins on Linux hosts over SSH
 collectors/wra.sh          reads Windows Reporting Agent reports for Windows hosts
+collectors/lra.sh          reads Linux agent reports for Linux hosts DRSM cannot reach
 plugins/<category>/<name>/
     plugin.conf            manifest: description, platforms, settings
     check.sh               runs on the host (MODE=remote)
@@ -28,6 +29,7 @@ etc/hosts/<host>.conf      one file per host
 utils/new_plugin.sh        creates a plugin from a template
 utils/migrate_systems_dat.sh  converts systems.dat and profiles to host files
 utils/wra_hosts.sh         creates host files for Windows agent hosts
+utils/lra_hosts.sh         creates host files for Linux agent hosts
 ```
 
 ## Plugins included
@@ -53,6 +55,11 @@ utils/wra_hosts.sh         creates host files for Windows agent hosts
 | `windows/patches` | agent report | Age of the newest Windows patch |
 | `windows/apps` | agent report | Required and forbidden installed programs |
 | `windows/resources` | agent report | CPU, memory, commit charge, disk space and network use, agent 3.3 and later |
+| `linux/checkin` | agent report | Linux agent host reported recently, complete report, agent version |
+| `linux/resources` | agent report | CPU, load, memory, swap, disk space, inodes and network use |
+| `linux/updates` | agent report | Pending updates, days since the last update, restart needed |
+| `linux/security` | agent report | SELinux, firewall, auditd, sshd settings, failed services |
+| `linux/vulnerabilities` | agent report | Security advisories and CVEs from the agent's OpenSCAP, CSAF/VEX or dnf scan, compliance score |
 
 `storage/diskio` and `cloud/aws` never alert. They add numbers to the
 trends page, so they are not in the default plugin list: add them to
@@ -63,7 +70,8 @@ provider's whole server.
 
 The Linux checks are the ones from `bin/*_checks.sh` and `system_check.sh`,
 with the same messages and thresholds. The Windows plugins are described
-in [Windows hosts](#windows-hosts).
+in [Windows hosts](#windows-hosts), the `linux/*` plugins in
+[Linux agent hosts](#linux-agent-hosts).
 
 ## Quick start
 
@@ -138,7 +146,7 @@ core_cpu_TIMEOUT=60
 | `SITE` | Organization and site, `<org>/<site>`, see [Organizations and sites](#organizations-and-sites) |
 | `GROUP` | Host group and tier: `ops` (or `production`, the default), `dev` or `qa`, selected with `drsm_run.sh -g`, see [Tiers](#tiers) |
 | `PLATFORM` | `linux` or `windows` |
-| `COLLECTOR` | `ssh`, `local` for the monitor host itself, `wra` for Windows Reporting Agent hosts, `none` for probes only |
+| `COLLECTOR` | `ssh`, `local` for the monitor host itself, `wra` for Windows Reporting Agent hosts, `lra` for Linux agent hosts, `none` for probes only |
 | `ENABLED` | `no` skips the host |
 | `PROBES` | Plugins run from the monitor host against this host |
 | `PLUGINS` | Plugins run on the host |
@@ -452,6 +460,125 @@ $ DRSM_TARGET=laptop1 DRSM_WRA_REPORT=/var/www/html/windows/reports/laptop1_wind
     bash ~/drsm/plugins/windows/checkin/check.sh
 ```
 
+## Linux agent hosts
+
+DRSM checks most Linux hosts over SSH with the core plugins, and needs
+nothing installed on them (the clientless mode). For a Linux host DRSM
+cannot reach, such as a cloud server behind NAT or on another network,
+install the DataReel Reporting Agent for Linux (`drra`), a systemd
+service for RHEL 8, 9 and 10. Every 15 minutes it sends a report on
+its host to the report server pages (`register.php`, `upload.php`) by
+signed HTTPS upload, the same protocol as the Windows agent, or by a
+CIFS share or SCP. The host only makes outgoing TLS connections. The
+`lra` collector runs the `linux/*` plugins on the monitor host against
+each host's last report,
+`${LRA_REPORTS_DIR}/<host>_linux_report_agent.txt`.
+
+A Linux agent host file, also in `etc/hosts/linux_agent.conf_example`:
+
+```
+HOST=web1
+PLATFORM=linux
+COLLECTOR=lra
+PROBES=""
+PLUGINS="linux/checkin linux/resources linux/updates linux/security linux/vulnerabilities"
+```
+
+Set `PLUGINS` in the host file: the core plugins in `_defaults.conf`
+are Linux plugins too, and with this collector they would check the
+monitor host. `PROBES=""` turns off the ping probe; keep probes such as
+`network/https` for hosts the monitor can reach. Set `LRA_REPORTS_DIR`
+once in `_defaults.conf`: it is `reports_dir` from the report server's
+`server.ini`, or the folder the CIFS or SCP delivery writes to. The
+default is `/var/www/html/linux/reports`. The DRSM account needs read
+access to it. Set `LRA_NAME` when the agent reports under a name other
+than `HOST`.
+
+For many hosts, `utils/lra_hosts.sh` makes one host file per report.
+It only lists what it would write until run with `--apply`, and never
+changes a host file that exists:
+
+```
+$ ~/drsm/utils/lra_hosts.sh -d /var/www/html/linux/reports
+$ ~/drsm/utils/lra_hosts.sh -d /var/www/html/linux/reports --apply
+```
+
+| Plugin | Setting | Default | Meaning |
+| --- | --- | --- | --- |
+| `linux/checkin` | `WARN_MINUTES` | 60 | Minutes without a report before a warning |
+| | `CRIT_HOURS` | 24 | Hours without a report before an error |
+| | `MIN_VERSION` | | Lowest agent version that does not warn |
+| `linux/resources` | `CPU_WARN`, `CPU_CRIT` | 85, 95 | CPU used percent |
+| | `LOAD_WARN_PER_CPU` | 2 | 15 minute load average per CPU before a warning |
+| | `MIN_AVAIL_MB` | 256 | Available memory at or below this is an error |
+| | `SWAP_WARN` | 80 | Swap used percent |
+| | `DISK_WARN`, `DISK_CRIT` | 90, 99 | Space used percent on each file system |
+| | `INODE_WARN` | 90 | Inodes used percent |
+| | `DISK_SKIP` | | Mount points to skip, for example `"/boot/efi /mnt/iso"` |
+| | `UPTIME_WARN_DAYS` | 0 | Days without a restart before a warning, 0 to skip |
+| | `MAX_AGE_HOURS` | 2 | Older reports are not checked, `linux/checkin` reports them |
+| `linux/updates` | `WARN_DAYS` | 45 | Days since a package was last installed or updated |
+| | `PENDING_WARN` | 0 | Pending updates before a warning, 0 to never warn on the count |
+| | `REBOOT_WARN` | 1 | Warn when a newer kernel waits for a restart |
+| `linux/security` | `SELINUX_WARN` | 1 | SELinux not enforcing |
+| | `FIREWALL_WARN` | 1 | No firewalld and no nftables rules |
+| | `AUDITD_WARN` | 0 | auditd not running |
+| | `SSH_ROOT_WARN` | 1 | sshd allows root to log in with a password |
+| | `SSH_PASSWORD_WARN` | 0 | sshd allows password logins |
+| | `FAILED_UNITS_WARN` | 1 | Failed systemd units |
+| | `FAILED_UNITS_SKIP` | | Failed units to ignore, for example `"kdump.service"` |
+| `linux/vulnerabilities` | `CRIT_SEVERITY` | Critical | Advisories at or above this severity are an error |
+| | `WARN_SEVERITY` | Important | Advisories at or above this severity are a warning |
+| | `UNFIXED_WARN_SEVERITY` | Critical | CVEs with no fix yet at or above this severity are a warning, `none` to never warn |
+| | `SCAN_MAX_AGE_DAYS` | 3 | Days since the last scan before a warning; a failed scan also warns |
+| | `COMPLIANCE_MIN_SCORE` | | Compliance score (0 to 100) below which is a warning, empty to skip |
+| | `MAX_LIST` | 300 | Most advisories listed for the Vulnerabilities page |
+
+The severities are Critical, Important, Moderate, Low, or `none`.
+`linux/resources` uses the metric names of the core and storage
+plugins (`cpu_used_pct`, `load_15m`, `mem_available_mb`,
+`swap_used_mb`, `disk_used_pct{mount="/"}`, `nic_rx_bytes{nic="eno1"}`
+and so on, plus `sample_etime`), so agent hosts get the same gauges and
+trends as SSH hosts. The other plugins add `updates_pending`,
+`updates_last_days`, `reboot_required`, `failed_units`,
+`user_sessions`, `lra_report_age_seconds`, `vuln_critical`,
+`vuln_important`, `vuln_moderate`, `vuln_low`, `vuln_total`,
+`vuln_cves`, `vuln_unfixed`, `compliance_score` and `compliance_fail`.
+
+The agent scans once a day. On RHEL 8 and 9 it runs OpenSCAP against
+Red Hat's OVAL feed (`source` `oval`) and uploads the OpenSCAP HTML
+report too. RHEL 10 has no OVAL feed, so the agent matches its
+packages against an index of Red Hat's CSAF/VEX files that the report
+server builds (`vex_sync.php` from cron, served by `vex_index.php`),
+plus dnf errata newer than the VEX files (`source` `csaf`). That scan
+also counts CVEs with no fix yet. `dnf` (dnf updateinfo) is the
+fallback. An optional OpenSCAP compliance scan (a CIS or STIG profile,
+off by default in the agent) adds a score and the failed rules.
+
+`linux/vulnerabilities` prints these lines for the
+[Vulnerabilities page](docs/dashboard.html#vulnerabilities); the host
+page hides them:
+
+```
+VULN summary|source|scan_etime|critical|important|moderate|low|unknown|total|cves|status|unfixed
+VULN advisory|id|severity|issued|cves|packages|title
+VULN unfixed|cve|severity|packages|state
+VULN compliance|profile|score|pass|fail|scan_etime
+VULN rule|rule|severity
+```
+
+`status` is `ok`, `failed`, `pending` or `disabled`; `unfixed` is
+empty when the scan cannot tell.
+
+A host that has never sent a report, or whose report file is empty, is
+an ERROR from `linux/checkin`; the other Linux agent plugins are
+UNKNOWN until a report arrives. To run one by hand:
+
+```
+$ DRSM_TARGET=web1 DRSM_LRA_REPORT=/var/www/html/linux/reports/web1_linux_report_agent.txt \
+    bash ~/drsm/plugins/linux/vulnerabilities/check.sh
+```
+
 ## Writing a plugin
 
 ```
@@ -556,6 +683,9 @@ run on the monitor host. Remote jobs go through the host's collector:
 - `wra` runs the `windows/*` plugins in place from `${DRSMHOME}` against
   the host's last Windows Reporting Agent report. See
   [Windows hosts](#windows-hosts).
+- `lra` runs the `linux/*` plugins in place from `${DRSMHOME}` against
+  the host's last DataReel Reporting Agent for Linux report. See
+  [Linux agent hosts](#linux-agent-hosts).
 - `ssh-linux` copies `lib/drsm_plugin.sh` and the host's plugins to
   `~/drsm_agent` on the host as one tar stream (skipped when the
   checksum has not changed), then runs the whole job in one SSH session

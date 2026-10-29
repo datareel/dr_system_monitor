@@ -22,7 +22,7 @@ the same prefix when you run a script by hand.
 - One file per host: `$DRSMHOME/etc/hosts/<host>.conf` with `HOST`,
   `DESCRIPTION`, `IMPACT`, `GROUP` (`production`/`ops`, `dev`, `qa` or
   your own, such as `windows`), `PLATFORM`, `COLLECTOR` (`ssh`,
-  `local`, `wra`, `none`), `PROBES`, `PLUGINS`, `ENABLED=no` to pause.
+  `local`, `wra`, `lra`, `none`), `PROBES`, `PLUGINS`, `ENABLED=no` to pause.
 - Shared values go in `etc/hosts/_defaults.conf`; a host file lists only
   what differs.
 - Plugin settings: `<category>_<name>_<SETTING>=value`, for example
@@ -35,6 +35,12 @@ the same prefix when you run a script by hand.
 - Windows hosts: `utils/wra_hosts.sh` (dry run, then `--apply`) makes a
   host file per agent report. Use `-g` for the group and `-p` for the
   plugins; leave out `windows/resources` for agents older than 3.3.
+- Linux hosts DRSM cannot reach over SSH run the DataReel Reporting
+  Agent for Linux: `utils/lra_hosts.sh` (dry run, then `--apply`)
+  makes a host file per agent report with `COLLECTOR=lra` and the
+  `linux/*` plugins. Set `LRA_REPORTS_DIR` in `_defaults.conf`. Keep
+  `PLUGINS` in those host files, or the core plugins from
+  `_defaults.conf` would check the monitor host.
 - Remove a host and its reports: `utils/drsm_remove_host.sh <host>`
   (dry run), then `--apply`.
 - From an old `systems.dat` setup: `utils/migrate_systems_dat.sh`.

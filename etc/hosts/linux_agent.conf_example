@@ -1,0 +1,39 @@
+# DRSM host file for a Linux host that runs the DataReel Reporting
+# Agent for Linux, copy to <host>.conf in this directory, or create
+# them all with utils/lra_hosts.sh. The agent sends its report to the
+# monitor side, DRSM reads the last report and never connects to the
+# host, so the host can be anywhere on the internet. Hosts DRSM can
+# reach over SSH can instead use COLLECTOR=ssh and the core plugins.
+
+# The name the agent reports as, lower case without the domain
+HOST=web1
+DESCRIPTION="Public web server"
+IMPACT="Web site may be down or exposed"
+GROUP=production
+PLATFORM=linux
+COLLECTOR=lra
+
+# Directory the agent reports land in: reports_dir in the agent
+# server.ini, or the CIFS share or SCP directory. Best set once in
+# _defaults.conf.
+LRA_REPORTS_DIR=/var/www/html/linux/reports
+# Report name when it differs from HOST
+# LRA_NAME=web1
+
+# Probes run from the monitor host. Keep them for hosts DRSM can
+# reach, for example PROBES="network/ping network/https".
+PROBES=""
+PLUGINS="linux/checkin linux/resources linux/updates linux/security linux/vulnerabilities"
+
+# Plugin settings, see plugins/linux/*/plugin.conf
+# linux_checkin_WARN_MINUTES=60
+# linux_checkin_CRIT_HOURS=24
+# linux_checkin_MIN_VERSION=1.0
+# linux_resources_DISK_WARN=90
+# linux_resources_DISK_SKIP="/boot/efi"
+# linux_updates_WARN_DAYS=45
+# linux_security_SSH_PASSWORD_WARN=1
+# linux_security_FAILED_UNITS_SKIP="kdump.service"
+# linux_vulnerabilities_CRIT_SEVERITY=Critical
+# linux_vulnerabilities_WARN_SEVERITY=Important
+# linux_vulnerabilities_COMPLIANCE_MIN_SCORE=80
