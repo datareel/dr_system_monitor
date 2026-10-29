@@ -101,7 +101,8 @@ provider's whole server.
 The Linux checks are the ones from `bin/*_checks.sh` and `system_check.sh`,
 with the same messages and thresholds. The Windows plugins are described
 in [Windows hosts](#windows-hosts), the `linux/*` plugins in
-[Linux agent hosts](#linux-agent-hosts).
+[Linux agent hosts](#linux-agent-hosts), the `uploads/*` plugins in
+[Hook uploads](#hook-uploads).
 
 ## Quick start
 
@@ -180,6 +181,9 @@ core_cpu_TIMEOUT=60
 | `ENABLED` | `no` skips the host |
 | `PROBES` | Plugins run from the monitor host against this host |
 | `PLUGINS` | Plugins run on the host |
+| `UPLOADS` | Hook uploads: `auto` (every installed `uploads/<id>` with data for the host), a list of hook IDs, or empty. See [Hook uploads](#hook-uploads) |
+| `UPLOADS_DIR` | The report server's `[hooks] dir`, where `hook.php` keeps the uploads |
+| `UPLOAD_NAME` | Name the agent sends hook uploads as, default `LRA_NAME`, `WRA_NAME`, or the host name in lower case without the domain |
 
 `_defaults.conf` is read before every host file, so put the common
 `PLUGINS` list and site wide settings there. A host file only lists
@@ -653,6 +657,128 @@ reports (`linux/*`) cannot be bundled.
 | --- | --- | --- | --- |
 | `linux/hooks` | `SKIP` | NONE | Hooks to leave out, such as `drcm` when `cluster/drcm` shows it |
 | | `NONE_OK` | 1 | A report with no hooks is OK, 0 makes it UNKNOWN |
+
+## Hook uploads
+
+A hook upload brings a report from another source onto the dashboard:
+a scan run by hand (so cloud servers do not pay for a daily scan), a
+custom application, a backup job, anything that can write a file. The
+DataReel Reporting Agent takes the file and sends it, signed, to
+`hook.php` on the report server. An upload plugin in DRSM,
+`plugins/uploads/<id>/`, is the matching manifest: it says what format
+the data is in, which rules raise a warning or an error, where it
+shows on the dashboard and which display draws it.
+
+On the agent host (Linux agent 1.0-beta2 and later), an upload hook is
+a file `/etc/drra/uploads.d/<id>.ini`:
+
+```
+[upload]
+id=openscap_manual
+title=Manual OpenSCAP scan
+format=xccdf-results
+```
+
+A tool writes its file to `/var/spool/drra/uploads/<id>/`, or runs
+`drra submit --hook openscap_manual --now results.xml`. Members of the
+`drra-upload` group may do both. The agent sends the files after each
+report, or within seconds with `--now`.
+
+On the report server, `server.ini` names the manifests and where the
+payloads go:
+
+```
+[hooks]
+manifest_dir = /home/drsm/drsm/plugins/uploads
+dir = /var/lib/linux_reporting_agent/hooks
+```
+
+`hook.php` only takes hook IDs that have a manifest there, from hosts
+that registered, about themselves. It parses each payload once into
+plain lines (`latest.lines`) next to the payload (`latest.data`) and
+its envelope (`latest.meta`) in `<dir>/<host>/<id>/`, and keeps
+`KEEP_HISTORY` older ones in `history/`.
+
+In DRSM, point the hosts at that folder and turn the uploads on, in
+`_defaults.conf` or a host file:
+
+```
+UPLOADS_DIR=/var/lib/linux_reporting_agent/hooks
+UPLOADS=auto
+```
+
+`UPLOADS=auto` runs every installed `uploads/<id>` plugin that has data for
+the host; `UPLOADS="backup_job openscap_manual"` runs those and warns
+when one has no data yet. The plugins run on the monitor host, like
+probes, and their results are in the host report like any plugin's:
+alerts, the Overview, the heat map and trends work unchanged.
+
+The manifest is a normal `plugin.conf` with `CATEGORY=uploads` and
+`MODE=probe`, and a `probe.sh` that sources `../upload_probe.sh`.
+`plugins/uploads/openscap_manual` and `plugins/uploads/backup_job` are
+examples; copy one to make a new upload hook.
+
+The agent's report hooks ([Report hooks](#report-hooks) under Linux
+agent hosts) are the other kind: scripts that run on the host with
+every report. Hook uploads are for files another tool makes now and
+then, with their own format, rules and display.
+
+| Setting | Read by | Meaning |
+| --- | --- | --- |
+| `FORMAT` | `hook.php` | `drsm-lines`, `kv-sections`, `json`, `csv`, `xccdf-results`, `text` or `html` |
+| `MAX_BYTES` | `hook.php` | Largest payload, at most `[hooks] max_bytes` |
+| `KEEP_HISTORY` | `hook.php` | Older payloads kept, default 3 |
+| `MIN_INTERVAL_SECONDS` | `hook.php` | Seconds between two uploads of the hook from one host, default 10 |
+| `TITLE` | DRSM | Name on the dashboard |
+| `PLACE` | DRSM | `host-section`: the hook's section in the Checks panel of the host page |
+| `DISPLAY` | DRSM | `table`, `kv`, `text`, `html`, or a site display plug-in |
+| `MAX_AGE_HOURS` | DRSM | Warning when the data is older, 0 = no check |
+| `WARN_IF`, `CRIT_IF` | DRSM | Rules such as `"fail_high > 0 or score < 80"` |
+| `METRICS` | DRSM | Values kept for the trends page, as `<id>_<name>` |
+| `MAX_LINES` | DRSM | Most data lines printed, default 2000 |
+
+The DRSM settings can be set per host as `uploads_<id>_<SETTING>=value`.
+A rule is `<name> <op> <number or word>` with `>`, `>=`, `<`, `<=`,
+`==` or `!=`, several joined with ` or `. Names are the values the
+parser found (below), and `rows` is the number of table rows.
+
+What each format gives:
+
+| Format | Example source | Lines |
+| --- | --- | --- |
+| `drsm-lines` | A script that prints DRSM lines | `INFO`, `WARNING`, `ERROR`, `UNKNOWN - ...` and `METRIC` lines as they are; `DETAIL name=value` becomes a value |
+| `kv-sections` | `NAME:` ... `END NAME` blocks of `name=value` | value `<section>.<name>` |
+| `json` | An application health endpoint | values with dotted names, `queue.depth`, `workers.0.up` |
+| `csv` | An export with a header row | a table, value `rows` |
+| `xccdf-results` | `oscap xccdf eval --results` | values `pass`, `fail`, `fail_critical` ... `fail_low`, `score`, `profile`; a table of the failed rules |
+| `text`, `html` | Any report | value `lines` (text); the file is shown with `upload_view.php` |
+
+The upload lines in the report are data lines, hidden on the host page
+and drawn by the display:
+
+```
+UPLOAD meta|<agent host name>|<hook id>|<display>|<title>|<collected etime>
+UPLOAD columns|<name>|<name>...
+UPLOAD row|<cell>|<cell>...
+UPLOAD value|<name>|<value>
+```
+
+A payload cannot add report sections, host facts (`DETAIL` lines) or
+metrics the manifest does not list. The `text` and `html` displays need
+`$UPLOADSdir` in `config/drsm.php` (the report server's `[hooks] dir`)
+on the dashboard that runs next to the report server; `upload_view.php`
+sends the file as plain text, or as HTML in a sandbox with scripts
+blocked. A site display plug-in is `php/uploads/<name>.php` in the
+dashboard (or `$UPLOADdisplayDir`) with a function
+`drsm_upload_display_<name>($hook)` that returns HTML; see
+`www/php/drsm_uploads.php`.
+
+To run an upload plugin by hand:
+
+```
+$ cd ~/drsm/plugins/uploads/backup_job && DRSM_TARGET=web1 DRSM_UPLOADS_DIR=/var/lib/linux_reporting_agent/hooks \
+    DRSM_TITLE="Backup job" DRSM_CRIT_IF="status != ok" bash ./probe.sh
+```
 
 ## Writing a plugin
 

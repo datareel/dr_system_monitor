@@ -60,3 +60,6 @@ jobs:
 
       - name: Linux agent host tests
         run: bash tests/lra_test.sh
+
+      - name: Hook upload tests
+        run: bash tests/uploads_test.sh

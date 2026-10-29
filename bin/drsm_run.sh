@@ -282,6 +282,36 @@ function load_host_ansible()
     if [ "${HCONF[PLUGINS]}" == "" ] && [ "${f}" == "" ]; then HCONF[PLUGINS]="${DRSM_DEFAULT_PLUGINS}"; fi
 }
 
+function upload_name()
+{
+    # Name the host's agent sends hook uploads as: UPLOAD_NAME, else the agent
+    # report name, else the host name in lower case without the domain
+    local h="${HCONF[UPLOAD_NAME]:-${HCONF[LRA_NAME]:-${HCONF[WRA_NAME]:-${HCONF[HOST]%%.*}}}}"
+    echo "${h,,}"
+}
+
+function add_upload_plugins()
+{
+    # UPLOADS="id ..." adds the plugins uploads/<id>, UPLOADS=auto every
+    # installed uploads/<id> that has data for this host in UPLOADS_DIR
+    local list="${HCONF[UPLOADS]}" d id name ids=""
+    if [ "${list}" == "" ] || [ "${list,,}" == "none" ]; then return 0; fi
+    if [ "${list,,}" == "auto" ]; then
+	name=$(upload_name)
+	for d in "${PLUGINSdir}"/uploads/*/plugin.conf; do
+	    if [ ! -f "${d}" ]; then continue; fi
+	    id=$(basename "$(dirname "${d}")")
+	    if [ "${HCONF[UPLOADS_DIR]}" != "" ] && [ -f "${HCONF[UPLOADS_DIR]}/${name}/${id}/latest.meta" ]; then ids="${ids} ${id}"; fi
+	done
+    else
+	ids="${list}"
+    fi
+    for id in ${ids}; do
+	if [[ " ${HCONF[PLUGINS]} " != *" uploads/${id} "* ]]; then HCONF[PLUGINS]="${HCONF[PLUGINS]} uploads/${id}"; fi
+    done
+    HCONF[PLUGINS]="${HCONF[PLUGINS]# }"
+}
+
 function load_host()
 {
     case "${1}" in
@@ -289,6 +319,7 @@ function load_host()
 	file:*) load_host_file "${1#file:}" ;;
 	dat:*) load_host_entry "${1#dat:}" ;;
     esac
+    add_upload_plugins
 }
 
 # ------------------------------------------------------------
@@ -392,6 +423,10 @@ function job_line()
     done
     args+=("DRSM_TARGET=${HCONF[HOST]}" "DRSM_HOST_DESCRIPTION=${HCONF[DESCRIPTION]}" "DRSM_HOST_IMPACT=${HCONF[IMPACT]}")
     args+=("DRSM_ORG=${HCONF[SITE]%%/*}" "DRSM_SITE=${HCONF[SITE]#*/}")
+    # Upload plugins read the host's hook uploads on the monitor host
+    if [[ "${id}" == uploads/* ]]; then
+	args+=("DRSM_UPLOADS_DIR=${HCONF[UPLOADS_DIR]}" "DRSM_UPLOAD_NAME=$(upload_name)" "DRSM_UPLOAD_ID=${id#uploads/}")
+    fi
     printf 'drsm_job_plugin %q %q %q %q' "${id}" "${t}" "${entry}" "${MANIFEST[REQUIRES]}"
     printf ' %q' "${args[@]}"
     echo ""

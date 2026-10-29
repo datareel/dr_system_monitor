@@ -44,6 +44,7 @@ lib/drsm_history.sh      metrics history for the trends page
 lib/drsm_ansible.sh      Ansible INI inventory as the host list (ANSIBLE_INVENTORY)
 collectors/              local.sh, ssh-linux.sh, wra.sh (Windows agent reports), lra.sh (Linux agent reports)
 plugins/<cat>/<name>/    plugin.conf + check.sh (on the host) or probe.sh (from the monitor)
+plugins/uploads/         hook uploads: upload_probe.sh + one folder per hook ID
 plugins/local/           site plugins, never overwritten by updates
 etc/drsm.sh              config template, copied to ~/.drsm.sh (or named by DRSM_CONFIG)
 etc/hosts/               _defaults.conf + one <host>.conf per host
@@ -72,14 +73,22 @@ Installed layout: code in `$DRSMHOME` (default `~/drsm`), dashboard in
   `DETAIL name=value` lines, plus any free text, and exits 0 OK,
   1 WARNING, 2 ERROR, 3 UNKNOWN.
 - Lines a page reads but people do not, `DRCM kind|...` from
-  `cluster/drcm` and `VULN kind|...` from `linux/vulnerabilities`, are
-  hidden on the host page (`drsm_line_level()` returns `DATA`). The
-  VULN lines are `summary`, `advisory`, `unfixed`, `compliance` and
-  `rule`; PLUGINS.md "Linux agent hosts" has their fields.
+  `cluster/drcm`, `VULN kind|...` from `linux/vulnerabilities` and
+  `UPLOAD kind|...` from the `uploads/*` plugins, are hidden on the host
+  page (`drsm_line_level()` returns `DATA`). The VULN lines are
+  `summary`, `advisory`, `unfixed`, `compliance` and `rule`;
+  PLUGINS.md "Linux agent hosts" has their fields. The UPLOAD lines are
+  `meta`, `columns`, `row` and `value`, see PLUGINS.md "Hook uploads".
 - Agent hosts: the `wra` and `lra` collectors run the `windows/*` and
   `linux/*` plugins on the monitor host against the host's last agent
   report (`DRSM_WRA_REPORT`, `DRSM_LRA_REPORT`); nothing connects to
   the host.
+- Hook uploads: `uploads/<id>` plugins (MODE=probe) read files the
+  agents sent to the report server's `hook.php` (`DRSM_UPLOADS_DIR`,
+  from `UPLOADS_DIR`; `UPLOADS=auto` or a list in the host file adds
+  them). The payload is untrusted: `plugins/uploads/upload_probe.sh`
+  only passes DRSM line kinds, and `upload_view.php` serves files
+  sandboxed.
 - The runner wraps each plugin in `=== <cat>/<name> [STATE] <secs>s ===`
   and adds `HOSTNAME:`, `ETIME:`, `GROUP:` and other header lines.
 - The pages find problems by the `ERROR - ` and `WARNING - ` prefixes

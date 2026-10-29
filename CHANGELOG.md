@@ -34,6 +34,17 @@ All notable changes to the DataReel System Monitor (DRSM) are listed here.
   utils/lra_hook_bundle.sh writes a plugin as one hook file.
   cluster/drcm has LRA_HOOK=drcm, so the Clusters page, Overview and
   Heat map cluster status work when DRSM runs off site.
+- Hook uploads (beta): reports from other sources, such as a scan run
+  by hand, a custom application or a backup job, that the DataReel
+  Reporting Agent sends to the report server's hook.php (drra submit).
+  New uploads/<id> plugins (plugin.conf manifest with FORMAT, TITLE,
+  DISPLAY, WARN_IF, CRIT_IF, MAX_AGE_HOURS, METRICS, and
+  plugins/uploads/upload_probe.sh), host file keys UPLOADS (auto or a
+  list), UPLOADS_DIR and UPLOAD_NAME, UPLOAD data lines, table, kv,
+  text and html displays and site display plug-ins in the host page's
+  Checks panel (www/php/drsm_uploads.php), upload_view.php (sandboxed
+  viewer, $UPLOADSdir), example uploads openscap_manual and backup_job,
+  tests/uploads_test.sh.
 - Docs: "Clientless and agent monitoring" in PLUGINS.md, plugins.html
   and the overview page: Linux hosts can be checked clientless over SSH
   or with the Linux agent, Windows hosts with the Windows agent only.

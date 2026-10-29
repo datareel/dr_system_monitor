@@ -180,6 +180,8 @@ drsm_clusters.php \
 drsm_vulns.php \
 vulnerabilities.php \
 scap_report.php \
+drsm_uploads.php \
+upload_view.php \
 clusters.php \
 heatmap.php \
 host_status.php \

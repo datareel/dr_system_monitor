@@ -203,6 +203,7 @@ drsm_page_start($hst["name"], "hosts", $hst["state"]);
         <span class="sec-meta"><?php echo drsm_badge($s["state"]); ?><span class="muted small"><?php echo (int)$s["secs"]; ?>s</span></span>
       </summary>
       <pre class="report"><?php echo drsm_render_lines($s["lines"]); ?></pre>
+<?php     if(drsm_is_upload_section($s["id"])) echo drsm_upload_render($s, $n, $site); ?>
 <?php     if($s["id"] == DRSM_CLUSTER_PLUGIN) { ?>
       <p class="pad small"><a href="<?php echo h(drsm_url("clusters.php")); ?>"><?php echo drsm_icon("link"); ?>Cluster diagram, keep alive timeline and events</a></p>
 <?php     } ?>

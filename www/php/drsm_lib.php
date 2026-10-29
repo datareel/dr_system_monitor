@@ -79,6 +79,11 @@ $LRAreportsDir  = '';   // Linux agent report server reports_dir, only
                         // on the server that receives the agent
                         // uploads: links the OpenSCAP HTML reports on
                         // the Vulnerabilities page (scap_report.php)
+$UPLOADSdir     = '';   // Report server [hooks] dir, only on the
+                        // server that receives the agent uploads:
+                        // text and html hook uploads (upload_view.php)
+$UPLOADdisplayDir = ''; // Site display plug-ins for hook uploads,
+                        // default php/uploads, see drsm_uploads.php
 
 Login for access from outside the internal networks is off by
 default, see drsm_auth.php for the $AUTH settings.
@@ -179,7 +184,7 @@ function drsm_line_level($line)
   if(strpos($line, "METRIC ") === 0) return "METRIC";
   if(strpos($line, "DETAIL ") === 0) return "DETAIL";
   // Page data from plugins, such as cluster/drcm and linux/vulnerabilities, not for people
-  if(preg_match('/^(DRCM|VULN) [a-z]+\|/', $line)) return "DATA";
+  if(preg_match('/^(DRCM|VULN|UPLOAD) [a-z]+\|/', $line)) return "DATA";
   return "";
 }
 
@@ -793,6 +798,8 @@ require_once("{$WWWdir}/php/drsm_messages.php");
 require_once("{$WWWdir}/php/drsm_clusters.php");
 // Vulnerability scans from the linux/vulnerabilities plugin
 require_once("{$WWWdir}/php/drsm_vulns.php");
+// Hook uploads: uploads/<id> plugins
+require_once("{$WWWdir}/php/drsm_uploads.php");
 
 // Optional login for requests from outside the internal networks,
 // see drsm_auth.php. login.php does its own checks.
