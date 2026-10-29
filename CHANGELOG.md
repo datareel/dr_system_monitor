@@ -26,6 +26,14 @@ All notable changes to the DataReel System Monitor (DRSM) are listed here.
   cluster), each peer's cluster link, and from the cluster log the
   isolated state, missed or stale keep alives, failover events and
   resource script errors. Read only; see PLUGINS.md "DRCM clusters".
+- Clusters page (clusters.php, drsm_clusters.php): each DRCM cluster
+  as a diagram of its nodes and keep alive links, the nodes and
+  resources as each node sees them, a 24 hour keep alive timeline per
+  link, missed keep alives over 7 to 90 days from the metrics history,
+  the cluster log events and each node's CM status report. The menu
+  item shows once a host runs cluster/drcm, and cluster nodes get a
+  Cluster tag on their host cards. "DRCM kind|..." plugin lines are
+  page data and are hidden on the host page.
 - network/http setting HTTPS_FALLBACK=yes: a host with port 80 closed
   that answers https://<host> passes, for web servers that now serve
   HTTPS only. Found at NHC, where the old DRSM 1.2 HTTP check never

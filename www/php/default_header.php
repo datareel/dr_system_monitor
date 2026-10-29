@@ -21,6 +21,10 @@ $drsm_nav += array(
   "trends" => array("Trends", "trends.php", "trend"),
   "checks" => array("Connectivity", "checks.php", "net")
 );
+// Clusters only when a host runs the cluster/drcm plugin
+if(drsm_clusters_present()) {
+  $drsm_nav = array_slice($drsm_nav, 0, count($drsm_nav) - 1, true) + array("clusters" => array("Clusters", "clusters.php", "link")) + array_slice($drsm_nav, -1, 1, true);
+}
 // Submenus: page views a menu item can open straight into
 $drsm_sub = array();
 if(isset($drsm_nav["orgs"])) {

@@ -727,9 +727,17 @@ expect "drcm: failover events" "${C}/out.txt" "cluster failover events in the la
 expect "drcm: isolated node is an error" "${C}/out.txt" "this node is isolated from the cluster since"
 expect "drcm: stale keep alive" "${C}/out.txt" "last keep alive from node2 was"
 expect "drcm: closed peer port is a link error" "${C}/out.txt" "cluster link to node2 at 127.0.0.1:9 does not connect"
+expect "drcm: cluster name from the node names" "${C}/out.txt" "DRCM cluster|node1+node2"
+expect "drcm: link line for the page" "${C}/out.txt" "DRCM link|node2|FAIL"
+if grep -qE '^DRCM strip\|node2\|[0-9]+\|300\|[omdi.]{287}[mi]$' "${C}/out.txt"; then pass "drcm: strip ends with the missed keep alives"; else fail "drcm: strip: $(grep '^DRCM strip' "${C}/out.txt" | rev | cut -c1-20)"; fi
+expect "drcm: dropout event for the page" "${C}/out.txt" "|miss|Node node2 failed keep alive check"
+expect "drcm: per peer missed count" "${C}/out.txt" 'METRIC drcm_keepalive_missed{peer="node2"}=3'
 printf '%s drcm_server: A peer is reachable again, this node is no longer isolated, resuming its resources\n' "${stamp}" >> "${C}/drcm.log"
 drcm env DRSM_LINK_CHECK=no
 if ! grep -q "this node is isolated from" "${C}/out.txt"; then pass "drcm: isolation cleared by the log"; else fail "drcm: still isolated after the resume line"; fi
+printf '%s drcm_server: Node node2 is dead, signaling cluster resource failover to active nodes\n' "${stamp}" > "${C}/drcm.log"
+drcm env DRSM_LINK_CHECK=no
+if grep -qE '^DRCM strip\|node2\|[0-9]+\|300\|\.{287}d$' "${C}/out.txt"; then pass "drcm: strip marks the peer down"; else fail "drcm: down strip: $(grep '^DRCM strip' "${C}/out.txt" | rev | cut -c1-20)"; fi
 
 printf 'Oct 28 22:57:42 drcm_client: ERROR - CM config file load error.\n' > "${C}/cm_stat.txt"
 drcm env DRSM_LINK_CHECK=no

@@ -316,6 +316,10 @@ drsm_page_start("Overview", "overview", $overall);
 <?php   } ?>
         <footer>
           <span class="tag"><?php echo h($hst["group"]); ?></span>
+<?php   $clu = isset($hst["plugins"][DRSM_CLUSTER_PLUGIN]) ? drsm_cluster_parse($hst) : null;
+        if($clu !== null) { ?>
+          <span class="tag cl-tag" title="<?php echo h("DRCM cluster " . $clu["name"] . ", node " . $clu["self"]); ?>"><?php echo drsm_icon("link"); ?>Cluster</span>
+<?php   } ?>
           <span class="muted"><?php echo drsm_time_html($hst["time"]); ?></span>
         </footer>
       </a>

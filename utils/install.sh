@@ -176,6 +176,8 @@ extreports.php \
 help.php \
 help_admin.php \
 drsm_sites.php \
+drsm_clusters.php \
+clusters.php \
 heatmap.php \
 host_status.php \
 index.php \

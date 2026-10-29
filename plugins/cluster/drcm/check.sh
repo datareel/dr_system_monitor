@@ -45,6 +45,12 @@
 #
 # Reads only. Never starts, stops or changes anything in the cluster.
 #
+# For the Clusters page it also prints "DRCM kind|field|..." lines: the
+# cluster name, this node, each node, resource and link, the health
+# line, a keep alive strip per peer for the last STRIP_HOURS in
+# STRIP_STEP second steps (o keep alive, m missed, d peer down, i this
+# node isolated, . nothing logged) and the cluster log events.
+#
 # -----------------------------------------------------------
 # shellcheck source=lib/drsm_plugin.sh
 source "${DRSM_LIB:-$(dirname "$0")/../../../lib}/drsm_plugin.sh"
@@ -61,6 +67,10 @@ EVENT_MINUTES=$(drsm_setting EVENT_MINUTES 30)
 KEEPALIVE_WARN=$(drsm_setting KEEPALIVE_WARN 3)
 KEEPALIVE_STALE=$(drsm_setting KEEPALIVE_STALE 300)
 FAILOVER_STATE=$(drsm_setting FAILOVER_STATE WARNING)
+CLUSTER_NAME=$(drsm_setting CLUSTER_NAME "")
+INTERVAL_MINUTES=$(drsm_setting INTERVAL_MINUTES 15)
+STRIP_HOURS=$(drsm_setting STRIP_HOURS 24)
+STRIP_STEP=$(drsm_setting STRIP_STEP 300)
 
 function failover_report()
 {
@@ -102,6 +112,11 @@ fi
 MYHOST=$(hostname 2> /dev/null)
 MYNODE=$(echo "${CFG}" | awk -F'|' -v h="${MYHOST}" -v s="${HOST}" '$1 == "node" && ($3 == h || $3 == s) { print $2; exit }')
 PEERS=$(echo "${CFG}" | awk -F'|' -v me="${MYNODE}" '$1 == "node" && $2 != me && $5 != "0" { print $2 "|" $4 }')
+if [ "${CLUSTER_NAME}" == "" ]; then
+    CLUSTER_NAME=$(echo "${CFG}" | awk -F'|' '$1 == "node" { printf "%s%s", sep, $2; sep = "+" }')
+fi
+echo "DRCM cluster|${CLUSTER_NAME}"
+echo "DRCM self|${MYNODE}"
 
 echo "DRCM cluster health on ${HOST}"
 echo "Config: ${CM_CONFIG}"
@@ -166,6 +181,7 @@ else
 	do
 	    name="${name#"${name%%[![:space:]]*}"}"
 	    state="${state%%[[:space:]]*}"
+	    echo "DRCM node|${name}|${nhost}|${state}|${ip}"
 	    if [ "${state}" == "Up" ]; then
 		nodes_up=$((nodes_up + 1))
 	    else
@@ -174,8 +190,9 @@ else
 	    fi
 	done < <(echo "${STAT}" | awk -F'\t' 'NF == 4 && ($3 ~ /^(Up|Down)/)')
 	# Resource lines: Type:<TAB>nickname<TAB>owner<TAB>status<TAB>start
-	RES=$(echo "${STAT}" | awk -F'\t' '$1 ~ /^ +[A-Za-z]+:$/ && NF >= 4 { t = $1; gsub(/[ :]/, "", t); print t "|" $2 "|" $3 "|" $4 }')
-	while IFS='|' read -r type nick owner state
+	RES=$(echo "${STAT}" | awk -F'\t' '$1 ~ /^ +[A-Za-z]+:$/ && NF >= 4 { t = $1; gsub(/[ :]/, "", t); print t "|" $2 "|" $3 "|" $4 "|" $5 }')
+	echo "${RES}" | awk 'NF { print "DRCM resource|" $0 }'
+	while IFS='|' read -r type nick owner state start
 	do
 	    [ "${nick}" == "" ] && continue
 	    resources=$((resources + 1))
@@ -197,6 +214,7 @@ else
 	    while read -r line; do drsm_crit "${HOST} cluster resources missing, ${line}"; done <<< "${missing}"
 	fi
 	health=$(echo "${STAT}" | awk -F': ' '/Cluster status:/ { print $2; exit }')
+	echo "DRCM health|${health}"
 	if [ "${health}" == "HEALTHY" ]; then
 	    drsm_ok "${HOST} cluster status is HEALTHY, ${nodes_up} nodes up, ${resources} resources"
 	elif [ "${DRSM_HAS_ERROR}" -eq 0 ] && [ "${DRSM_HAS_WARNING}" -eq 0 ]; then
@@ -205,6 +223,10 @@ else
 	    echo "Cluster status: ${health}"
 	fi
     fi
+fi
+# No cm_stat: the nodes from the config, state unknown
+if [ $((nodes_up + nodes_down)) -eq 0 ]; then
+    echo "${CFG}" | awk -F'|' '$1 == "node" { print "DRCM node|" $2 "|" $3 "|Unknown|" $4 }'
 fi
 drsm_metric drcm_nodes_up "${nodes_up}"
 drsm_metric drcm_nodes_down "${nodes_down}"
@@ -219,8 +241,10 @@ if [ "${LINK_CHECK}" == "yes" ] && [ "${TCPPORT}" != "" ]; then
 	[ "${peer}" == "" ] && continue
 	if timeout "${LINK_TIMEOUT}" bash -c "exec 3<> /dev/tcp/${ip}/${TCPPORT}" 2> /dev/null; then
 	    drsm_ok "${HOST} cluster link to ${peer} at ${ip}:${TCPPORT} connects"
+	    echo "DRCM link|${peer}|OK"
 	else
 	    drsm_crit "${HOST} cluster link to ${peer} at ${ip}:${TCPPORT} does not connect"
+	    echo "DRCM link|${peer}|FAIL"
 	fi
     done <<< "${PEERS}"
 fi
@@ -234,29 +258,69 @@ if [ ! -r "${LOG_FILE}" ]; then
 else
     now=$(date +%s)
     since=$((now - EVENT_MINUTES * 60))
-    LOG=$(tail -n 50000 "${LOG_FILE}" | awk -v now="${now}" -v since="${since}" -v year="$(date +%Y)" '
-	BEGIN { split("Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec", m, " "); for (i = 1; i <= 12; i++) mon[m[i]] = i }
+    ival=$((now - INTERVAL_MINUTES * 60))
+    nb=$((STRIP_HOURS * 3600 / STRIP_STEP))
+    sstart=$((now - nb * STRIP_STEP))
+    peers=$(echo "${PEERS}" | awk -F'|' 'NF { printf "%s ", $1 }')
+    LOG=$(tail -n 100000 "${LOG_FILE}" | awk -v now="${now}" -v ival="${ival}" -v sstart="${sstart}" \
+	-v step="${STRIP_STEP}" -v nb="${nb}" -v peers="${peers}" -v year="$(date +%Y)" '
+	BEGIN {
+	    split("Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec", m, " "); for (i = 1; i <= 12; i++) mon[m[i]] = i
+	    np = split(peers, plist, " ")
+	    rank["."] = 0; rank["o"] = 1; rank["m"] = 2; rank["i"] = 3; rank["d"] = 4
+	}
+	function bucket(e,   b) { b = int((e - sstart) / step); return (b >= nb) ? nb - 1 : b }
+	function mark(p, b, c) { if (b >= 0 && b < nb && rank[c] > rank[(p, b) in st ? st[p, b] : "."]) st[p, b] = c }
+	# Mark peer p (or every peer for "") from time a to time z
+	function span(p, a, z, c,   b, j) {
+	    if (a < sstart) a = sstart
+	    for (b = bucket(a); b <= bucket(z) && b < nb; b++) {
+		if (p != "") mark(p, b, c); else for (j = 1; j <= np; j++) mark(plist[j], b, c)
+	    }
+	}
 	!($1 in mon) { next }
 	{
 	    split($3, t, ":")
 	    e = mktime(year " " mon[$1] " " $2 " " t[1] " " t[2] " " t[3])
 	    if (e > now + 86400) e = mktime((year - 1) " " mon[$1] " " $2 " " t[1] " " t[2] " " t[3])
 	    msg = $0; sub(/^[A-Z][a-z][a-z] +[0-9]+ [0-9:]+ [^:]*: /, "", msg)
-	    # Isolation state comes from the whole log read
-	    if (msg ~ /this node is isolated, stopping its resources/) iso = e
-	    if (msg ~ /no longer isolated/) iso = 0
-	    if (match(msg, /^Node [^ ]+ is alive/)) { split(msg, w, " "); alive[w[2]] = e }
-	    if (e < since) next
+	    peer = ""
+	    if (msg ~ /^Node [^ ]+ /) { split(msg, w, " "); peer = w[2] }
+	    if (msg ~ /this node is isolated, stopping its resources/) { if (!iso) iso = e }
+	    else if (msg ~ /no longer isolated/) { if (iso) span("", iso, e, "i"); iso = 0 }
+	    if (peer != "") {
+		if (msg ~ /is alive|is back on line/) {
+		    alive[peer] = e
+		    if (peer in down) { span(peer, down[peer], e, "d"); delete down[peer] }
+		    if (e >= sstart) mark(peer, bucket(e), "o")
+		    if (e >= ival) okn[peer]++
+		}
+		else if (msg ~ /failed keep alive check/) {
+		    if (e >= sstart) mark(peer, bucket(e), "m")
+		    if (e >= ival) missn[peer]++
+		}
+		else if (msg ~ /is dead|is inactive|back in failed state/) { if (!(peer in down)) down[peer] = e }
+	    }
+	    if (e < sstart) next
 	    if (msg ~ /failed keep alive check/) print "miss|" e "|" msg
+	    else if (msg ~ /is back on line/) print "recover|" e "|" msg
 	    else if (msg ~ /is dead|is inactive|failback|back in failed state|isolated|takeover_check|is alive but failed over/) print "event|" e "|" msg
 	    else if (msg ~ /ERROR - Resource script/) print "error|" e "|" msg
 	}
 	END {
-	    if (iso) print "isolated|" iso "|"
-	    for (n in alive) print "alive|" alive[n] "|" n
+	    if (iso) { print "isolated|" iso "|"; span("", iso, now, "i") }
+	    for (p in down) span(p, down[p], now, "d")
+	    for (p in alive) print "alive|" alive[p] "|" p
+	    for (j = 1; j <= np; j++) {
+		p = plist[j]; s = ""
+		for (b = 0; b < nb; b++) s = s (((p, b) in st) ? st[p, b] : ".")
+		print "strip|" p "|" s
+		print "count|" p "|" okn[p] + 0 "|" missn[p] + 0
+	    }
 	}')
-    misses=$(echo "${LOG}" | grep -c '^miss|')
-    events=$(echo "${LOG}" | grep -c '^event|')
+    misses=$(echo "${LOG}" | awk -F'|' -v s="${since}" '$1 == "miss" && $2 >= s' | wc -l)
+    events=$(echo "${LOG}" | awk -F'|' -v s="${since}" '$1 == "event" && $2 >= s' | wc -l)
+    errors=$(echo "${LOG}" | awk -F'|' -v s="${since}" '$1 == "error" && $2 >= s' | wc -l)
     iso=$(echo "${LOG}" | awk -F'|' '$1 == "isolated" { print $2 }')
     if [ "${iso}" != "" ]; then
 	drsm_crit "${HOST} this node is isolated from the cluster since $(date -d "@${iso}" '+%F %T'), its resources are stopped"
@@ -280,15 +344,23 @@ else
     if [ "${events}" -gt 0 ]; then
 	failover_report "${HOST} ${events} cluster failover events in the last ${EVENT_MINUTES} minutes"
     fi
-    errors=$(echo "${LOG}" | grep -c '^error|')
     if [ "${errors}" -gt 0 ]; then
 	drsm_crit "${HOST} ${errors} cluster resource script errors in the last ${EVENT_MINUTES} minutes"
     fi
     if [ $((events + errors + misses)) -gt 0 ]; then
 	echo ""
 	echo "Cluster log, last ${EVENT_MINUTES} minutes:"
-	echo "${LOG}" | awk -F'|' '$1 == "miss" || $1 == "event" || $1 == "error" { print strftime("%F %T", $2) " " $3 }' | tail -20
+	echo "${LOG}" | awk -F'|' -v s="${since}" '($1 == "miss" || $1 == "event" || $1 == "error") && $2 >= s { print strftime("%F %T", $2) " " $3 }' | tail -20
     fi
+    # Keep alive strips, per peer counts for the trends history, and the
+    # newest 100 log events of the strip period
+    echo "${LOG}" | awk -F'|' -v s="${sstart}" -v st="${STRIP_STEP}" '$1 == "strip" { print "DRCM strip|" $2 "|" s "|" st "|" $3 }'
+    while IFS='|' read -r kind peer ok missed
+    do
+	drsm_metric drcm_keepalive_ok "${ok}" "peer=\"${peer}\""
+	drsm_metric drcm_keepalive_missed "${missed}" "peer=\"${peer}\""
+    done < <(echo "${LOG}" | awk -F'|' '$1 == "count"')
+    echo "${LOG}" | awk -F'|' '$1 == "miss" || $1 == "recover" || $1 == "event" || $1 == "error" { print "DRCM event|" $2 "|" $1 "|" $3 }' | tail -100
 fi
 drsm_metric drcm_keepalive_misses "${misses}"
 drsm_metric drcm_failover_events "${events}"

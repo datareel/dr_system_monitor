@@ -84,7 +84,9 @@ function drsm_render_lines($lines)
   $out = "";
   foreach($lines as $line) {
     $cls = "";
-    switch(drsm_line_level($line)) {
+    $lvl = drsm_line_level($line);
+    if($lvl == "DATA") continue;
+    switch($lvl) {
       case "ERROR": $cls = "l-err"; break;
       case "WARNING": $cls = "l-warn"; break;
       case "UNKNOWN": $cls = "l-unk"; break;
@@ -191,7 +193,7 @@ drsm_page_start($hst["name"], "hosts", $hst["state"]);
             if($lvl == "ERROR" || $lvl == "WARNING" || $lvl == "UNKNOWN") { $summary = $line; break; }
           }
           if($summary == "") {
-            foreach($s["lines"] as $line) if(trim($line) != "" && !in_array(drsm_line_level($line), array("METRIC", "DETAIL"))) { $summary = $line; break; }
+            foreach($s["lines"] as $line) if(trim($line) != "" && !in_array(drsm_line_level($line), array("METRIC", "DETAIL", "DATA"))) { $summary = $line; break; }
           } ?>
     <details class="section <?php echo h(drsm_state_class($s["state"])); ?>" id="<?php echo h(drsm_plugin_anchor($s["id"])); ?>"<?php if($open) echo " open"; ?>>
       <summary>
@@ -201,6 +203,9 @@ drsm_page_start($hst["name"], "hosts", $hst["state"]);
         <span class="sec-meta"><?php echo drsm_badge($s["state"]); ?><span class="muted small"><?php echo (int)$s["secs"]; ?>s</span></span>
       </summary>
       <pre class="report"><?php echo drsm_render_lines($s["lines"]); ?></pre>
+<?php     if($s["id"] == DRSM_CLUSTER_PLUGIN) { ?>
+      <p class="pad small"><a href="<?php echo h(drsm_url("clusters.php")); ?>"><?php echo drsm_icon("link"); ?>Cluster diagram, keep alive timeline and events</a></p>
+<?php     } ?>
     </details>
 <?php   } ?>
   </div>

@@ -174,6 +174,8 @@ function drsm_line_level($line)
   if(strpos($line, "INFO - ") === 0) return "INFO";
   if(strpos($line, "METRIC ") === 0) return "METRIC";
   if(strpos($line, "DETAIL ") === 0) return "DETAIL";
+  // Page data from plugins, such as cluster/drcm, not for people
+  if(preg_match('/^DRCM [a-z]+\|/', $line)) return "DATA";
   return "";
 }
 
@@ -783,6 +785,8 @@ require_once("{$WWWdir}/php/drsm_sites.php");
 require_once("{$WWWdir}/php/drsm_ext.php");
 // Status messages
 require_once("{$WWWdir}/php/drsm_messages.php");
+// DRCM clusters from the cluster/drcm plugin
+require_once("{$WWWdir}/php/drsm_clusters.php");
 
 // Optional login for requests from outside the internal networks,
 // see drsm_auth.php. login.php does its own checks.

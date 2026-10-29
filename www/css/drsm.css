@@ -768,6 +768,46 @@ td > .tier:first-child { margin-left: 0; }
   .msg-run[aria-hidden] { display: none; }
   .msg { white-space: normal; }
 }
+/* ---------- Clusters (clusters.php) ---------- */
+
+.cl-diagram { margin: 4px 0 14px; overflow-x: auto; }
+.cl-svg { display: block; width: 100%; max-width: 980px; height: auto; margin: 0 auto; }
+.cl-node rect { fill: var(--surface-2); stroke: var(--tone, var(--unk)); stroke-width: 2; }
+.cl-node circle { fill: var(--tone, var(--unk)); }
+.cl-node.ok { --tone: var(--ok); }
+.cl-node.warn { --tone: var(--warn); }
+.cl-node.err { --tone: var(--err); }
+.cl-node.err rect { fill: var(--err-bg); }
+.cl-svg a:hover rect { fill: var(--surface-3); }
+.cl-name { fill: var(--text); font-size: 15px; font-weight: 700; font-family: var(--font); }
+.cl-sub { fill: var(--text-2); font-size: 11.5px; font-family: var(--font); }
+.cl-link { stroke: var(--unk); stroke-width: 3; stroke-linecap: round; }
+.cl-link.ok { stroke: var(--ok); }
+.cl-link.warn { stroke: var(--warn); stroke-dasharray: 8 5; }
+.cl-link.err { stroke: var(--err); stroke-dasharray: 3 5; }
+.cl-ltext { fill: var(--muted); font-size: 11px; font-family: var(--font); }
+.cl-strip-row { margin: 10px 0 16px; }
+.cl-strip-label { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; margin-bottom: 6px; }
+.cl-strip { display: block; width: 100%; height: 40px; }
+.cl-strip .tick { stroke: var(--border-strong); }
+.cl-strip .ax, .cl-hist .ax { fill: var(--muted); font-size: 11px; font-family: var(--font); }
+.s-ok, .cl-legend .s-ok { fill: var(--ok); background: var(--ok); }
+.s-miss, .cl-legend .s-miss { fill: var(--warn); background: var(--warn); }
+.s-down, .cl-legend .s-down { fill: var(--err); background: var(--err); }
+.s-iso, .cl-legend .s-iso { fill: var(--stale); background: var(--stale); }
+.s-none, .cl-legend .s-none { fill: var(--surface-3); background: var(--surface-3); }
+.cl-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; color: var(--text-2); }
+.cl-legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+.cl-hist .h-ok { fill: var(--ok); opacity: .7; }
+.cl-hist .h-miss { fill: var(--warn); }
+.cl-hist .h-down { fill: var(--err); opacity: .75; }
+.cl-hist .h-none { fill: var(--surface-3); }
+.cl-cm { border-top: 1px solid var(--border); padding: 10px 0; }
+.cl-cm summary { cursor: pointer; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.cl-cm pre.report { margin-top: 10px; }
+.cl-tag { white-space: nowrap; }
+.cl-tag .icon { width: 12px; height: 12px; vertical-align: -2px; margin-right: 3px; }
+
 @media print { .msgbar { display: none; } }
 
 /* ---------- Responsive ---------- */

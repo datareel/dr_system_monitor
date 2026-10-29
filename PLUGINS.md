@@ -362,7 +362,15 @@ through a `drcm` group that owns it (mode 640); without it the cluster
 status is UNKNOWN and the other checks still run. Metrics for the
 trends page: `drcm_nodes_up`, `drcm_nodes_down`, `drcm_resources`,
 `drcm_resources_failed_over`, `drcm_keepalive_misses`,
-`drcm_failover_events`.
+`drcm_failover_events`, and per peer `drcm_keepalive_ok` and
+`drcm_keepalive_missed` for the last `INTERVAL_MINUTES` (15, the cron
+interval).
+
+The plugin also prints `DRCM kind|...` lines for the Clusters page of
+the dashboard (nodes, resources, links, health, a keep alive timeline
+per peer for the last `STRIP_HOURS` in `STRIP_STEP` second steps, and
+the log events). The host page hides them. `CLUSTER_NAME` names the
+cluster on that page; by default it is the node names joined with `+`.
 
 ## Windows hosts
 

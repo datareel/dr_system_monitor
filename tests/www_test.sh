@@ -260,6 +260,52 @@ expect "bad host falls back to all hosts" "Capacity by host"
 render trends.php "h=old1&r=bogus"
 expect "no history message" "utils/drsm_metrics_backfill.sh --apply"
 
+echo "== Clusters"
+render index.php ""
+reject "no Clusters menu without cluster hosts" "clusters.php"
+render clusters.php ""
+expect "clusters page without clusters" "No host reports a DRCM cluster yet"
+# Two cluster nodes as cluster/drcm reports them, n2 with a dropout
+# and a down period in its keep alive strip
+now=$(date +%s)
+sstart=$((now - 86400))
+strip=$(printf 'o%.0s' $(seq 1 280))mmdddooo
+for n in n1 n2; do
+    if [ "${n}" == "n1" ]; then self=node1; peer=node2; else self=node2; peer=node1; fi
+    mkdir -p "${W}/reports/systems/${n}"
+    {
+	printf 'HOSTNAME:%s\nETIME:%s\nGROUP:production\n=== cluster/drcm [WARNING] 1s ===\n' "${n}" "${now}"
+	printf 'DRCM cluster|node1+node2\nDRCM self|%s\nDRCM cluster health on %s\n' "${self}" "${n}"
+	printf 'DRCM node|node1|n1.example.com|Up|10.0.0.1\nDRCM node|node2|n2.example.com|Up|10.0.0.2\n'
+	printf 'DRCM resource|Crontab|job1|n1.example.com|OK-Normal|Oct 27 20:36:56\nDRCM health|HEALTHY\nDRCM link|%s|OK\n' "${peer}"
+	printf 'DRCM strip|%s|%s|300|%s\n' "${peer}" "${sstart}" "${strip}"
+	printf 'DRCM event|%s|miss|Node %s failed keep alive check <b>\n' "$((now - 2000))" "${peer}"
+	printf 'WARNING - %s 2 missed cluster keep alives in the last 30 minutes\n' "${n}"
+	printf 'METRIC drcm_keepalive_missed{peer="%s"}=2\n' "${peer}"
+    } > "${W}/reports/systems/${n}/${n}_report.txt"
+    printf '{"host":"%s","group":"production","time":%s,"plugins":[{"id":"cluster/drcm","state":"WARNING","secs":1}]}\n' "${n}" "${now}" > "${W}/reports/systems/${n}/status.json"
+    printf '%s\tdrcm_nodes_down=0\tdrcm_keepalive_ok{peer="%s"}=10\tdrcm_keepalive_missed{peer="%s"}=3\n' "$((now - 7200))" "${peer}" "${peer}" > "${W}/reports/systems/${n}/metrics_history.tsv"
+done
+render clusters.php ""
+expect "clusters in the menu" 'href="/drsm/dashboard/php/clusters.php"'
+expect "cluster diagram" 'class="cl-svg"'
+expect "node box links to its host" 'readreport.php?n=n2#p-cluster-drcm'
+expect "link drawn with the recent drops" 'class="cl-link err"'
+expect "keep alive strip" 'class="cl-strip"'
+expect "down period in the strip" 'class="s-down"'
+expect "history bars" 'class="h-miss"'
+expect "event listed and escaped" 'failed keep alive check &lt;b&gt;'
+expect "resource owner" 'n1.example.com'
+reject "no page data lines in the CM report" 'DRCM strip|'
+render clusters.php "c=../../etc&r=bogus"
+expect "unknown cluster falls back to the first" "node1+node2"
+render index.php ""
+expect "cluster tag on the host card" 'class="tag cl-tag"'
+render readreport.php "n=n1"
+reject "page data hidden on the host page" 'DRCM node|'
+expect "host page links to the cluster page" 'Cluster diagram, keep alive timeline and events'
+rm -rf "${W}/reports/systems/n1" "${W}/reports/systems/n2"
+
 echo "== Organizations and sites"
 mkdir -p "${T}/sites/acme" "${T}/sites/beta"
 printf 'NAME="Acme Corp"\nCONTACT="ops@acme.test"\n' > "${T}/sites/acme.org"
