@@ -806,6 +806,9 @@ td > .tier:first-child { margin-left: 0; }
 .cl-cm summary { cursor: pointer; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .cl-cm pre.report { margin-top: 10px; }
 .cl-tag { white-space: nowrap; }
+.heat.clusters td { min-width: 120px; }
+.hcell.wide { gap: 8px; padding: 0 12px; justify-content: flex-start; white-space: nowrap; }
+.hcell.wide .hcell-text { color: var(--text); font-size: .8rem; font-weight: 600; }
 .cl-tag .icon { width: 12px; height: 12px; vertical-align: -2px; margin-right: 3px; }
 
 @media print { .msgbar { display: none; } }

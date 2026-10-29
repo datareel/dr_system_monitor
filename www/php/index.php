@@ -224,6 +224,24 @@ drsm_page_start("Overview", "overview", $overall);
       </ul>
     </section>
 
+<?php $clusters = drsm_clusters($hosts);
+      if(count($clusters) > 0) { ?>
+    <section class="panel">
+      <div class="panel-head"><h2><?php echo drsm_icon("link"); ?>Clusters</h2><a class="link" href="<?php echo h(drsm_url("clusters.php")); ?>">Details</a></div>
+      <ul class="group-list">
+<?php   foreach($clusters as $cn => $cl) {
+          $cs = drsm_cluster_summary($cl); ?>
+        <li>
+          <a href="<?php echo h(drsm_url("clusters.php", array("c" => $cn))); ?>" title="<?php echo h($cs["nodes"][2] . "; " . $cs["links"][2] . "; " . $cs["resources"][2]); ?>">
+            <span class="dot-lg <?php echo h(drsm_state_class($cl["state"])); ?>" aria-hidden="true"></span>
+            <span class="grow"><strong><?php echo h($cn); ?></strong><span class="muted"><?php echo h("Nodes " . $cs["nodes"][1] . ", " . $cs["drops"][1] . " keep alive drops in 24 h, " . $cs["cm"][1]); ?></span></span>
+            <?php echo drsm_badge($cl["state"]); ?>
+          </a>
+        </li>
+<?php   } ?>
+      </ul>
+    </section>
+<?php } ?>
 <?php if(drsm_ext_enabled() && count(drsm_ext_sections()) > 0) { ?>
     <section class="panel">
       <div class="panel-head"><h2><?php echo drsm_icon("file"); ?><?php echo h($EXTtitle); ?></h2><a class="link" href="<?php echo h(drsm_url("extreports.php")); ?>">All</a></div>

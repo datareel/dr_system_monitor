@@ -263,6 +263,9 @@ expect "no history message" "utils/drsm_metrics_backfill.sh --apply"
 echo "== Clusters"
 render index.php ""
 reject "no Clusters menu without cluster hosts" "clusters.php"
+reject "no clusters panel without cluster hosts" "keep alive drops"
+render heatmap.php ""
+reject "no clusters table without cluster hosts" 'class="heat clusters"'
 render clusters.php ""
 expect "clusters page without clusters" "No host reports a DRCM cluster yet"
 # Two cluster nodes as cluster/drcm reports them, n2 with a dropout
@@ -301,6 +304,14 @@ render clusters.php "c=../../etc&r=bogus"
 expect "unknown cluster falls back to the first" "node1+node2"
 render index.php ""
 expect "cluster tag on the host card" 'class="tag cl-tag"'
+expect "clusters panel on the overview" 'Nodes 2/2 up, 2 keep alive drops in 24 h, HEALTHY'
+expect "overview cluster links to its page" 'clusters.php?c=node1%2Bnode2'
+render heatmap.php ""
+expect "clusters table on the heat map" 'class="heat clusters"'
+expect "heat map link cell shows the drops" '<span class="hcell-text">2 links</span>'
+expect "heat map drops cell" 'clusters.php?c=node1%2Bnode2#cl-strips'
+render heatmap.php "mode=metrics"
+reject "no clusters table on resource use" 'class="heat clusters"'
 render readreport.php "n=n1"
 reject "page data hidden on the host page" 'DRCM node|'
 expect "host page links to the cluster page" 'Cluster diagram, keep alive timeline and events'

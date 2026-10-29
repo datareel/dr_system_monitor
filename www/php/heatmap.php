@@ -180,6 +180,41 @@ function drsm_heat_metrics($hosts, $showsite)
 <?php
 }
 
+// DRCM clusters: one row each, with node, link, keep alive, resource
+// and CM status cells that open the Clusters page
+function drsm_heat_clusters($clusters)
+{
+  $cols = array("nodes" => "Nodes", "links" => "Keep alive links", "drops" => "Drops 24 h", "resources" => "Resources", "cm" => "CM status"); ?>
+  <div class="heat-site"><span class="dot-lg <?php $w = "OK"; foreach($clusters as $cl) $w = drsm_worst($w, $cl["state"]); echo h(drsm_state_class($w)); ?>" aria-hidden="true"></span><h2><a href="<?php echo h(drsm_url("clusters.php")); ?>">Clusters</a></h2><span class="muted small"><?php echo count($clusters); ?> DRCM cluster<?php echo count($clusters) == 1 ? "" : "s"; ?></span></div>
+  <div class="heat-wrap" tabindex="0" aria-label="Cluster status, scrolls sideways">
+    <table class="heat clusters">
+      <thead>
+        <tr>
+          <th scope="col" class="corner">Cluster</th>
+<?php foreach($cols as $k => $label) { ?>
+          <th scope="col"><span class="col-cat">cluster</span><span class="col-name"><?php echo h($label); ?></span></th>
+<?php } ?>
+        </tr>
+      </thead>
+      <tbody>
+<?php foreach($clusters as $cn => $cl) {
+        $cs = drsm_cluster_summary($cl);
+        $curl = drsm_url("clusters.php", array("c" => $cn)); ?>
+        <tr>
+          <th scope="row"><a href="<?php echo h($curl); ?>"><span class="dot-lg <?php echo h(drsm_state_class($cl["state"])); ?>" aria-hidden="true"></span><span class="truncate"><?php echo h($cn); ?></span></a></th>
+<?php   foreach($cols as $k => $label) {
+          $tip = "{$cn} - {$label}: " . drsm_state_label($cs[$k][0]) . "\n" . $cs[$k][2];
+          $anchor = ($k == "drops") ? "#cl-strips" : ""; ?>
+          <td><a class="hcell wide <?php echo h(drsm_state_class($cs[$k][0])); ?>" href="<?php echo h($curl . $anchor); ?>" title="<?php echo h($tip); ?>" aria-label="<?php echo h($tip); ?>"><?php echo drsm_state_icon($cs[$k][0]); ?><span class="hcell-text"><?php echo h($cs[$k][1]); ?></span></a></td>
+<?php   } ?>
+        </tr>
+<?php } ?>
+      </tbody>
+    </table>
+  </div>
+<?php
+}
+
 drsm_page_start("Heat map", "heatmap", $overall);
 ?>
 <section class="page-head">
@@ -206,6 +241,14 @@ drsm_page_start("Heat map", "heatmap", $overall);
   </div>
 </section>
 
+<?php if($mode == "status") {
+  $clusters = drsm_clusters($hosts);
+  if(count($clusters) > 0) { ?>
+<section class="panel flush">
+<?php drsm_heat_clusters($clusters); ?>
+</section>
+<?php }
+} ?>
 <?php $nset = 0;
 foreach($sets as $sid => $set) {
   $nset++; ?>

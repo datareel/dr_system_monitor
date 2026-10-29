@@ -295,6 +295,67 @@ function drsm_cluster_strip_svg($s, $label)
 }
 
 // Report lines as HTML, styled by level as on the host page
+/*
+Status of one cluster for the overview and the heat map. Each part is
+array(state, text, tip): nodes (Up count), links (keep alive links,
+worst direction), resources (split, on backup, normal), drops (missed
+keep alives in the last 24 hours) and cm (each node's CM status).
+*/
+function drsm_cluster_summary($cl)
+{
+  $now = time();
+  $up = 0;
+  $tips = array();
+  foreach($cl["nodes"] as $nd) {
+    if($nd["state"] == "Up") $up++;
+    $tips[] = $nd["name"] . ": " . $nd["state"];
+  }
+  $n = count($cl["nodes"]);
+  $out = array("state" => $cl["state"]);
+  $out["nodes"] = array(($up == $n && $n > 0) ? "OK" : (($up < $n) ? "ERROR" : "UNKNOWN"), "{$up}/{$n} up", implode(", ", $tips));
+
+  $lst = ""; $tips = array();
+  $drops = 0; $dtips = array();
+  foreach($cl["reporters"] as $c) {
+    $peers = array_unique(array_merge(array_keys($c["strips"]), array_keys($c["links"])));
+    foreach($peers as $peer) {
+      $st = drsm_cluster_link_state($c, $peer);
+      $lst = ($lst == "") ? $st : drsm_worst($lst, $st);
+      $tips[] = $c["self"] . " from " . $peer . ": " . drsm_state_label($st);
+    }
+    $mine = 0;
+    foreach($c["events"] as $e) if($e["kind"] == "miss" && $e["t"] >= $now - 86400) $mine++;
+    $drops += $mine;
+    $dtips[] = $c["self"] . ": " . $mine . " missed";
+  }
+  $nl = count($tips);
+  $out["links"] = array($lst == "" ? "UNKNOWN" : $lst, $nl . " link" . ($nl == 1 ? "" : "s"), implode(", ", $tips));
+  $out["drops"] = array($drops > 0 ? "WARNING" : "OK", (string)$drops, "Missed keep alives in the last 24 hours, " . implode(", ", $dtips));
+
+  $rst = "OK"; $nr = 0; $backup = 0; $split = 0;
+  $owners = array();
+  foreach($cl["reporters"] as $c) {
+    foreach($c["resources"] as $r) $owners[$r["type"] . "|" . $r["nick"]][$r["owner"]] = $r["state"];
+  }
+  foreach($owners as $k => $o) {
+    $nr++;
+    if(count($o) > 1) $split++;
+    else if(in_array("OK-Backup", $o)) $backup++;
+  }
+  if($split > 0) $rst = "ERROR"; else if($backup > 0) $rst = "WARNING"; else if($nr == 0) $rst = "UNKNOWN";
+  $out["resources"] = array($rst, $split > 0 ? "{$split} split" : ($backup > 0 ? "{$backup} on backup" : (string)$nr),
+                            $nr . " resource" . ($nr == 1 ? "" : "s") . ($split > 0 ? ", {$split} running on two nodes" : "") . ($backup > 0 ? ", {$backup} on a backup node" : ""));
+
+  $cst = ""; $tips = array();
+  foreach($cl["reporters"] as $c) {
+    $cst = ($cst == "") ? $c["state"] : drsm_worst($cst, $c["state"]);
+    $tips[] = $c["self"] . ": " . ($c["health"] != "" ? $c["health"] : "no CM status") . " (" . drsm_state_label($c["state"]) . ")";
+  }
+  $first = reset($cl["reporters"]);
+  $out["cm"] = array($cst == "" ? "UNKNOWN" : $cst, ($first && $first["health"] != "") ? $first["health"] : "-", implode(", ", $tips));
+  return $out;
+}
+
 // Badge with its own words in place of the state name
 function drsm_cluster_badge($state, $text)
 {

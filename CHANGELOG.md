@@ -59,6 +59,11 @@ All notable changes to the DataReel System Monitor (DRSM) are listed here.
   item shows once a host runs cluster/drcm, and cluster nodes get a
   Cluster tag on their host cards. "DRCM kind|..." plugin lines are
   page data and are hidden on the host page.
+- Cluster status on the Overview (a Clusters panel beside the group
+  checks) and the Heat map (a row per cluster above the host map, in
+  the check status view: nodes, keep alive links, drops in 24 hours,
+  resources and CM status). drsm_cluster_summary() in
+  drsm_clusters.php.
 - network/http setting HTTPS_FALLBACK=yes: a host with port 80 closed
   that answers https://<host> passes, for web servers that now serve
   HTTPS only. Found at NHC, where the old DRSM 1.2 HTTP check never
