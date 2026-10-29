@@ -11,7 +11,10 @@ Everything is BASH. Writing a plugin needs no other language.
 ## Clientless and agent monitoring
 
 DRSM checks a host in one of three ways. Each host file picks one with
-`PLATFORM` and `COLLECTOR`.
+`PLATFORM` and `COLLECTOR`. For Linux, run clientless where you can
+and use the agent where you need it: one DRSM install can mix both
+kinds of host on the same dashboard. Windows hosts always use the
+agent.
 
 | Host | Mode | How it works | Use it when |
 | --- | --- | --- | --- |
