@@ -158,6 +158,11 @@ the same prefix when you run a script by hand.
 
 ## Hosts
 
+- Three ways to check a host: Linux clientless (`COLLECTOR=ssh`, or
+  `local`), Linux agent (`COLLECTOR=lra`, the DataReel Reporting Agent
+  for Linux pushes reports), and Windows, agent only (`COLLECTOR=wra`;
+  DRSM never connects to a Windows host). See PLUGINS.md "Clientless
+  and agent monitoring".
 - One file per host: `$DRSMHOME/etc/hosts/<host>.conf` with `HOST`,
   `DESCRIPTION`, `IMPACT`, `GROUP` (`production`/`ops`, `dev`, `qa` or
   your own, such as `windows`), `PLATFORM`, `COLLECTOR` (`ssh`,

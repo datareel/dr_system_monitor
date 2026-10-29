@@ -8,6 +8,32 @@ check means adding a folder, not editing a core script.
 
 Everything is BASH. Writing a plugin needs no other language.
 
+## Clientless and agent monitoring
+
+DRSM checks a host in one of three ways. Each host file picks one with
+`PLATFORM` and `COLLECTOR`.
+
+| Host | Mode | How it works | Use it when |
+| --- | --- | --- | --- |
+| Linux | Clientless (`COLLECTOR=ssh`, or `local` for the monitor host) | The monitor host logs in over SSH with a key and runs the plugins in one session. Nothing is installed on the host; the plugins are copied to `~/drsm_agent` and only again when they change. | The monitor host can reach the host over SSH: the same network, a VPN, or a cloud host with port 22 open to the monitor |
+| Linux | Agent (`COLLECTOR=lra`) | The DataReel Reporting Agent for Linux (`drra`, RHEL 8, 9 and 10) sends a report every 15 minutes by signed HTTPS upload (or CIFS, SCP). The `linux/*` plugins read the last report on the monitor side. | DRSM cannot reach the host: behind NAT, on another network, no SSH from outside. Also for the vulnerability scans and the Vulnerabilities page |
+| Windows | Agent only (`COLLECTOR=wra`) | The DataReel Reporting Agent for Windows, a Windows service, sends its report every 15 minutes by signed HTTPS upload, a CIFS share or SCP. The `windows/*` plugins read the last report. | Every Windows host. DRSM never connects to a Windows host, so there is no clientless mode for Windows |
+
+Agent hosts only make outgoing connections, to the report server pages
+(`register.php`, `upload.php`) on the dashboard's web server, so they
+can be anywhere on the internet. The monitor host does not need to
+reach them, and can even be the web server itself. Probes such as
+`network/ping` and `network/https` still run from the monitor host, so
+set `PROBES=""` for agent hosts it cannot reach.
+
+The clientless Linux mode runs every Linux plugin, including
+`storage/raid`, `storage/diskio`, `cloud/aws` and `cluster/drcm`. The
+Linux agent reports CPU, load, memory, swap, disks, inodes, network,
+users, updates, security settings, failed services and vulnerability
+scans, with the same metric names as the clientless plugins, so the
+trends page shows both kinds of host the same way. See
+[Windows hosts](#windows-hosts) and [Linux agent hosts](#linux-agent-hosts).
+
 ## Layout
 
 ```
@@ -723,7 +749,6 @@ so `-g dev` writes the same `_dev` files as before. Alerts use
 The design in the project doc adds, in later releases: storage, network
 and core checks (SMART, mounts, backup age, TCP ports, TLS expiry, DNS,
 time sync, failed services); generic database, container, service and
-process plugins plus a `custom/command` catch-all; live Windows checks
-over OpenSSH and PowerShell, alongside the Windows Reporting Agent; configurable notifiers (email, SMS, Slack,
+process plugins plus a `custom/command` catch-all; configurable notifiers (email, SMS, Slack,
 ntfy, webhook) with alert-on-change; and a plugin status grid in the
 Web interface.

@@ -20,6 +20,9 @@ All notable changes to the DataReel System Monitor (DRSM) are listed here.
 
 ### Added
 
+- Docs: "Clientless and agent monitoring" in PLUGINS.md, plugins.html
+  and the overview page: Linux hosts can be checked clientless over SSH
+  or with the Linux agent, Windows hosts with the Windows agent only.
 - Linux agent hosts (beta): Linux hosts that run the DataReel
   Reporting Agent for Linux (drra 1.0-beta1, RHEL 8, 9 and 10) push a
   report every 15 minutes over HTTPS, so DRSM can monitor hosts it
