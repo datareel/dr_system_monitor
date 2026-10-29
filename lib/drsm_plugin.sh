@@ -142,6 +142,60 @@ function drsm_exit()
     if [ ${DRSM_HAS_UNKNOWN} -eq 1 ]; then exit 3; fi
     exit 0
 }
+
+function drsm_lra_hook_lines()
+{
+    # The HOOKS section of Linux agent report $1: for hook $2, its
+    # "hook=" line and output lines (the "| " taken off); for no $2,
+    # every hook. Skipped hooks are "skipped=" lines.
+    awk -v want="${2}" '
+	/^HOOKS:$/ { in_h = 1; next }
+	/^END HOOKS$/ { in_h = 0; next }
+	!in_h { next }
+	/^hook=/ { split($1, a, "="); cur = a[2]; if (want == "" || cur == want) print; next }
+	/^skipped=/ { print; next }
+	/^\| ?/ { if (want == "" || cur == want) { sub(/^\| ?/, ""); print "| " $0 } }' "${1}" 2> /dev/null
+}
+
+function drsm_lra_hook()
+{
+    # Print report hook $1 from the Linux agent report DRSM_LRA_REPORT
+    # as this plugin's output, and exit with the hook's state
+    local name="${1}" lines head rc timed
+    if [ ! -s "${DRSM_LRA_REPORT}" ]; then
+	echo "UNKNOWN - ${DRSM_TARGET:-${HOST}} has no Linux agent report yet"
+	exit 3
+    fi
+    lines=$(drsm_lra_hook_lines "${DRSM_LRA_REPORT}" "${name}")
+    head=$(echo "${lines}" | grep -m 1 "^hook=${name} ")
+    if [ "${head}" == "" ]; then
+	if echo "${lines}" | grep -q "^skipped=\"${name}\(\.sh\)\?\""; then
+	    echo "ERROR - ${DRSM_TARGET:-${HOST}} report hook ${name} was skipped by the agent: $(echo "${lines}" | grep -m 1 "^skipped=\"${name}" | sed 's/.*reason="\(.*\)"/\1/')"
+	    exit 2
+	fi
+	echo "UNKNOWN - ${DRSM_TARGET:-${HOST}} agent report has no ${name} report hook, install it in /etc/drra/report.d (utils/lra_hook_bundle.sh)"
+	exit 3
+    fi
+    echo "${lines}" | sed -n 's/^| //p'
+    rc=$(echo "${head}" | sed -n 's/.* exit=\(-\?[0-9]*\).*/\1/p')
+    timed=$(echo "${head}" | sed -n 's/.* timed_out=\([01]\).*/\1/p')
+    if [ "${timed}" == "1" ]; then
+	echo "ERROR - ${DRSM_TARGET:-${HOST}} report hook ${name} timed out on the host"
+	exit 2
+    fi
+    case "${rc}" in
+	0|1|2|3) exit "${rc}" ;;
+    esac
+    echo "ERROR - ${DRSM_TARGET:-${HOST}} report hook ${name} exited ${rc}"
+    exit 2
+}
+
+# On Linux agent hosts (COLLECTOR=lra) a plugin whose manifest sets
+# LRA_HOOK=<name> shows that report hook's output in place of running
+# its checks here, see utils/lra_hook_bundle.sh
+if [ "${DRSM_LRA_REPORT}" != "" ] && [ "${DRSM_LRA_HOOK}" != "" ] && ! drsm_is_none "${DRSM_LRA_HOOK}"; then
+    drsm_lra_hook "${DRSM_LRA_HOOK}"
+fi
 # ----------------------------------------------------------- 
 # ******************************* 
 # ********* End of File ********* 

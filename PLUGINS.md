@@ -89,6 +89,7 @@ utils/lra_hosts.sh         creates host files for Linux agent hosts
 | `linux/updates` | agent report | Pending updates, days since the last update, restart needed |
 | `linux/security` | agent report | SELinux, firewall, auditd, sshd settings, failed services |
 | `linux/vulnerabilities` | agent report | Security advisories and CVEs from the agent's OpenSCAP, CSAF/VEX or dnf scan, compliance score |
+| `linux/hooks` | agent report | Output of the agent's report hooks, site checks run on the host |
 
 `storage/diskio` and `cloud/aws` never alert. They add numbers to the
 trends page, so they are not in the default plugin list: add them to
@@ -409,6 +410,10 @@ per peer for the last `STRIP_HOURS` in `STRIP_STEP` second steps, and
 the log events). The host page hides them. `CLUSTER_NAME` names the
 cluster on that page; by default it is the node names joined with `+`.
 
+On Linux agent hosts (`COLLECTOR=lra`) DRSM cannot run the check: it
+runs on each node as the agent's `drcm` report hook instead, see
+[Report hooks](#report-hooks).
+
 ## Windows hosts
 
 Windows hosts run the Windows Reporting Agent, a small Windows service
@@ -610,6 +615,43 @@ UNKNOWN until a report arrives. To run one by hand:
 $ DRSM_TARGET=web1 DRSM_LRA_REPORT=/var/www/html/linux/reports/web1_linux_report_agent.txt \
     bash ~/drsm/plugins/linux/vulnerabilities/check.sh
 ```
+
+### Report hooks
+
+Checks that must run on an agent host, such as `cluster/drcm`, run as
+the agent's **report hooks**: executable files in `/etc/drra/report.d`
+on the host (agent 1.0-beta2 and later). The agent runs each one with
+every report and puts its output and exit code in the report's `HOOKS`
+section. On the monitor:
+
+- A plugin whose manifest sets `LRA_HOOK=<name>` shows hook `<name>` as
+  its own check on `COLLECTOR=lra` hosts, in place of running here
+  (`cluster/drcm` has `LRA_HOOK=drcm`, so the Clusters page works for
+  agent hosts). A hook that is missing is UNKNOWN, one that timed out
+  or that the agent skipped is an ERROR. Set
+  `<category>_<name>_LRA_HOOK=NONE` in a host file to turn this off.
+- `linux/hooks` shows every hook, each with its output, and takes the
+  worst exit code. List the hooks a plugin already shows in `SKIP`.
+- `utils/lra_hook_bundle.sh` writes a plugin as one self-contained hook
+  file, with the manifest defaults, the `-f` host file settings and
+  `KEY=value` arguments built in:
+
+```
+$ ~/drsm/utils/lra_hook_bundle.sh -f ~/drsm/etc/hosts/node1.conf cluster/drcm > drcm
+$ scp drcm node1:
+$ ssh node1 'sudo install -o root -g root -m 0755 drcm /etc/drra/report.d/drcm && sudo drra hooks'
+```
+
+Then add the plugin to the host's `PLUGINS`, for example
+`PLUGINS="linux/checkin ... cluster/drcm"`. Any script can be a hook:
+it prints DRSM plugin lines (`INFO - `, `WARNING - `, `ERROR - `,
+`METRIC`, `DETAIL`) and exits 0, 1, 2 or 3. Plugins that read agent
+reports (`linux/*`) cannot be bundled.
+
+| Plugin | Setting | Default | Meaning |
+| --- | --- | --- | --- |
+| `linux/hooks` | `SKIP` | NONE | Hooks to leave out, such as `drcm` when `cluster/drcm` shows it |
+| | `NONE_OK` | 1 | A report with no hooks is OK, 0 makes it UNKNOWN |
 
 ## Writing a plugin
 

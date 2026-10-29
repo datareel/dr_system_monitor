@@ -20,6 +20,14 @@ All notable changes to the DataReel System Monitor (DRSM) are listed here.
 
 ### Added
 
+- Report hooks for Linux agent hosts: the agent (1.0-beta2) runs the
+  site checks in /etc/drra/report.d with each report and sends their
+  output in a HOOKS section. A plugin with LRA_HOOK=<name> in its
+  manifest shows that hook as its own check on COLLECTOR=lra hosts
+  (lib/drsm_plugin.sh), new linux/hooks plugin shows every hook, and
+  utils/lra_hook_bundle.sh writes a plugin as one hook file.
+  cluster/drcm has LRA_HOOK=drcm, so the Clusters page, Overview and
+  Heat map cluster status work when DRSM runs off site.
 - Docs: "Clientless and agent monitoring" in PLUGINS.md, plugins.html
   and the overview page: Linux hosts can be checked clientless over SSH
   or with the Linux agent, Windows hosts with the Windows agent only.

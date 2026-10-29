@@ -135,6 +135,56 @@ expect "missing report is an error" "${R}/new1/new1_report.txt" "=== linux/check
 expect "other plugins wait for a report" "${R}/new1/new1_report.txt" "=== linux/vulnerabilities [UNKNOWN]"
 rm -f "${T}/hosts/new1.conf"
 rm -rf "${R}/new1"
+
+# Report hooks: hk1 has a drcm hook (shown by cluster/drcm, LRA_HOOK),
+# an app hook that warns, one that timed out and one the agent skipped
+awk -v now="${now}" '
+    /^ETIME: / { print "ETIME: " now; next }
+    /^INSTALLED PACKAGES:/ {
+	print "HOOKS:"
+	print "hook=app exit=1 secs=0 timed_out=0 truncated=0"
+	print "| WARNING - hk1 app queue has 120 files"
+	print "| METRIC app_queue=120"
+	print "hook=drcm exit=0 secs=1 timed_out=0 truncated=0"
+	print "| DRCM cluster|node1+node2"
+	print "| DRCM self|node1"
+	print "| INFO - hk1 cluster status is HEALTHY, 2 nodes up, 1 resources"
+	print "| END HOOKS"
+	print "hook=slow exit=-1 secs=60 timed_out=1 truncated=0"
+	print "skipped=\"open.sh\" reason=\"group or world writable\""
+	print "END HOOKS"
+	print ""
+    }
+    { gsub(/web1/, "hk1"); print }' "${TOPdir}/tests/fixtures/web1_linux_report_agent.txt" > "${RPT}/hk1_linux_report_agent.txt"
+sed "s/^ETIME: .*/ETIME: ${now}/; s/web1/hk2/g" "${TOPdir}/tests/fixtures/web1_linux_report_agent.txt" > "${RPT}/hk2_linux_report_agent.txt"
+for h in hk1 hk2; do
+    printf 'HOST=%s\nPLATFORM=linux\nCOLLECTOR=lra\nPROBES=""\nPLUGINS="cluster/drcm linux/hooks"\nlinux_hooks_SKIP=drcm\n' "${h}" > "${T}/hosts/${h}.conf"
+    HOME="${T}/home" bash "${D}/bin/drsm_run.sh" -n -H "${h}" > "${T}/run_${h}.log" 2>&1
+done
+K="${R}/hk1/hk1_report.txt"
+expect "hook: cluster/drcm shows the drcm hook" "${K}" "=== cluster/drcm [OK]"
+expect "hook: page data lines kept" "${K}" "DRCM cluster|node1+node2"
+expect "hook: output that looks like the section end stays output" "${K}" "END HOOKS"
+reject "hook: cluster/drcm did not run its own checks" "${K}" "DRCM config /etc/drcm/cm.cfg is missing"
+expect "hook: linux/hooks takes the worst state" "${K}" "=== linux/hooks [ERROR]"
+expect "hook: app hook output" "${K}" "WARNING - hk1 app queue has 120 files"
+expect "hook: timed out hook is an error" "${K}" "ERROR - hk1 report hook slow timed out on the host"
+expect "hook: skipped hook warns" "${K}" "report hook open.sh was skipped by the agent: group or world writable"
+reject "hook: SKIP leaves drcm to cluster/drcm" "${K}" "Hook drcm:"
+K2="${R}/hk2/hk2_report.txt"
+expect "hook: missing hook is unknown" "${K2}" "agent report has no drcm report hook"
+expect "hook: no hooks is OK for linux/hooks" "${K2}" "=== linux/hooks [OK]"
+# The bundled hook: one file, the plugin's settings, never in hook mode
+bash "${D}/utils/lra_hook_bundle.sh" cluster/drcm TUNNEL_SERVICES=drcm-tunnel CM_CONFIG=/nonexistent > "${T}/drcm_hook" 2> "${T}/bundle.err"
+if bash -n "${T}/drcm_hook"; then pass "hook: bundle is valid BASH"; else fail "hook: bundle syntax"; fi
+expect "hook: bundle has the host setting" "${T}/drcm_hook" "export DRSM_TUNNEL_SERVICES=drcm-tunnel"
+expect "hook: bundle leaves hook mode off" "${T}/drcm_hook" "unset DRSM_LRA_REPORT DRSM_LRA_HOOK"
+if grep -q '^source "${DRSM_LIB' "${T}/drcm_hook"; then fail "hook: bundle sources the helpers"; else pass "hook: bundle does not source the helpers"; fi
+DRSM_LRA_REPORT="${RPT}/hk1_linux_report_agent.txt" DRSM_LRA_HOOK=drcm bash "${T}/drcm_hook" > "${T}/hook_out.txt" 2>&1
+expect "hook: bundle runs the plugin itself" "${T}/hook_out.txt" "DRCM config /nonexistent is missing"
+if bash "${D}/utils/lra_hook_bundle.sh" linux/updates > /dev/null 2>&1; then fail "hook: report reading plugin bundled"; else pass "hook: report reading plugins are refused"; fi
+rm -f "${T}/hosts/hk1.conf" "${T}/hosts/hk2.conf" "${RPT}/hk1_linux_report_agent.txt" "${RPT}/hk2_linux_report_agent.txt"
+rm -rf "${R}/hk1" "${R}/hk2"
 cat > "${W}/config/drsm.php" <<PHPCONF
 <?php
 \$WWWdir = '${W}';
