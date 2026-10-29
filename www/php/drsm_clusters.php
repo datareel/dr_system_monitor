@@ -50,6 +50,7 @@ function drsm_cluster_strip_kinds()
     "o" => array("label" => "Keep alives answered", "cls" => "s-ok"),
     "m" => array("label" => "Missed keep alives", "cls" => "s-miss"),
     "d" => array("label" => "Peer down", "cls" => "s-down"),
+    "s" => array("label" => "This node in standby", "cls" => "s-stby"),
     "i" => array("label" => "This node isolated", "cls" => "s-iso"),
     "." => array("label" => "Nothing logged", "cls" => "s-none")
   );
@@ -91,7 +92,7 @@ function drsm_cluster_parse($host)
         break;
       case "strip":
         if(count($f) >= 4 && ctype_digit($f[1]) && ctype_digit($f[2]) && (int)$f[2] > 0) {
-          $c["strips"][$f[0]] = array("start" => drsm_demo_time((int)$f[1]), "step" => (int)$f[2], "map" => preg_replace('/[^omdi.]/', ".", $f[3]));
+          $c["strips"][$f[0]] = array("start" => drsm_demo_time((int)$f[1]), "step" => (int)$f[2], "map" => preg_replace('/[^omdsi.]/', ".", $f[3]));
         }
         break;
       case "event":
@@ -137,6 +138,8 @@ function drsm_clusters($hosts)
       $st = "Unknown";
       $vals = array_values($nd["views"]);
       if(in_array("Down", $vals)) $st = "Down";
+      else if(in_array("Standby", $vals)) $st = "Standby";
+      else if(in_array("Releasing", $vals)) $st = "Releasing";
       else if(count($vals) > 0 && count(array_unique($vals)) == 1 && $vals[0] == "Up") $st = "Up";
       $nodes[$name]["state"] = $st;
     }
@@ -232,7 +235,7 @@ function drsm_cluster_diagram($cl)
 
   foreach($nodes as $i => $nd) {
     $x = $pos[$i][0] - $bw / 2; $y = $pos[$i][1] - $bh / 2;
-    $st = ($nd["state"] == "Up") ? "OK" : (($nd["state"] == "Down") ? "ERROR" : "UNKNOWN");
+    $st = drsm_cluster_node_state($nd["state"]);
     $owned = 0;
     foreach($cl["reporters"] as $c) {
       foreach($c["resources"] as $r) if($r["owner"] == $nd["host"]) $owned++;
@@ -304,15 +307,18 @@ keep alives in the last 24 hours) and cm (each node's CM status).
 function drsm_cluster_summary($cl)
 {
   $now = time();
-  $up = 0;
+  $up = 0; $sby = 0; $nst = "";
   $tips = array();
   foreach($cl["nodes"] as $nd) {
     if($nd["state"] == "Up") $up++;
+    if($nd["state"] == "Standby" || $nd["state"] == "Releasing") $sby++;
+    $s = drsm_cluster_node_state($nd["state"]);
+    $nst = ($nst == "") ? $s : drsm_worst($nst, $s);
     $tips[] = $nd["name"] . ": " . $nd["state"];
   }
   $n = count($cl["nodes"]);
-  $out = array("state" => $cl["state"]);
-  $out["nodes"] = array(($up == $n && $n > 0) ? "OK" : (($up < $n) ? "ERROR" : "UNKNOWN"), "{$up}/{$n} up", implode(", ", $tips));
+  $out = array("state" => $cl["state"], "standby" => $sby);
+  $out["nodes"] = array($nst == "" ? "UNKNOWN" : $nst, "{$up}/{$n} up" . ($sby > 0 ? ", {$sby} standby" : ""), implode(", ", $tips));
 
   $lst = ""; $tips = array();
   $drops = 0; $dtips = array();
@@ -343,7 +349,7 @@ function drsm_cluster_summary($cl)
     else if(in_array("OK-Backup", $o)) $backup++;
   }
   if($split > 0) $rst = "ERROR"; else if($backup > 0) $rst = "WARNING"; else if($nr == 0) $rst = "UNKNOWN";
-  $out["resources"] = array($rst, $split > 0 ? "{$split} split" : ($backup > 0 ? "{$backup} on backup" : (string)$nr),
+  $out["resources"] = array($rst, $split > 0 ? "{$split} split" : ($backup > 0 ? "{$backup} on " . ($sby > 0 ? "peer" : "backup") : (string)$nr),
                             $nr . " resource" . ($nr == 1 ? "" : "s") . ($split > 0 ? ", {$split} running on two nodes" : "") . ($backup > 0 ? ", {$backup} on a backup node" : ""));
 
   $cst = ""; $tips = array();
@@ -354,6 +360,16 @@ function drsm_cluster_summary($cl)
   $first = reset($cl["reporters"]);
   $out["cm"] = array($cst == "" ? "UNKNOWN" : $cst, ($first && $first["health"] != "") ? $first["health"] : "-", implode(", ", $tips));
   return $out;
+}
+
+// Dashboard state of a node state from cm_stat: Up, Standby or
+// Releasing (DRCM 1.43, planned), Down, or Unknown
+function drsm_cluster_node_state($s)
+{
+  if($s == "Up") return "OK";
+  if($s == "Standby" || $s == "Releasing") return "WARNING";
+  if($s == "Down") return "ERROR";
+  return "UNKNOWN";
 }
 
 // Badge with its own words in place of the state name

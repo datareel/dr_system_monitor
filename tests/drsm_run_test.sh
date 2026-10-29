@@ -710,6 +710,19 @@ expect "drcm: failed over resource warns" "${C}/out.txt" "WARNING - $(hostname -
 expect "drcm: failed over metric" "${C}/out.txt" "METRIC drcm_resources_failed_over=1"
 if [ ${rc} -eq 2 ]; then pass "drcm: down node exits 2"; else fail "drcm: down node exit ${rc}"; fi
 
+cm_stat_fixture "Standby" '   Crontab:\tjob1\t'"${me}"'\tOK-Backup\tOct 29 16:25:56\n' " FAILEDOVER resources"
+drcm env DRSM_LINK_CHECK=no
+rc=$?
+expect "drcm: standby node is shown as standby" "${C}/out.txt" "WARNING - $(hostname -s) cluster node node2 is in STANDBY, its resources run on its peers"
+if ! grep -q "node2 (127.0.0.1) is Down" "${C}/out.txt"; then pass "drcm: standby is not Down"; else fail "drcm: standby reported as Down"; fi
+expect "drcm: resource on a peer during standby" "${C}/out.txt" "cluster Crontab job1 runs on ${me} while node2 is in standby"
+expect "drcm: standby metric" "${C}/out.txt" "METRIC drcm_nodes_standby=1"
+expect "drcm: standby line for the page" "${C}/out.txt" "DRCM standby|node2"
+expect "drcm: node line keeps the standby state" "${C}/out.txt" "DRCM node|node2|other.example.com|Standby|127.0.0.1"
+if [ ${rc} -eq 1 ]; then pass "drcm: standby is a warning"; else fail "drcm: standby exit ${rc}"; fi
+drcm env DRSM_LINK_CHECK=no DRSM_STANDBY_STATE=INFO
+rc=$?
+if [ ${rc} -eq 0 ]; then pass "drcm: STANDBY_STATE=INFO keeps the check OK"; else fail "drcm: STANDBY_STATE=INFO exit ${rc}: $(grep -E '^(WARNING|ERROR)' "${C}/out.txt" | head -2)"; fi
 cm_stat_fixture "Up  " '   Crontab:\tjob1\t'"${me}"'\tOK-Normal\tOct 27 20:36:56\n   Crontab:\tjob1\tother.example.com\tOK-Backup\tOct 28 01:00:00\n' "FAILEDOVER resources"
 drcm env DRSM_LINK_CHECK=no
 expect "drcm: one resource on two owners is a split cluster" "${C}/out.txt" "split cluster, Crontab job1 on ${me} and other.example.com"
@@ -738,6 +751,11 @@ if ! grep -q "this node is isolated from" "${C}/out.txt"; then pass "drcm: isola
 printf '%s drcm_server: Node node2 is dead, signaling cluster resource failover to active nodes\n' "${stamp}" > "${C}/drcm.log"
 drcm env DRSM_LINK_CHECK=no
 if grep -qE '^DRCM strip\|node2\|[0-9]+\|300\|\.{287}d$' "${C}/out.txt"; then pass "drcm: strip marks the peer down"; else fail "drcm: down strip: $(grep '^DRCM strip' "${C}/out.txt" | rev | cut -c1-20)"; fi
+printf '%s drcm_server: Standby requested, stopping all resources on this node so peers can take them over\n%s drcm_server: Node node2 is alive\n' "${stamp}" "${stamp}" > "${C}/drcm.log"
+drcm env DRSM_LINK_CHECK=no
+if grep -qE '^DRCM strip\|node2\|[0-9]+\|300\|\.{287}s$' "${C}/out.txt"; then pass "drcm: strip marks this node in standby"; else fail "drcm: standby strip: $(grep '^DRCM strip' "${C}/out.txt" | rev | cut -c1-20)"; fi
+expect "drcm: standby event for the page" "${C}/out.txt" "|standby|Standby requested"
+if ! grep -q "cluster failover events" "${C}/out.txt"; then pass "drcm: standby is not a failover event"; else fail "drcm: standby counted as failover"; fi
 
 printf 'Oct 28 22:57:42 drcm_client: ERROR - CM config file load error.\n' > "${C}/cm_stat.txt"
 drcm env DRSM_LINK_CHECK=no

@@ -794,6 +794,7 @@ td > .tier:first-child { margin-left: 0; }
 .s-ok, .cl-legend .s-ok { fill: var(--ok); background: var(--ok); }
 .s-miss, .cl-legend .s-miss { fill: var(--warn); background: var(--warn); }
 .s-down, .cl-legend .s-down { fill: var(--err); background: var(--err); }
+.s-stby, .cl-legend .s-stby { fill: var(--accent-2); background: var(--accent-2); }
 .s-iso, .cl-legend .s-iso { fill: var(--stale); background: var(--stale); }
 .s-none, .cl-legend .s-none { fill: var(--surface-3); background: var(--surface-3); }
 .cl-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; color: var(--text-2); }

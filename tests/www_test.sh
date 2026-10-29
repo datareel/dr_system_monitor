@@ -300,6 +300,18 @@ expect "history bars" 'class="h-miss"'
 expect "event listed and escaped" 'failed keep alive check &lt;b&gt;'
 expect "resource owner" 'n1.example.com'
 reject "no page data lines in the CM report" 'DRCM strip|'
+# node2 goes into standby: n2 reports it, n1 sees it
+for n in n1 n2; do
+    sed -i 's/^DRCM node|node2|n2.example.com|Up|/DRCM node|node2|n2.example.com|Standby|/' "${W}/reports/systems/${n}/${n}_report.txt"
+done
+render clusters.php ""
+expect "standby node badge" '<span class="dot"></span>Standby</span>'
+expect "standby in the nodes KPI" 'node2 in standby'
+render heatmap.php ""
+expect "standby on the heat map" '<span class="hcell-text">1/2 up, 1 standby</span>'
+for n in n1 n2; do
+    sed -i 's/^DRCM node|node2|n2.example.com|Standby|/DRCM node|node2|n2.example.com|Up|/' "${W}/reports/systems/${n}/${n}_report.txt"
+done
 render clusters.php "c=../../etc&r=bogus"
 expect "unknown cluster falls back to the first" "node1+node2"
 render index.php ""

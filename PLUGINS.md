@@ -383,6 +383,7 @@ cluster_drcm_TUNNEL_SERVICES=drcm-tunnel   # node that runs the SSH tunnel
 | --- | --- |
 | `drcm_server` (`SERVICE`) and each unit in `TUNNEL_SERVICES` running | ERROR when stopped |
 | `cm_stat`: a node Down | ERROR |
+| `cm_stat`: a node in Standby or Releasing (DRCM 1.43 maintenance), and the resources its peers run meanwhile | `STANDBY_STATE`, WARNING by default (INFO or ERROR) |
 | `cm_stat`: a resource on its backup node (`OK-Backup`) | `FAILOVER_STATE`, WARNING by default |
 | `cm_stat`: one resource on two owners, duplicate resource, resources missing | ERROR (split cluster) |
 | TCP connect to each active peer's `keep_alive_ip:tcpport` (`LINK_CHECK`) | ERROR when it does not connect |
@@ -400,7 +401,7 @@ through a `drcm` group that owns it (mode 640); without it the cluster
 status is UNKNOWN and the other checks still run. Metrics for the
 trends page: `drcm_nodes_up`, `drcm_nodes_down`, `drcm_resources`,
 `drcm_resources_failed_over`, `drcm_keepalive_misses`,
-`drcm_failover_events`, and per peer `drcm_keepalive_ok` and
+`drcm_failover_events`, `drcm_nodes_standby`, and per peer `drcm_keepalive_ok` and
 `drcm_keepalive_missed` for the last `INTERVAL_MINUTES` (15, the cron
 interval).
 

@@ -49,7 +49,8 @@
 # cluster name, this node, each node, resource and link, the health
 # line, a keep alive strip per peer for the last STRIP_HOURS in
 # STRIP_STEP second steps (o keep alive, m missed, d peer down, i this
-# node isolated, . nothing logged) and the cluster log events.
+# node isolated, s this node in standby, . nothing logged) and the
+# cluster log events.
 #
 # -----------------------------------------------------------
 # shellcheck source=lib/drsm_plugin.sh
@@ -67,6 +68,7 @@ EVENT_MINUTES=$(drsm_setting EVENT_MINUTES 30)
 KEEPALIVE_WARN=$(drsm_setting KEEPALIVE_WARN 3)
 KEEPALIVE_STALE=$(drsm_setting KEEPALIVE_STALE 300)
 FAILOVER_STATE=$(drsm_setting FAILOVER_STATE WARNING)
+STANDBY_STATE=$(drsm_setting STANDBY_STATE WARNING)
 CLUSTER_NAME=$(drsm_setting CLUSTER_NAME "")
 INTERVAL_MINUTES=$(drsm_setting INTERVAL_MINUTES 15)
 STRIP_HOURS=$(drsm_setting STRIP_HOURS 24)
@@ -75,6 +77,16 @@ STRIP_STEP=$(drsm_setting STRIP_STEP 300)
 function failover_report()
 {
     if [ "${FAILOVER_STATE^^}" == "ERROR" ]; then drsm_crit "$@"; else drsm_warn "$@"; fi
+}
+
+function standby_report()
+{
+    # A node in standby (DRCM 1.43) is planned, not a failure
+    case "${STANDBY_STATE^^}" in
+	ERROR) drsm_crit "$@" ;;
+	INFO|OK) drsm_info "$@" ;;
+	*) drsm_warn "$@" ;;
+    esac
 }
 
 if [ ! -r "${CM_CONFIG}" ]; then
@@ -157,6 +169,8 @@ fi
 # Cluster status from this node's point of view
 nodes_up=0
 nodes_down=0
+nodes_standby=0
+standby_names=""
 resources=0
 failed_over=0
 if [ ! -x "${DRCM_SERVER}" ]; then
@@ -184,11 +198,19 @@ else
 	    echo "DRCM node|${name}|${nhost}|${state}|${ip}"
 	    if [ "${state}" == "Up" ]; then
 		nodes_up=$((nodes_up + 1))
+	    elif [ "${state}" == "Standby" ] || [ "${state}" == "Releasing" ]; then
+		nodes_standby=$((nodes_standby + 1))
+		standby_names="${standby_names:+${standby_names} and }${name}"
+		if [ "${state}" == "Standby" ]; then
+		    standby_report "${HOST} cluster node ${name} is in STANDBY, its resources run on its peers"
+		else
+		    standby_report "${HOST} cluster node ${name} is RELEASING its resources to go into STANDBY"
+		fi
 	    else
 		nodes_down=$((nodes_down + 1))
 		drsm_crit "${HOST} cluster node ${name} (${ip}) is Down"
 	    fi
-	done < <(echo "${STAT}" | awk -F'\t' 'NF == 4 && ($3 ~ /^(Up|Down)/)')
+	done < <(echo "${STAT}" | awk -F'\t' 'NF == 4 && ($3 ~ /^(Up|Down|Standby|Releasing)/)')
 	# Resource lines: Type:<TAB>nickname<TAB>owner<TAB>status<TAB>start
 	RES=$(echo "${STAT}" | awk -F'\t' '$1 ~ /^ +[A-Za-z]+:$/ && NF >= 4 { t = $1; gsub(/[ :]/, "", t); print t "|" $2 "|" $3 "|" $4 "|" $5 }')
 	echo "${RES}" | awk 'NF { print "DRCM resource|" $0 }'
@@ -198,7 +220,11 @@ else
 	    resources=$((resources + 1))
 	    if [ "${state}" == "OK-Backup" ]; then
 		failed_over=$((failed_over + 1))
-		failover_report "${HOST} cluster ${type} ${nick} is failed over, running on backup ${owner}"
+		if [ ${nodes_standby} -gt 0 ]; then
+		    standby_report "${HOST} cluster ${type} ${nick} runs on ${owner} while ${standby_names} is in standby"
+		else
+		    failover_report "${HOST} cluster ${type} ${nick} is failed over, running on backup ${owner}"
+		fi
 	    fi
 	done <<< "${RES}"
 	# The same resource on two owners is a split cluster
@@ -215,8 +241,13 @@ else
 	fi
 	health=$(echo "${STAT}" | awk -F': ' '/Cluster status:/ { print $2; exit }')
 	echo "DRCM health|${health}"
+	if [ ${nodes_standby} -gt 0 ]; then
+	    echo "DRCM standby|${standby_names}"
+	fi
 	if [ "${health}" == "HEALTHY" ]; then
 	    drsm_ok "${HOST} cluster status is HEALTHY, ${nodes_up} nodes up, ${resources} resources"
+	elif [ ${nodes_standby} -gt 0 ] && [ ${nodes_down} -eq 0 ] && [[ "${health}" != *MISSING* ]]; then
+	    standby_report "${HOST} cluster status is ${health}, ${standby_names} in STANDBY"
 	elif [ "${DRSM_HAS_ERROR}" -eq 0 ] && [ "${DRSM_HAS_WARNING}" -eq 0 ]; then
 	    drsm_warn "${HOST} cluster status is ${health}"
 	else
@@ -230,6 +261,7 @@ if [ $((nodes_up + nodes_down)) -eq 0 ]; then
 fi
 drsm_metric drcm_nodes_up "${nodes_up}"
 drsm_metric drcm_nodes_down "${nodes_down}"
+drsm_metric drcm_nodes_standby "${nodes_standby}"
 drsm_metric drcm_resources "${resources}"
 drsm_metric drcm_resources_failed_over "${failed_over}"
 
@@ -267,7 +299,7 @@ else
 	BEGIN {
 	    split("Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec", m, " "); for (i = 1; i <= 12; i++) mon[m[i]] = i
 	    np = split(peers, plist, " ")
-	    rank["."] = 0; rank["o"] = 1; rank["m"] = 2; rank["i"] = 3; rank["d"] = 4
+	    rank["."] = 0; rank["o"] = 1; rank["m"] = 2; rank["s"] = 3; rank["i"] = 4; rank["d"] = 5
 	}
 	function bucket(e,   b) { b = int((e - sstart) / step); return (b >= nb) ? nb - 1 : b }
 	function mark(p, b, c) { if (b >= 0 && b < nb && rank[c] > rank[(p, b) in st ? st[p, b] : "."]) st[p, b] = c }
@@ -286,6 +318,9 @@ else
 	    msg = $0; sub(/^[A-Z][a-z][a-z] +[0-9]+ [0-9:]+ [^:]*: /, "", msg)
 	    peer = ""
 	    if (msg ~ /^Node [^ ]+ /) { split(msg, w, " "); peer = w[2] }
+	    # This node in standby (DRCM 1.43), until an unstandby request
+	    if (msg ~ /^Standby requested|^Starting in standby/) { if (!sby) sby = e }
+	    else if (msg ~ /^Unstandby requested/) { if (sby) span("", sby, e, "s"); sby = 0 }
 	    if (msg ~ /this node is isolated, stopping its resources/) { if (!iso) iso = e }
 	    else if (msg ~ /no longer isolated/) { if (iso) span("", iso, e, "i"); iso = 0 }
 	    if (peer != "") {
@@ -303,12 +338,14 @@ else
 	    }
 	    if (e < sstart) next
 	    if (msg ~ /failed keep alive check/) print "miss|" e "|" msg
+	    else if (msg ~ /^(Standby requested|Starting in standby|Unstandby requested|Peers released this node|This node released all its resources)/) print "standby|" e "|" msg
 	    else if (msg ~ /is back on line/) print "recover|" e "|" msg
 	    else if (msg ~ /is dead|is inactive|failback|back in failed state|isolated|takeover_check|is alive but failed over/) print "event|" e "|" msg
 	    else if (msg ~ /ERROR - Resource script/) print "error|" e "|" msg
 	}
 	END {
 	    if (iso) { print "isolated|" iso "|"; span("", iso, now, "i") }
+	    if (sby) span("", sby, now, "s")
 	    for (p in down) span(p, down[p], now, "d")
 	    for (p in alive) print "alive|" alive[p] "|" p
 	    for (j = 1; j <= np; j++) {
@@ -360,7 +397,7 @@ else
 	drsm_metric drcm_keepalive_ok "${ok}" "peer=\"${peer}\""
 	drsm_metric drcm_keepalive_missed "${missed}" "peer=\"${peer}\""
     done < <(echo "${LOG}" | awk -F'|' '$1 == "count"')
-    echo "${LOG}" | awk -F'|' '$1 == "miss" || $1 == "recover" || $1 == "event" || $1 == "error" { print "DRCM event|" $2 "|" $1 "|" $3 }' | tail -100
+    echo "${LOG}" | awk -F'|' '$1 == "miss" || $1 == "recover" || $1 == "standby" || $1 == "event" || $1 == "error" { print "DRCM event|" $2 "|" $1 "|" $3 }' | tail -100
 fi
 drsm_metric drcm_keepalive_misses "${misses}"
 drsm_metric drcm_failover_events "${events}"

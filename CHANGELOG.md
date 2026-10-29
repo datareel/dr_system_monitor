@@ -20,6 +20,12 @@ All notable changes to the DataReel System Monitor (DRSM) are listed here.
 
 ### Added
 
+- cluster/drcm shows DRCM 1.43 standby: a node in Standby or Releasing
+  is a warning with its own message (STANDBY_STATE, WARNING, INFO or
+  ERROR), not Down; resources its peers run meanwhile say so;
+  drcm_nodes_standby metric, standby periods in the keep alive
+  timeline and standby events. The Clusters page, Overview and Heat
+  map show "Standby" nodes.
 - Report hooks for Linux agent hosts: the agent (1.0-beta2) runs the
   site checks in /etc/drra/report.d with each report and sends their
   output in a HOOKS section. A plugin with LRA_HOOK=<name> in its

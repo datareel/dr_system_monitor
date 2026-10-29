@@ -189,7 +189,11 @@ $now = time();
 $reporters = $cl["reporters"];
 $first = reset($reporters);
 $nup = 0;
-foreach($cl["nodes"] as $nd) if($nd["state"] == "Up") $nup++;
+$nsby = array();
+foreach($cl["nodes"] as $nd) {
+  if($nd["state"] == "Up") $nup++;
+  if($nd["state"] == "Standby" || $nd["state"] == "Releasing") $nsby[] = $nd["name"];
+}
 $events = array();
 foreach($reporters as $key => $c) foreach($c["events"] as $e) { $e["by"] = $c; $events[] = $e; }
 usort($events, function($a, $b) { return $b["t"] - $a["t"]; });
@@ -203,8 +207,8 @@ foreach($first["resources"] as $r) if($r["state"] == "OK-Backup") $backup++;
 ?>
 <section class="kpis" aria-label="Summary">
   <div class="kpi <?php echo h(drsm_state_class($cl["state"])); ?>"><span class="kpi-label">Cluster</span><span class="kpi-value"><?php echo h(drsm_state_label($cl["state"])); ?></span><span class="kpi-sub"><?php echo h($first["health"] != "" ? $first["health"] : "no CM status"); ?></span></div>
-  <div class="kpi <?php echo $nup == count($cl["nodes"]) ? "ok" : "err"; ?>"><span class="kpi-label">Nodes up</span><span class="kpi-value"><?php echo (int)$nup; ?> / <?php echo count($cl["nodes"]); ?></span><span class="kpi-sub"><?php echo count($reporters); ?> reporting to DRSM</span></div>
-  <div class="kpi <?php echo $backup > 0 ? "warn" : "ok"; ?>"><span class="kpi-label">Resources</span><span class="kpi-value"><?php echo count($first["resources"]); ?></span><span class="kpi-sub"><?php echo $backup > 0 ? (int)$backup . " on backup nodes" : "all on their owners"; ?></span></div>
+  <div class="kpi <?php echo $nup == count($cl["nodes"]) ? "ok" : (($nup + count($nsby)) == count($cl["nodes"]) ? "warn" : "err"); ?>"><span class="kpi-label">Nodes up</span><span class="kpi-value"><?php echo (int)$nup; ?> / <?php echo count($cl["nodes"]); ?></span><span class="kpi-sub"><?php echo count($nsby) > 0 ? h(implode(", ", $nsby) . " in standby") : count($reporters) . " reporting to DRSM"; ?></span></div>
+  <div class="kpi <?php echo $backup > 0 ? "warn" : "ok"; ?>"><span class="kpi-label">Resources</span><span class="kpi-value"><?php echo count($first["resources"]); ?></span><span class="kpi-sub"><?php echo $backup > 0 ? (int)$backup . (count($nsby) > 0 ? " on peers during standby" : " on backup nodes") : "all on their owners"; ?></span></div>
   <a class="kpi <?php echo $drops > 0 ? "warn" : "ok"; ?>" href="#cl-strips"><span class="kpi-label">Keep alive drops</span><span class="kpi-value"><?php echo (int)$drops; ?></span><span class="kpi-sub">missed, last 24 hours</span></a>
   <a class="kpi <?php echo $failovers > 0 ? "warn" : "ok"; ?>" href="#cl-events"><span class="kpi-label">Failover events</span><span class="kpi-value"><?php echo (int)$failovers; ?></span><span class="kpi-sub">last 24 hours</span></a>
 </section>
@@ -221,7 +225,7 @@ foreach($first["resources"] as $r) if($r["state"] == "OK-Backup") $backup++;
           <th scope="row"><?php echo h($nd["name"]); ?></th>
           <td class="small"><?php echo h($nd["host"]); ?></td>
           <td><code><?php echo h($nd["ip"]); ?></code></td>
-          <td><?php echo drsm_cluster_badge($nd["state"] == "Up" ? "OK" : ($nd["state"] == "Down" ? "ERROR" : "UNKNOWN"), $nd["state"]); ?></td>
+          <td><?php echo drsm_cluster_badge(drsm_cluster_node_state($nd["state"]), $nd["state"]); ?></td>
           <td class="small"><?php $v = array(); foreach($nd["views"] as $k => $s) $v[] = $reporters[$k]["self"] . ": " . $s; echo h(implode(", ", $v)); ?></td>
           <td><?php if($nd["drsm"] !== null) { ?><a href="<?php echo h(drsm_host_url("readreport.php", $nd["drsm"], array(), drsm_plugin_anchor(DRSM_CLUSTER_PLUGIN))); ?>"><?php echo h($nd["drsm"]["name"]); ?></a><?php } else { ?><span class="muted">none</span><?php } ?></td>
         </tr>
@@ -256,7 +260,7 @@ foreach($rows as $r) {
           <td><?php echo h($r["type"]); ?></td>
           <th scope="row"><?php echo h($r["nick"]); ?></th>
           <td class="small"><?php echo h($r["owner"]); ?></td>
-          <td><?php echo drsm_cluster_badge($st, $split ? "On two nodes" : $r["state"]); ?></td>
+          <td><?php echo drsm_cluster_badge($st, $split ? "On two nodes" : (($r["state"] == "OK-Backup" && count($nsby) > 0) ? "On peer, standby" : $r["state"])); ?></td>
           <td class="small"><?php echo h($r["start"]); ?></td>
           <td class="small"><?php echo h(implode(", ", array_unique($r["by"]))); ?></td>
         </tr>
@@ -337,7 +341,7 @@ if(!$any) echo "    <p class=\"muted\">The metrics history has no keep alive cou
       <thead><tr><th scope="col">Time</th><th scope="col">Node log</th><th scope="col">Kind</th><th scope="col">Event</th></tr></thead>
       <tbody>
 <?php
-$kinds = array("miss" => array("WARNING", "Dropout"), "recover" => array("OK", "Recovered"), "event" => array("WARNING", "Failover"), "error" => array("ERROR", "Error"));
+$kinds = array("miss" => array("WARNING", "Dropout"), "recover" => array("OK", "Recovered"), "standby" => array("WARNING", "Standby"), "event" => array("WARNING", "Failover"), "error" => array("ERROR", "Error"));
 foreach(array_slice($events, 0, 200) as $e) {
   $k = isset($kinds[$e["kind"]]) ? $kinds[$e["kind"]] : array("UNKNOWN", $e["kind"]);
 ?>
