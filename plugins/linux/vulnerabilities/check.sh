@@ -82,12 +82,12 @@ for kv in ${counts}; do V[${kv%%=*}]="${kv#*=}"; done
 
 case "${V[status]}" in
     disabled)
-	echo "Vulnerability scan turned off on the agent ([scan] enabled=0)"
-	echo "VULN summary|||||||||disabled"
+	drsm_info "${LRA_HOST} vulnerability scans are off, turn them on in the agent with [scan] enabled=1 in /etc/drra/drra.ini"
+	echo "VULN summary||||||||||disabled"
 	drsm_exit ;;
     pending|"")
 	drsm_info "${LRA_HOST} has not finished its first vulnerability scan"
-	echo "VULN summary|||||||||pending"
+	echo "VULN summary||||||||||pending"
 	drsm_exit ;;
 esac
 

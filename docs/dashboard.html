@@ -92,7 +92,7 @@
 </ul>
 
 <h2 id="vulnerabilities">Vulnerabilities</h2>
-<p>The <strong>Vulnerabilities</strong> page shows the security advisories (Red Hat errata and their CVEs) that apply to the hosts that run the DataReel Reporting Agent for Linux, from each host's daily scan (turned on per host in the agent, <code>[scan] enabled=1</code>), read by the <a href="plugins.html#linux"><code>linux/vulnerabilities</code></a> plugin. The menu item appears once a host runs the plugin.</p>
+<p>The <strong>Vulnerabilities</strong> page shows the security advisories (Red Hat errata and their CVEs) that apply to the hosts that run the DataReel Reporting Agent for Linux, from each host's daily scan (turned on per host in the agent, <code>[scan] enabled=1</code>; the page names the hosts with the scan off), read by the <a href="plugins.html#linux"><code>linux/vulnerabilities</code></a> plugin. The menu item appears once a host runs the plugin.</p>
 <ul>
 <li>The <strong>fleet view</strong> lists each host with its Critical, Important, Moderate and Low advisory counts, its CVEs with no fix yet, its compliance score and when it was last scanned, then the advisories that affect the most hosts, worst first. Filter the advisories by severity. Each advisory links to its Red Hat errata page.</li>
 <li>A <strong>host view</strong> (select a host) lists its advisories with the packages to update, the CVEs Red Hat has no fix for yet (RHEL 10 CSAF/VEX scans), and the failed rules of a compliance scan.</li>

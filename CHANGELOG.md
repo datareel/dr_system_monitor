@@ -39,7 +39,9 @@ All notable changes to the DataReel System Monitor (DRSM) are listed here.
   serves the agent's OpenSCAP HTML reports with a sandbox
   Content-Security-Policy where $LRAreportsDir is set, only for hosts
   in the visitor's sites. "VULN kind|..." plugin lines are page data
-  and are hidden on the host page. Tests in tests/lra_test.sh.
+  and are hidden on the host page. Hosts whose agent has the scan
+  turned off (the agent default) are named in a notice on the page.
+  Tests in tests/lra_test.sh.
 - cluster/drcm plugin for DataReel Cluster Manager (DRCM) clusters, run
   on every node: drcm_server and tunnel units running, cm_stat nodes
   Down, failed over resources, one resource on two owners (split

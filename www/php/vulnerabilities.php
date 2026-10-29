@@ -84,6 +84,14 @@ function vuln_counts_cells($v)
   return $out;
 }
 
+// Notice for hosts whose agent has the vulnerability scan turned off,
+// $names empty for the one host view
+function vuln_off_callout($names = array())
+{
+  $who = count($names) == 0 ? "this host" : count($names) . (count($names) == 1 ? " host: " : " hosts: ") . implode(", ", array_map("h", $names));
+  return "<div class=\"callout\">" . drsm_icon("lock") . "<span>Vulnerability scans are off on {$who}. Turn them on in the agent with <code>[scan] enabled=1</code> in <code>/etc/drra/drra.ini</code>, then <code>systemctl reload drra</code>.</span></div>\n";
+}
+
 function vuln_scan_text($v)
 {
   if($v["status"] == "disabled") return "<span class=\"muted\">scan off</span>";
@@ -146,6 +154,11 @@ if($one === null) {
     }
     return strcmp($a["host"]["name"], $b["host"]["name"]);
   });
+?>
+<?php
+  $off = array();
+  foreach($order as $v) if($v["status"] == "disabled") $off[] = $v["host"]["name"];
+  if(count($off) > 0) echo vuln_off_callout($off);
 ?>
 <section class="kpis" aria-label="Summary">
   <div class="kpi <?php echo h(drsm_state_class($overall)); ?>"><span class="kpi-label">Hosts scanned</span><span class="kpi-value"><?php echo count($vulns); ?></span><span class="kpi-sub"><?php echo (int)$hosts_crit; ?> with critical advisories</span></div>
@@ -225,6 +238,7 @@ else {
   $scap = drsm_vuln_html_path($hst["name"], "scap");
   $comp = drsm_vuln_html_path($hst["name"], "compliance");
 ?>
+<?php if($v["status"] == "disabled") echo vuln_off_callout(); ?>
 <section class="kpis" aria-label="Summary">
   <div class="kpi <?php echo h(drsm_state_class($v["state"])); ?>"><span class="kpi-label">State</span><span class="kpi-value"><?php echo h(drsm_state_label($v["state"])); ?></span><span class="kpi-sub"><?php echo vuln_scan_text($v); ?></span></div>
 <?php foreach(array("Critical", "Important", "Moderate", "Low") as $s) { ?>
@@ -265,7 +279,7 @@ else {
         </tr>
 <?php } ?>
 <?php if(count($v["advisories"]) == 0) { ?>
-        <tr><td colspan="6" class="muted"><?php echo $v["status"] == "ok" ? "No security advisories apply to this host." : "No scan results."; ?></td></tr>
+        <tr><td colspan="6" class="muted"><?php echo $v["status"] == "ok" ? "No security advisories apply to this host." : ($v["status"] == "disabled" ? "Vulnerability scans are off on this host." : "No scan results."); ?></td></tr>
 <?php } ?>
       </tbody>
     </table>

@@ -82,6 +82,14 @@ awk -v now="${now}" '
     /^advisory / { if (!done) { print "advisory id=RHSA-2026:90328 severity=Moderate cves=CVE-2026-1111 packages=bind-libs<32:9.18.33-15.el10_2.13 title=\"Moderate: bind-libs security update\""; print "unfixed cve=CVE-2026-2222 severity=Critical packages=edk2-ovmf state=\"Affected\""; print "unfixed cve=CVE-2026-3333 severity=Low packages=firefox state=\"Will not fix\"" } done = 1; next }
     { gsub(/web1/, "app1"); print }' "${TOPdir}/tests/fixtures/web1_linux_report_agent.txt" > "${RPT}/app1_linux_report_agent.txt"
 
+# off1: the agent has the vulnerability scan turned off
+awk -v now="${now}" '
+    /^ETIME: / { print "ETIME: " now; next }
+    /^VULNERABILITIES:/ { print; print "status=disabled"; skip = 1; next }
+    /^END VULNERABILITIES/ { skip = 0 }
+    skip { next }
+    { gsub(/web1/, "off1"); print }' "${TOPdir}/tests/fixtures/web1_linux_report_agent.txt" > "${RPT}/off1_linux_report_agent.txt"
+
 cat > "${T}/home/.drsm.sh" <<CONF
 export SITEID="LRATEST"
 export WWWdir=${W}
@@ -116,6 +124,8 @@ expect "db1 skipped failed unit" "${R}/db1/db1_report.txt" "=== linux/security [
 expect "app1 unfixed critical warns" "${R}/app1/app1_report.txt" "has 1 Critical or worse CVEs with no fix yet"
 expect "app1 unfixed line" "${R}/app1/app1_report.txt" "VULN unfixed|CVE-2026-3333|Low|firefox|Will not fix"
 expect "app1 summary has the unfixed count" "${R}/app1/app1_report.txt" "|ok|2"
+expect "scan off is OK" "${R}/off1/off1_report.txt" "=== linux/vulnerabilities [OK]"
+expect "scan off message" "${R}/off1/off1_report.txt" "INFO - off1 vulnerability scans are off"
 expect "app1 resources metric for trends" "${R}/app1/app1_report.txt" "METRIC cpu_used_pct="
 
 # A host with no report yet is an error from linux/checkin only
@@ -152,6 +162,7 @@ render vulnerabilities.php ""
 expect_page "fleet page lists web1" ">web1</strong>"
 expect_page "fleet page lists the critical advisory" "https://access.redhat.com/errata/RHSA-2026:88455"
 expect_page "built in menu item" 'href="/drsm/dashboard/php/vulnerabilities.php"'
+expect_page "fleet page says scans are off" "Vulnerability scans are off on 1 host: off1"
 render vulnerabilities.php "sev=Important"
 expect_page "severity filter" "RHSA-2026:77396"
 render vulnerabilities.php "n=db1"
@@ -162,6 +173,8 @@ expect_page "host page lists unfixed CVEs" "CVE-2026-2222"
 expect_page "host page names the CSAF source" "CSAF/VEX"
 render vulnerabilities.php "n=web1"
 expect_page "host page packages" "ca-certificates-"
+render vulnerabilities.php "n=off1"
+expect_page "host page says scans are off" "Vulnerability scans are off on this host. Turn them on"
 render scap_report.php "n=db1&site=default/default&kind=scap"
 expect_page "report viewer serves the HTML" "OpenSCAP report"
 render scap_report.php "n=db1&kind=scap"
@@ -184,7 +197,7 @@ sed -i 's#^?>$#$NAVextra = array(array("label" => "Vulnerabilities", "url" => "/
 render index.php ""
 if [ "$(grep -c 'href="/drsm/dashboard/php/vulnerabilities.php"' "${T}/page.html")" == "1" ]; then pass "no second menu item from \$NAVextra"; else fail "Vulnerabilities menu item listed more than once"; fi
 # No Linux agent hosts, no menu item
-rm -rf "${R}/web1" "${R}/db1" "${R}/app1"
+rm -rf "${R}/web1" "${R}/db1" "${R}/app1" "${R}/off1"
 sed -i '/^\$NAVextra/d' "${W}/config/drsm.php"
 render index.php ""
 reject_page "no menu item without agent hosts" "vulnerabilities.php"
