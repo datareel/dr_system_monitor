@@ -42,6 +42,7 @@ utils/wra_hosts.sh         creates host files for Windows agent hosts
 | `storage/raid` | host | mdadm software RAID, LSI MegaRAID drives |
 | `storage/diskio` | host | Disk read and write operations and bytes, for IOPS and throughput trends |
 | `cloud/aws` | host | AWS EC2 instance type, zone, public IPv4 and EBS volume sizes from instance metadata |
+| `cluster/drcm` | host | DRCM cluster nodes, resources, keep alives, cluster links and failover events |
 | `network/nics` | host | Interface errors, drops, collisions |
 | `network/ping` | monitor | Host answers ping |
 | `network/http` | monitor | HTTP service answers |
@@ -328,6 +329,40 @@ shows one site, and on each site card on the Organizations page. When
 the picker shows All sites or a whole organization, the top bar has an
 Org links menu instead, with the org links of each organization shown.
 Links open in a new tab.
+
+## DRCM clusters
+
+`cluster/drcm` watches a DataReel Cluster Manager (DRCM) cluster. Add
+it to the `PLUGINS` of every cluster node: each node reports what it
+sees, so a split cluster shows as two nodes that disagree.
+
+```
+PLUGINS="... cluster/drcm"
+cluster_drcm_TUNNEL_SERVICES=drcm-tunnel   # node that runs the SSH tunnel
+```
+
+| Check | State |
+| --- | --- |
+| `drcm_server` (`SERVICE`) and each unit in `TUNNEL_SERVICES` running | ERROR when stopped |
+| `cm_stat`: a node Down | ERROR |
+| `cm_stat`: a resource on its backup node (`OK-Backup`) | `FAILOVER_STATE`, WARNING by default |
+| `cm_stat`: one resource on two owners, duplicate resource, resources missing | ERROR (split cluster) |
+| TCP connect to each active peer's `keep_alive_ip:tcpport` (`LINK_CHECK`) | ERROR when it does not connect |
+| Log: this node isolated (split brain fencing) and not yet resumed | ERROR |
+| Log: missed keep alives in `EVENT_MINUTES` (30) at or over `KEEPALIVE_WARN` (3) | WARNING |
+| Log: no "is alive" line from a peer for `KEEPALIVE_STALE` seconds (300) | WARNING |
+| Log: failover, failback, isolation and takeover check events in `EVENT_MINUTES` | `FAILOVER_STATE` |
+| Log: resource script errors in `EVENT_MINUTES` | ERROR |
+
+The plugin only reads: `drcm_server --client --command=cm_stat`, the
+cluster config (`CM_CONFIG`, default `/etc/drcm/cm.cfg`) and the
+cluster log named by its `log_dir` and `logfile`. The DRSM account
+needs read access to `/etc/drcm/.auth` for `cm_stat`, for example
+through a `drcm` group that owns it (mode 640); without it the cluster
+status is UNKNOWN and the other checks still run. Metrics for the
+trends page: `drcm_nodes_up`, `drcm_nodes_down`, `drcm_resources`,
+`drcm_resources_failed_over`, `drcm_keepalive_misses`,
+`drcm_failover_events`.
 
 ## Windows hosts
 

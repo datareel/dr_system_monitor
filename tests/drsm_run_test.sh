@@ -655,6 +655,86 @@ mv "${T}/home/.drsm.sh.noans" "${T}/home/.drsm.sh"
 rm -f "${T}/hosts/"*.conf
 rm -rf "${T}/sites"; mv "${T}/sites.ans" "${T}/sites"
 
+echo "== cluster/drcm plugin"
+C="${T}/drcm"
+mkdir -p "${C}"
+me=$(hostname)
+cat > "${C}/cm.cfg" <<CFG
+[CM_SERVER]
+tcpport = 9
+log_dir = ${C}
+logfile = drcm.log
+
+[CM_NODE]
+nodename = node1
+hostname = ${me}
+keep_alive_ip = 127.0.0.1
+
+[CM_NODE]
+nodename = node2
+hostname = other.example.com
+keep_alive_ip = 127.0.0.1
+CFG
+# drcm_server stand in: prints the cm_stat file
+cat > "${C}/drcm_server" <<FAKE
+#!/bin/bash
+if [ "\${1}" == "--version" ]; then echo "Datareel Cluster Manager version 1.42"; exit 0; fi
+cat "${C}/cm_stat.txt"
+FAKE
+chmod 755 "${C}/drcm_server"
+# $1 == node2 Up or Down, $2 == resource lines
+function cm_stat_fixture() {
+    printf '\nCluster Manager Status Monitor\n\n========================= M e m b e r   S t a t u s ===========================\n\n' > "${C}/cm_stat.txt"
+    printf '  node1\t%s\tUp  \t127.0.0.1\n  node2\tother.example.com\t%s\t127.0.0.1\n\n' "${me}" "${1}" >> "${C}/cm_stat.txt"
+    printf '======================== R e s o u r c e   S t a t u s ========================\n\n%b\n' "${2}" >> "${C}/cm_stat.txt"
+    printf '======================== C l u s t e r   H e a l t h  =========================\n\n  Cluster status: %s\n' "${3:-HEALTHY}" >> "${C}/cm_stat.txt"
+}
+function drcm() {
+    DRSM_CM_CONFIG="${C}/cm.cfg" DRSM_DRCM_SERVER="${C}/drcm_server" DRSM_SERVICE=NONE DRSM_LINK_TIMEOUT=2 \
+	"$@" bash "${TOPdir}/plugins/cluster/drcm/check.sh" > "${C}/out.txt" 2>&1
+}
+stamp=$(date '+%b %e %T')
+printf '%s drcm_server: Node node2 is alive\n' "${stamp}" > "${C}/drcm.log"
+cm_stat_fixture "Up  " '   Crontab:\tjob1\t'"${me}"'\tOK-Normal\tOct 27 20:36:56\n'
+drcm env DRSM_LINK_CHECK=no
+rc=$?
+expect "drcm: healthy cluster" "${C}/out.txt" "cluster status is HEALTHY, 2 nodes up, 1 resources"
+expect "drcm: this node found by host name" "${C}/out.txt" "DETAIL DRCM node=node1"
+if [ ${rc} -eq 0 ]; then pass "drcm: healthy exits 0"; else fail "drcm: healthy exit ${rc}: $(grep -E '^(WARNING|ERROR|UNKNOWN)' "${C}/out.txt" | head -2)"; fi
+
+cm_stat_fixture "Down" '   Crontab:\tjob1\t'"${me}"'\tOK-Backup\tOct 27 20:36:56\n' "DOWN nodes FAILEDOVER resources"
+drcm env DRSM_LINK_CHECK=no
+rc=$?
+expect "drcm: down node is an error" "${C}/out.txt" "ERROR - $(hostname -s) cluster node node2 (127.0.0.1) is Down"
+expect "drcm: failed over resource warns" "${C}/out.txt" "WARNING - $(hostname -s) cluster Crontab job1 is failed over, running on backup ${me}"
+expect "drcm: failed over metric" "${C}/out.txt" "METRIC drcm_resources_failed_over=1"
+if [ ${rc} -eq 2 ]; then pass "drcm: down node exits 2"; else fail "drcm: down node exit ${rc}"; fi
+
+cm_stat_fixture "Up  " '   Crontab:\tjob1\t'"${me}"'\tOK-Normal\tOct 27 20:36:56\n   Crontab:\tjob1\tother.example.com\tOK-Backup\tOct 28 01:00:00\n' "FAILEDOVER resources"
+drcm env DRSM_LINK_CHECK=no
+expect "drcm: one resource on two owners is a split cluster" "${C}/out.txt" "split cluster, Crontab job1 on ${me} and other.example.com"
+
+cm_stat_fixture "Up  " ""
+{
+    printf '%s drcm_server: Node node2 failed keep alive check\n' "${stamp}" "${stamp}" "${stamp}"
+    printf '%s drcm_server: Node node2 is dead, signaling cluster resource failover to active nodes\n' "${stamp}"
+    printf '%s drcm_server: ERROR - All peers unreachable and the isolation check failed, this node is isolated, stopping its resources\n' "${stamp}"
+    printf 'Jan  1 00:00:00 drcm_server: Node node2 is alive\n'
+} > "${C}/drcm.log"
+drcm env DRSM_EVENT_MINUTES=10 DRSM_KEEPALIVE_STALE=60
+expect "drcm: missed keep alives" "${C}/out.txt" "WARNING - $(hostname -s) 3 missed cluster keep alives in the last 10 minutes"
+expect "drcm: failover events" "${C}/out.txt" "cluster failover events in the last 10 minutes"
+expect "drcm: isolated node is an error" "${C}/out.txt" "this node is isolated from the cluster since"
+expect "drcm: stale keep alive" "${C}/out.txt" "last keep alive from node2 was"
+expect "drcm: closed peer port is a link error" "${C}/out.txt" "cluster link to node2 at 127.0.0.1:9 does not connect"
+printf '%s drcm_server: A peer is reachable again, this node is no longer isolated, resuming its resources\n' "${stamp}" >> "${C}/drcm.log"
+drcm env DRSM_LINK_CHECK=no
+if ! grep -q "this node is isolated from" "${C}/out.txt"; then pass "drcm: isolation cleared by the log"; else fail "drcm: still isolated after the resume line"; fi
+
+printf 'Oct 28 22:57:42 drcm_client: ERROR - CM config file load error.\n' > "${C}/cm_stat.txt"
+drcm env DRSM_LINK_CHECK=no
+expect "drcm: no auth key access is unknown" "${C}/out.txt" "UNKNOWN - $(hostname -s) $(whoami) cannot read the DRCM auth key"
+
 # DRSM_CONFIG names the config in place of ~/.drsm.sh, for a second
 # install in the same account
 mkdir -p "${T}/home2"

@@ -20,6 +20,12 @@ All notable changes to the DataReel System Monitor (DRSM) are listed here.
 
 ### Added
 
+- cluster/drcm plugin for DataReel Cluster Manager (DRCM) clusters, run
+  on every node: drcm_server and tunnel units running, cm_stat nodes
+  Down, failed over resources, one resource on two owners (split
+  cluster), each peer's cluster link, and from the cluster log the
+  isolated state, missed or stale keep alives, failover events and
+  resource script errors. Read only; see PLUGINS.md "DRCM clusters".
 - network/http setting HTTPS_FALLBACK=yes: a host with port 80 closed
   that answers https://<host> passes, for web servers that now serve
   HTTPS only. Found at NHC, where the old DRSM 1.2 HTTP check never
