@@ -545,7 +545,10 @@ trends as SSH hosts. The other plugins add `updates_pending`,
 `vuln_important`, `vuln_moderate`, `vuln_low`, `vuln_total`,
 `vuln_cves`, `vuln_unfixed`, `compliance_score` and `compliance_fail`.
 
-The agent scans once a day. On RHEL 8 and 9 it runs OpenSCAP against
+The vulnerability scan is off in the agent by default (an OpenSCAP
+scan can use about 800 MB of memory); turn it on per host with
+`[scan] enabled=1` in `/etc/drra/drra.ini`. A host with the scan off
+is OK with a note. The agent then scans once a day. On RHEL 8 and 9 it runs OpenSCAP against
 Red Hat's OVAL feed (`source` `oval`) and uploads the OpenSCAP HTML
 report too. RHEL 10 has no OVAL feed, so the agent matches its
 packages against an index of Red Hat's CSAF/VEX files that the report
