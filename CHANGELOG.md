@@ -44,7 +44,8 @@ All notable changes to the DataReel System Monitor (DRSM) are listed here.
   text and html displays and site display plug-ins in the host page's
   Checks panel (www/php/drsm_uploads.php), upload_view.php (sandboxed
   viewer, $UPLOADSdir), example uploads openscap_manual and backup_job,
-  tests/uploads_test.sh.
+  tests/uploads_test.sh. Example uploads/defender_scan for the Windows
+  agent (3.3-beta2).
 - Docs: "Clientless and agent monitoring" in PLUGINS.md, plugins.html
   and the overview page: Linux hosts can be checked clientless over SSH
   or with the Linux agent, Windows hosts with the Windows agent only.

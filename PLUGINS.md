@@ -715,8 +715,9 @@ alerts, the Overview, the heat map and trends work unchanged.
 
 The manifest is a normal `plugin.conf` with `CATEGORY=uploads` and
 `MODE=probe`, and a `probe.sh` that sources `../upload_probe.sh`.
-`plugins/uploads/openscap_manual` and `plugins/uploads/backup_job` are
-examples; copy one to make a new upload hook.
+`plugins/uploads/openscap_manual`, `plugins/uploads/backup_job` and
+`plugins/uploads/defender_scan` (Windows agent 3.3-beta2, a CSV from
+`Get-MpThreatDetection`, `drra_svc.exe submit`) are examples; copy one to make a new upload hook.
 
 The agent's report hooks ([Report hooks](#report-hooks) under Linux
 agent hosts) are the other kind: scripts that run on the host with
