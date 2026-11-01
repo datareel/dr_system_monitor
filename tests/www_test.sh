@@ -192,6 +192,23 @@ expect "host status JSON" '"host":"db1"'
 expect "host status age" '"age_secs":'
 render host_status.php "n=../../etc"
 expect "host status path traversal refused" '"error":"not found"'
+# an agent host: the dashboard ran its checks 60 s ago, the agent's own report was 1500 s old then
+mkdir -p "${W}/reports/systems/agent1"
+cat > "${W}/reports/systems/agent1/agent1_report.txt" <<RPT
+HOSTNAME:agent1
+ETIME:$(( $(date +%s) - 60 ))
+
+=== linux/checkin [WARNING] 0s ===
+WARNING agent1 has not reported for 25 minutes
+METRIC lra_report_age_seconds=1500
+RPT
+render host_status.php "n=agent1"
+expect "agent host: the dashboard run age" '"age_secs":6'
+if grep -qE '"agent_age_secs":(156[0-9]|157[0-9])' "${T}/page.html"; then pass "agent host: agent_age_secs = report age at the run + time since the run"
+else fail "agent host: agent_age_secs not ~1560: $(cat "${T}/page.html")"; fi
+render host_status.php "n=db1"
+if grep -q '"agent_age_secs"' "${T}/page.html"; then fail "host without an agent has agent_age_secs"; else pass "host without an agent: no agent_age_secs"; fi
+rm -rf "${W}/reports/systems/agent1"
 
 render checks.php ""
 expect "connectivity report" "Connectivity tests"

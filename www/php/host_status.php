@@ -78,14 +78,28 @@ if($n == "" || !file_exists(drsm_site_dir($site) . "/systems/{$n}/{$n}_report.tx
 }
 
 $hst = drsm_load_host($n, $site);
-echo json_encode(array(
+$out = array(
   "host" => $n,
   "site" => $site,
   "time" => (int)$hst["time"],
   "age_secs" => time() - (int)$hst["time"],
   "state" => (string)$hst["state"],
   "stale" => (bool)$hst["stale"]
-)) . "\n";
+);
+// The host's own agent (Linux / Windows reporting agent): "time" above is when the dashboard last ran the
+// host's checks, every run whether the agent reported or not, so for an agent host age_secs never grows past
+// the run interval. The checkin plugins record the agent report's age at that run; add the time since the run.
+// The DRCM takeover check (drsm_report_check.sh) uses agent_age_secs when it is here.
+$metrics = isset($hst["report"]["metrics"]) ? $hst["report"]["metrics"] : array();
+foreach(array("lra_report_age_seconds", "wra_report_age_seconds") as $mname) {
+  if(isset($metrics[$mname][0][1])) {
+    $agent_age = (int)$metrics[$mname][0][1] + max(0, time() - (int)$hst["time"]);
+    $out["agent_age_secs"] = $agent_age;
+    $out["agent_time"] = time() - $agent_age;
+    break;
+  }
+}
+echo json_encode($out) . "\n";
 
 // SCRIPT CONTENT ENDS ABOVE.
 // ----------------------------------------------------------- //
