@@ -89,6 +89,12 @@ awk -v now="${now}" '
     /^END VULNERABILITIES/ { skip = 0 }
     skip { next }
     { gsub(/web1/, "off1"); print }' "${TOPdir}/tests/fixtures/web1_linux_report_agent.txt" > "${RPT}/off1_linux_report_agent.txt"
+# man1: scans by hand only (agent 1.1.1 mode=manual), last scan 10 days ago
+awk -v now="${now}" '
+    /^ETIME: / { print "ETIME: " now; next }
+    /^VULNERABILITIES:/ { print; print "mode=manual"; next }
+    /^scan_etime=/ { print "scan_etime=" (now - 10 * 86400); next }
+    { gsub(/web1/, "man1"); print }' "${TOPdir}/tests/fixtures/web1_linux_report_agent.txt" > "${RPT}/man1_linux_report_agent.txt"
 
 cat > "${T}/home/.drsm.sh" <<CONF
 export SITEID="LRATEST"
@@ -125,7 +131,9 @@ expect "app1 unfixed critical warns" "${R}/app1/app1_report.txt" "has 1 Critical
 expect "app1 unfixed line" "${R}/app1/app1_report.txt" "VULN unfixed|CVE-2026-3333|Low|firefox|Will not fix"
 expect "app1 summary has the unfixed count" "${R}/app1/app1_report.txt" "|ok|2"
 expect "scan off is OK" "${R}/off1/off1_report.txt" "=== linux/vulnerabilities [OK]"
-expect "scan off message" "${R}/off1/off1_report.txt" "INFO - off1 vulnerability scans are off"
+expect "manual scan is noted" "${R}/man1/man1_report.txt" "Scanned by hand (drra scan) 10 days ago"
+if grep -q "last vulnerability scan is" "${R}/man1/man1_report.txt"; then fail "manual scan warned as old"; else pass "manual scan does not warn as old"; fi
+expect "scan off message" "${R}/off1/off1_report.txt" "INFO - off1 has no vulnerability scan yet: run sudo drra scan"
 expect "app1 resources metric for trends" "${R}/app1/app1_report.txt" "METRIC cpu_used_pct="
 
 # A host with no report yet is an error from linux/checkin only
@@ -212,7 +220,7 @@ render vulnerabilities.php ""
 expect_page "fleet page lists web1" ">web1</strong>"
 expect_page "fleet page lists the critical advisory" "https://access.redhat.com/errata/RHSA-2026:88455"
 expect_page "built in menu item" 'href="/drsm/dashboard/php/vulnerabilities.php"'
-expect_page "fleet page says scans are off" "Vulnerability scans are off on 1 host: off1"
+expect_page "fleet page says there is no scan yet" "No vulnerability scan yet on 1 host: off1"
 render vulnerabilities.php "sev=Important"
 expect_page "severity filter" "RHSA-2026:77396"
 render vulnerabilities.php "n=db1"
@@ -224,7 +232,7 @@ expect_page "host page names the CSAF source" "CSAF/VEX"
 render vulnerabilities.php "n=web1"
 expect_page "host page packages" "ca-certificates-"
 render vulnerabilities.php "n=off1"
-expect_page "host page says scans are off" "Vulnerability scans are off on this host. Turn them on"
+expect_page "host page says there is no scan yet" "No vulnerability scan yet on this host. Run <code>sudo drra scan</code>"
 render scap_report.php "n=db1&site=default/default&kind=scap"
 expect_page "report viewer serves the HTML" "OpenSCAP report"
 render scap_report.php "n=db1&kind=scap"
@@ -247,7 +255,7 @@ sed -i 's#^?>$#$NAVextra = array(array("label" => "Vulnerabilities", "url" => "/
 render index.php ""
 if [ "$(grep -c 'href="/drsm/dashboard/php/vulnerabilities.php"' "${T}/page.html")" == "1" ]; then pass "no second menu item from \$NAVextra"; else fail "Vulnerabilities menu item listed more than once"; fi
 # No Linux agent hosts, no menu item
-rm -rf "${R}/web1" "${R}/db1" "${R}/app1" "${R}/off1"
+rm -rf "${R}/web1" "${R}/db1" "${R}/app1" "${R}/off1" "${R}/man1"
 sed -i '/^\$NAVextra/d' "${W}/config/drsm.php"
 render index.php ""
 reject_page "no menu item without agent hosts" "vulnerabilities.php"

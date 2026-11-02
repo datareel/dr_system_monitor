@@ -84,17 +84,18 @@ function vuln_counts_cells($v)
   return $out;
 }
 
-// Notice for hosts whose agent has the vulnerability scan turned off,
+// Notice for hosts with no vulnerability scan yet: the agent does not
+// scan on a schedule ([scan] enabled=0) and no one has run "drra scan".
 // $names empty for the one host view
 function vuln_off_callout($names = array())
 {
   $who = count($names) == 0 ? "this host" : count($names) . (count($names) == 1 ? " host: " : " hosts: ") . implode(", ", array_map("h", $names));
-  return "<div class=\"callout\">" . drsm_icon("lock") . "<span>Vulnerability scans are off on {$who}. Turn them on in the agent with <code>[scan] enabled=1</code> in <code>/etc/drra/drra.ini</code>, then <code>systemctl reload drra</code>.</span></div>\n";
+  return "<div class=\"callout\">" . drsm_icon("lock") . "<span>No vulnerability scan yet on {$who}. Run <code>sudo drra scan</code> on the host, which sends the results right away, or schedule scans with <code>[scan] enabled=1</code> in <code>/etc/drra/drra.ini</code>.</span></div>\n";
 }
 
 function vuln_scan_text($v)
 {
-  if($v["status"] == "disabled") return "<span class=\"muted\">scan off</span>";
+  if($v["status"] == "disabled") return "<span class=\"muted\">no scan yet</span>";
   if($v["status"] == "pending") return "<span class=\"muted\">first scan pending</span>";
   if($v["status"] == "failed") return drsm_badge("WARNING", " scan failed");
   $names = array("oval" => "OpenSCAP OVAL", "csaf" => "CSAF/VEX", "dnf" => "dnf updateinfo");
@@ -279,7 +280,7 @@ else {
         </tr>
 <?php } ?>
 <?php if(count($v["advisories"]) == 0) { ?>
-        <tr><td colspan="6" class="muted"><?php echo $v["status"] == "ok" ? "No security advisories apply to this host." : ($v["status"] == "disabled" ? "Vulnerability scans are off on this host." : "No scan results."); ?></td></tr>
+        <tr><td colspan="6" class="muted"><?php echo $v["status"] == "ok" ? "No security advisories apply to this host." : ($v["status"] == "disabled" ? "No vulnerability scan yet on this host." : "No scan results."); ?></td></tr>
 <?php } ?>
       </tbody>
     </table>

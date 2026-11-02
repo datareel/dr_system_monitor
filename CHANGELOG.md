@@ -13,6 +13,10 @@ All notable changes to the DataReel System Monitor (DRSM) are listed here.
 
 ### Changed
 
+- linux/vulnerabilities: scans run by hand on the agent (Linux agent
+  1.1.1, [scan] enabled=0, report line mode=manual) no longer warn as
+  old after 3 days; new setting MANUAL_SCAN_MAX_AGE_DAYS (0 = never).
+  A host with no scan yet says to run "sudo drra scan".
 - Top bar with extra menu items (nav-wide): below 1800px the menu moves
   to its own row and keeps its names instead of showing icons only.
   NHC users on Windows, at 125 to 150% display scaling, did not see the

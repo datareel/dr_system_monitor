@@ -570,6 +570,7 @@ $ ~/drsm/utils/lra_hosts.sh -d /var/www/html/linux/reports --apply
 | | `WARN_SEVERITY` | Important | Advisories at or above this severity are a warning |
 | | `UNFIXED_WARN_SEVERITY` | Critical | CVEs with no fix yet at or above this severity are a warning, `none` to never warn |
 | | `SCAN_MAX_AGE_DAYS` | 3 | Days since the last scan before a warning; a failed scan also warns |
+| | `MANUAL_SCAN_MAX_AGE_DAYS` | 0 | The same for scans run by hand (`drra scan`, agent `[scan] enabled=0`), 0 to never warn |
 | | `COMPLIANCE_MIN_SCORE` | | Compliance score (0 to 100) below which is a warning, empty to skip |
 | | `MAX_LIST` | 300 | Most advisories listed for the Vulnerabilities page |
 

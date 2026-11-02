@@ -53,6 +53,7 @@ source "$(dirname "$0")/../lra_report.sh"
 CRIT_SEVERITY=$(drsm_setting CRIT_SEVERITY Critical)
 WARN_SEVERITY=$(drsm_setting WARN_SEVERITY Important)
 SCAN_MAX_AGE_DAYS=$(drsm_setting SCAN_MAX_AGE_DAYS 3)
+MANUAL_SCAN_MAX_AGE_DAYS=$(drsm_setting MANUAL_SCAN_MAX_AGE_DAYS 0)
 COMPLIANCE_MIN_SCORE=$(drsm_setting COMPLIANCE_MIN_SCORE "")
 MAX_LIST=$(drsm_setting MAX_LIST 300)
 UNFIXED_WARN_SEVERITY=$(drsm_setting UNFIXED_WARN_SEVERITY Critical)
@@ -82,7 +83,7 @@ for kv in ${counts}; do V[${kv%%=*}]="${kv#*=}"; done
 
 case "${V[status]}" in
     disabled)
-	drsm_info "${LRA_HOST} vulnerability scans are off, turn them on in the agent with [scan] enabled=1 in /etc/drra/drra.ini"
+	drsm_info "${LRA_HOST} has no vulnerability scan yet: run sudo drra scan on the host, or schedule scans with [scan] enabled=1 in /etc/drra/drra.ini"
 	echo "VULN summary||||||||||disabled"
 	drsm_exit ;;
     pending|"")
@@ -104,7 +105,15 @@ if [ "${V[status]}" == "failed" ]; then
     echo "VULN summary|${src}|${scan_etime}||||||||failed"
     drsm_exit
 fi
-if [ "${scan_age}" != "" ] && [ "${scan_age}" -gt "${SCAN_MAX_AGE_DAYS}" ]; then
+# Scans by hand (agent [scan] enabled=0, mode=manual) are as old as the
+# admin lets them get, so they only warn with MANUAL_SCAN_MAX_AGE_DAYS
+mode="${V[mode]:-auto}"
+max_age="${SCAN_MAX_AGE_DAYS}"
+if [ "${mode}" == "manual" ]; then
+    max_age="${MANUAL_SCAN_MAX_AGE_DAYS}"
+    echo "Scanned by hand (drra scan) ${scan_age:-?} days ago, the agent does not scan on a schedule"
+fi
+if [ "${scan_age}" != "" ] && [ "${max_age}" -gt 0 ] && [ "${scan_age}" -gt "${max_age}" ]; then
     drsm_warn "${LRA_HOST} last vulnerability scan is ${scan_age} days old"
 fi
 
