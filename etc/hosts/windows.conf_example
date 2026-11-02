@@ -31,6 +31,9 @@ windows_checkin_CRIT_DAYS=15
 # windows_patches_WARN_DAYS=45
 # windows_resources_DISK_WARN=90
 # windows_resources_UPTIME_WARN_DAYS=30
+# Agent 3.5 and later: add windows/vulnerabilities to PLUGINS for the
+# Windows Update scan (drra_svc.exe scan) and the Vulnerabilities page
+# windows_vulnerabilities_UNRATED_SEVERITY=Important
 # Semicolon separated, case insensitive regular expressions
 # windows_apps_REQUIRED="Microsoft Defender;Mozilla Firefox"
 # windows_apps_FORBIDDEN="uTorrent;TeamViewer"

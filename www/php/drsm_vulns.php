@@ -36,12 +36,23 @@ Vulnerability scan results for the Vulnerabilities page. The
 linux/vulnerabilities plugin reads the scan results in each DataReel
 Reporting Agent for Linux report and prints "VULN kind|field|..."
 lines in its report section: summary, advisory, unfixed (CVEs with no
-fix yet, from CSAF/VEX scans), compliance and rule.
+fix yet, from CSAF/VEX scans), compliance and rule. The
+windows/vulnerabilities plugin prints the same lines from the
+DataReel Reporting Agent for Windows (3.5 and later) Windows Update
+scan, with KB numbers as the advisory ids, plus "other" lines for the
+non-security updates waiting to install.
 */
 // ----------------------------------------------------------- //
 // SCRIPT CONTENT STARTS BELOW.
 
 define("DRSM_VULN_PLUGIN", "linux/vulnerabilities");
+define("DRSM_VULN_PLUGIN_WINDOWS", "windows/vulnerabilities");
+
+// Plugins that print VULN lines: plugin id => host OS
+function drsm_vuln_plugins()
+{
+  return array(DRSM_VULN_PLUGIN => "linux", DRSM_VULN_PLUGIN_WINDOWS => "windows");
+}
 
 // Severities, most severe first: label => CSS state class
 function drsm_vuln_severities()
@@ -56,19 +67,22 @@ function drsm_vuln_rank($sev)
 }
 
 /*
-A host's linux/vulnerabilities section, or null. Returns source,
-scan_time, status, counts (severity => n), total, cves, advisories
-(id, severity, issued, cves, packages, title), unfixed (cve, severity,
-packages, state), nunfixed (null when the scan cannot tell), compliance (profile,
-score, pass, fail, time) or null, rules (rule, severity), state and
-the host.
+A host's linux/vulnerabilities or windows/vulnerabilities section, or
+null. Returns plugin, os (linux or windows), source, scan_time, status,
+counts (severity => n), total, cves, advisories (id, severity, issued,
+cves, packages, title), unfixed (cve, severity, packages, state),
+nunfixed (null when the scan cannot tell), other (id, classification,
+issued, title: Windows updates that are not security updates),
+compliance (profile, score, pass, fail, time) or null, rules (rule,
+severity), state and the host.
 */
 function drsm_vuln_parse($host)
 {
   if(!isset($host["report"]["sections"])) return null;
   foreach($host["report"]["sections"] as $s) {
-    if($s["id"] != DRSM_VULN_PLUGIN) continue;
-    $v = array("source" => "", "scan_time" => 0, "status" => "", "counts" => array(), "total" => 0, "cves" => 0,
+    $plugins = drsm_vuln_plugins();
+    if(!isset($plugins[$s["id"]])) continue;
+    $v = array("plugin" => $s["id"], "os" => $plugins[$s["id"]], "other" => array(), "source" => "", "scan_time" => 0, "status" => "", "counts" => array(), "total" => 0, "cves" => 0,
                "advisories" => array(), "unfixed" => array(), "nunfixed" => null, "compliance" => null, "rules" => array(), "state" => $s["state"], "host" => $host);
     foreach(array_keys(drsm_vuln_severities()) as $sev) $v["counts"][$sev] = 0;
     foreach($s["lines"] as $line) {
@@ -98,6 +112,10 @@ function drsm_vuln_parse($host)
                                    "packages" => $f[4] == "" ? array() : explode(",", $f[4]),
                                    "title" => implode("|", array_slice($f, 5)));
         break;
+      case "other":
+        if(count($f) >= 4) $v["other"][] = array("id" => $f[0], "classification" => $f[1], "issued" => $f[2],
+                                                 "title" => implode("|", array_slice($f, 3)));
+        break;
       case "compliance":
         if(count($f) < 5) break;
         $v["compliance"] = array("profile" => $f[0], "score" => $f[1], "pass" => (int)$f[2], "fail" => (int)$f[3],
@@ -114,7 +132,7 @@ function drsm_vuln_parse($host)
   return null;
 }
 
-// Hosts with a linux/vulnerabilities section, by host key
+// Hosts with a linux/ or windows/vulnerabilities section, by host key
 function drsm_vulns($hosts)
 {
   $out = array();
@@ -148,18 +166,21 @@ function drsm_vuln_advisories($vulns)
 }
 
 // Link for an advisory or CVE id: Red Hat errata and CVE pages, EPEL
-// updates in Bodhi
-function drsm_vuln_url($id)
+// updates in Bodhi; on Windows hosts ($os windows) the Microsoft
+// support article for a KB number and the MSRC page for a CVE
+function drsm_vuln_url($id, $os = "linux")
 {
+  if(preg_match('/^KB(\d+)$/', $id, $m)) return "https://support.microsoft.com/help/{$m[1]}";
+  if($os == "windows" && preg_match('/^CVE-\d{4}-\d+$/', $id)) return "https://msrc.microsoft.com/update-guide/vulnerability/{$id}";
   if(preg_match('/^RH[SBE]A-\d{4}:\d+$/', $id)) return "https://access.redhat.com/errata/{$id}";
   if(preg_match('/^CVE-\d{4}-\d+$/', $id)) return "https://access.redhat.com/security/cve/{$id}";
   if(preg_match('/^FEDORA-EPEL-[0-9A-Za-z-]+$/', $id)) return "https://bodhi.fedoraproject.org/updates/{$id}";
   return "";
 }
 
-function drsm_vuln_link($id)
+function drsm_vuln_link($id, $os = "linux")
 {
-  $url = drsm_vuln_url($id);
+  $url = drsm_vuln_url($id, $os);
   if($url == "") return h($id);
   return "<a href=\"" . h($url) . "\" target=\"_blank\" rel=\"noopener noreferrer\">" . h($id) . "</a>";
 }
@@ -187,7 +208,7 @@ function drsm_vuln_html_path($hostname, $kind)
   return is_file($f) && is_readable($f) ? $f : "";
 }
 
-// True when any host in scope runs the linux/vulnerabilities plugin
+// True when any host in scope runs the linux/ or windows/vulnerabilities plugin
 function drsm_vulns_present()
 {
   static $present = null;
@@ -199,10 +220,12 @@ function drsm_vulns_present()
     foreach($files as $f) {
       $json = @file_get_contents($f, false, null, 0, 65536);
       if($json === false) continue;
-      if(strpos($json, "\"" . str_replace("/", "\\/", DRSM_VULN_PLUGIN) . "\"") !== false ||
-         strpos($json, "\"" . DRSM_VULN_PLUGIN . "\"") !== false) {
-        $present = true;
-        return $present;
+      foreach(array_keys(drsm_vuln_plugins()) as $p) {
+        if(strpos($json, "\"" . str_replace("/", "\\/", $p) . "\"") !== false ||
+           strpos($json, "\"" . $p . "\"") !== false) {
+          $present = true;
+          return $present;
+        }
       }
     }
   }

@@ -1,0 +1,26 @@
+DataReel Reporting Agent report from host win1
+VERSION: 3.5
+HOSTNAME: win1
+ETIME: 1793590595
+DATETIME: Sun Nov  1 22:36:35 2026
+
+
+IP ADDRESS:
+192.0.2.10
+END IP ADDRESS
+
+VULNERABILITIES:
+mode=manual
+source=wua
+feed=Windows Update
+scan_etime=1793590595
+scan_seconds=41
+status=ok
+critical=1 important=1 moderate=0 low=0 unknown=1 total=3 cves=3 other=2
+advisory id=KB5066835 severity=Critical issued=2026-10-14 cves=CVE-2026-1001,CVE-2026-1002 packages="Windows 11" title="2026-10 Cumulative Update for Windows 11 Version 25H2 for x64-based Systems (KB5066835)"
+advisory id=KB5066131 severity=Important issued=2026-10-14 cves=CVE-2026-1003 packages="Microsoft Edge" title="Security Update for Microsoft Edge | test (KB5066131)"
+advisory id=KB5127694 severity=Unknown issued=2026-10-13 cves= packages="" title="2026-10 .NET Framework Security Update (KB5127694)"
+other id=KB2267602 classification="Definition Updates" issued=2026-11-02 title="Security Intelligence Update for Microsoft Defender Antivirus - KB2267602 (Version 1.463.83.0) - Current Channel (Broad)"
+other id=KB5127936 classification="Updates" issued=2026-10-28 title="2026-10 Preview Update (KB5127936) (26300.9818)"
+END VULNERABILITIES
+

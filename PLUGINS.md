@@ -84,6 +84,7 @@ utils/lra_hosts.sh         creates host files for Linux agent hosts
 | `windows/patches` | agent report | Age of the newest Windows patch |
 | `windows/apps` | agent report | Required and forbidden installed programs |
 | `windows/resources` | agent report | CPU, memory, commit charge, disk space and network use, agent 3.3 and later |
+| `windows/vulnerabilities` | agent report | Security updates still to install (KB, MSRC severity, CVEs) from the agent's Windows Update scan, agent 3.5 and later |
 | `linux/checkin` | agent report | Linux agent host reported recently, complete report, agent version |
 | `linux/resources` | agent report | CPU, load, memory, swap, disk space, inodes and network use |
 | `linux/updates` | agent report | Pending updates, days since the last update, restart needed |
@@ -478,6 +479,29 @@ $ ~/drsm/utils/wra_hosts.sh -d /var/www/html/windows/reports --apply
 | | `DISK_SKIP` | | Drives to skip, for example `"D: E:"` |
 | | `UPTIME_WARN_DAYS` | 0 | Days without a restart before a warning, 0 to skip |
 | | `MAX_AGE_HOURS` | 2 | Older reports are not checked, `windows/checkin` reports them |
+| `windows/vulnerabilities` | `CRIT_SEVERITY` | Critical | Security updates at or above this severity are an error |
+| | `WARN_SEVERITY` | Important | Security updates at or above this severity are a warning |
+| | `UNRATED_SEVERITY` | Important | Severity for security updates Microsoft did not rate, `none` to never alert on them |
+| | `SCAN_MAX_AGE_DAYS` | 3 | Days since the last scan before a warning; a failed scan also warns |
+| | `MANUAL_SCAN_MAX_AGE_DAYS` | 0 | The same for scans run by hand (`drra_svc.exe scan`, agent `[scan] enabled=0`), 0 to never warn |
+| | `MAX_LIST` | 300 | Most updates listed for the Vulnerabilities page |
+
+`windows/vulnerabilities` (agent 3.5 and later) reads the agent's
+Windows Update scan: the updates Windows Update, or the WSUS server a
+policy sets, has for the host and it has not installed, with each
+security update's KB number, MSRC severity and CVEs (`source` `wua`).
+Scans run by hand from an administrator command prompt,
+`drra_svc.exe scan`, which sends a report right away; `[scan]
+enabled=1` in the agent's `drra.ini` scans every `interval_hours`
+instead. Windows Update leaves the MSRC severity empty on some
+security updates (.NET, Windows Insider builds); those count as
+`UNRATED_SEVERITY`. Non-security updates (drivers, definitions,
+preview updates) are listed but never alert. It prints the
+`linux/vulnerabilities` lines below, with KB numbers as advisory ids
+and products as packages, plus `VULN other|id|classification|issued|title`,
+so Windows hosts show on the same Vulnerabilities page. It is not in
+the default plugin list (older agents have no scan and would be
+UNKNOWN): add it to `PLUGINS` for 3.5 agents.
 
 `windows/resources` uses the metric names of the Linux plugins
 (`cpu_used_pct`, `mem_available_mb`, `disk_used_pct{mount="C:"}`,

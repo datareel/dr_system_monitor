@@ -34,13 +34,16 @@ along with the DataReel software distribution.  If not, see
 
 DRSM vulnerabilities: the security advisories (Red Hat errata and
 their CVEs) that apply to each host running the DataReel Reporting
-Agent for Linux, from the agent's daily OpenSCAP or dnf scan, read
-through the linux/vulnerabilities plugin. The fleet view lists hosts
-and the advisories that affect the most hosts; ?n=<host> shows one
-host's advisories, packages, compliance results and its OpenSCAP
-HTML report.
+Agent for Linux, from the agent's OpenSCAP, CSAF/VEX or dnf scan, read
+through the linux/vulnerabilities plugin, and the security updates
+(KB numbers, MSRC severity, CVEs) that hosts running the DataReel
+Reporting Agent for Windows still need, from the agent's Windows
+Update scan, read through the windows/vulnerabilities plugin. The
+fleet view lists hosts and the advisories that affect the most hosts;
+?n=<host> shows one host's advisories, packages, compliance results
+and its OpenSCAP HTML report.
 
-The menu shows it when a host runs the linux/vulnerabilities plugin.
+The menu shows it when a host runs either plugin.
 On the server that receives the agent uploads, set the agent server's
 reports_dir in config/drsm.php for the OpenSCAP HTML reports:
   $LRAreportsDir = "/var/www/html/linux/reports";
@@ -85,12 +88,20 @@ function vuln_counts_cells($v)
 }
 
 // Notice for hosts with no vulnerability scan yet: the agent does not
-// scan on a schedule ([scan] enabled=0) and no one has run "drra scan".
-// $names empty for the one host view
-function vuln_off_callout($names = array())
+// scan on a schedule ([scan] enabled=0) and no one has run "drra scan"
+// (Linux) or "drra_svc.exe scan" (Windows). $names empty for the one
+// host view; $oses the host OSes (linux, windows) the text is for
+function vuln_off_callout($names = array(), $oses = array("linux"))
 {
   $who = count($names) == 0 ? "this host" : count($names) . (count($names) == 1 ? " host: " : " hosts: ") . implode(", ", array_map("h", $names));
-  return "<div class=\"callout\">" . drsm_icon("lock") . "<span>No vulnerability scan yet on {$who}. Run <code>sudo drra scan</code> on the host, which sends the results right away, or schedule scans with <code>[scan] enabled=1</code> in <code>/etc/drra/drra.ini</code>.</span></div>\n";
+  $how = array();
+  if(in_array("linux", $oses)) $how[] = "Run <code>sudo drra scan</code> on " . (in_array("windows", $oses) ? "a Linux host" : "the host") .
+                                 " or schedule scans with <code>[scan] enabled=1</code> in <code>/etc/drra/drra.ini</code>.";
+  if(in_array("windows", $oses)) $how[] = "Run <code>drra_svc.exe scan</code> from an administrator command prompt on " .
+                                   (in_array("linux", $oses) ? "a Windows host" : "the host") .
+                                   " or schedule scans with <code>[scan] enabled=1</code> in its <code>drra.ini</code>.";
+  return "<div class=\"callout\">" . drsm_icon("lock") . "<span>No vulnerability scan yet on {$who}. " . implode(" ", $how) .
+    " A scan run by hand sends the results right away.</span></div>\n";
 }
 
 function vuln_scan_text($v)
@@ -98,7 +109,7 @@ function vuln_scan_text($v)
   if($v["status"] == "disabled") return "<span class=\"muted\">no scan yet</span>";
   if($v["status"] == "pending") return "<span class=\"muted\">first scan pending</span>";
   if($v["status"] == "failed") return drsm_badge("WARNING", " scan failed");
-  $names = array("oval" => "OpenSCAP OVAL", "csaf" => "CSAF/VEX", "dnf" => "dnf updateinfo");
+  $names = array("oval" => "OpenSCAP OVAL", "csaf" => "CSAF/VEX", "dnf" => "dnf updateinfo", "wua" => "Windows Update");
   $src = isset($names[$v["source"]]) ? $names[$v["source"]] : $v["source"];
   return drsm_time_html($v["scan_time"]) . " <span class=\"tag\">" . h($src) . "</span>";
 }
@@ -106,12 +117,12 @@ function vuln_scan_text($v)
 <section class="page-head">
   <div>
     <h1><?php echo $one ? h($one["host"]["name"]) . " vulnerabilities" : "Vulnerabilities"; ?></h1>
-    <p class="muted">Security advisories that apply to Linux agent hosts, from each host's daily OpenSCAP, CSAF/VEX or dnf scan</p>
+    <p class="muted">Security advisories and updates that agent hosts still need, from each Linux host's OpenSCAP, CSAF/VEX or dnf scan and each Windows host's Windows Update scan</p>
   </div>
 <?php if($one) { ?>
   <div class="head-actions">
     <a class="btn" href="<?php echo h(drsm_url("vulnerabilities.php")); ?>"><?php echo drsm_icon("back"); ?>All hosts</a>
-    <a class="btn" href="<?php echo h(drsm_host_url("readreport.php", $one["host"], array(), drsm_plugin_anchor(DRSM_VULN_PLUGIN))); ?>"><?php echo drsm_icon("file"); ?>Host report</a>
+    <a class="btn" href="<?php echo h(drsm_host_url("readreport.php", $one["host"], array(), drsm_plugin_anchor($one["plugin"]))); ?>"><?php echo drsm_icon("file"); ?>Host report</a>
   </div>
 <?php } ?>
 </section>
@@ -122,7 +133,7 @@ if(count($vulns) == 0) {
   <div class="empty">
     <?php echo drsm_icon("lock"); ?>
     <p>No host reports vulnerability scan results yet.</p>
-    <p class="muted">Install the DataReel Reporting Agent for Linux on a host, add it with <code>COLLECTOR=lra</code> and <code>linux/vulnerabilities</code> in its <code>PLUGINS</code>; results show here after the agent's first scan and the next DRSM run.</p>
+    <p class="muted">Install the DataReel Reporting Agent for Linux on a host, add it with <code>COLLECTOR=lra</code> and <code>linux/vulnerabilities</code> in its <code>PLUGINS</code>, or the DataReel Reporting Agent for Windows (3.5 or later) with <code>COLLECTOR=wra</code> and <code>windows/vulnerabilities</code>; results show here after the agent's first scan and the next DRSM run.</p>
   </div>
 </section>
 <?php
@@ -158,8 +169,9 @@ if($one === null) {
 ?>
 <?php
   $off = array();
-  foreach($order as $v) if($v["status"] == "disabled") $off[] = $v["host"]["name"];
-  if(count($off) > 0) echo vuln_off_callout($off);
+  $off_os = array();
+  foreach($order as $v) if($v["status"] == "disabled") { $off[] = $v["host"]["name"]; $off_os[$v["os"]] = $v["os"]; }
+  if(count($off) > 0) echo vuln_off_callout($off, array_values($off_os));
 ?>
 <section class="kpis" aria-label="Summary">
   <div class="kpi <?php echo h(drsm_state_class($overall)); ?>"><span class="kpi-label">Hosts scanned</span><span class="kpi-value"><?php echo count($vulns); ?></span><span class="kpi-sub"><?php echo (int)$hosts_crit; ?> with critical advisories</span></div>
@@ -239,7 +251,7 @@ else {
   $scap = drsm_vuln_html_path($hst["name"], "scap");
   $comp = drsm_vuln_html_path($hst["name"], "compliance");
 ?>
-<?php if($v["status"] == "disabled") echo vuln_off_callout(); ?>
+<?php if($v["status"] == "disabled") echo vuln_off_callout(array(), array($v["os"])); ?>
 <section class="kpis" aria-label="Summary">
   <div class="kpi <?php echo h(drsm_state_class($v["state"])); ?>"><span class="kpi-label">State</span><span class="kpi-value"><?php echo h(drsm_state_label($v["state"])); ?></span><span class="kpi-sub"><?php echo vuln_scan_text($v); ?></span></div>
 <?php foreach(array("Critical", "Important", "Moderate", "Low") as $s) { ?>
@@ -261,17 +273,17 @@ else {
 </section>
 <?php } ?>
 <section class="panel flush">
-  <div class="panel-head pad"><h2><?php echo drsm_icon("alert"); ?>Advisories</h2><span class="muted small"><?php echo (int)$v["total"]; ?> <?php echo $v["total"] == 1 ? "advisory" : "advisories"; ?>, <?php echo (int)$v["cves"]; ?> <?php echo $v["cves"] == 1 ? "CVE" : "CVEs"; ?>. Install the updates with <code>dnf update --advisory=&lt;id&gt;</code> or <code>dnf update --security</code>.</span></div>
+  <div class="panel-head pad"><h2><?php echo drsm_icon("alert"); ?>Advisories</h2><span class="muted small"><?php echo (int)$v["total"]; ?> <?php echo $v["os"] == "windows" ? ($v["total"] == 1 ? "security update" : "security updates") : ($v["total"] == 1 ? "advisory" : "advisories"); ?>, <?php echo (int)$v["cves"]; ?> <?php echo $v["cves"] == 1 ? "CVE" : "CVEs"; ?>. <?php if($v["os"] == "windows") { ?>Install the updates with Windows Update (Settings &gt; Windows Update) or your WSUS or Intune server.<?php } else { ?>Install the updates with <code>dnf update --advisory=&lt;id&gt;</code> or <code>dnf update --security</code>.<?php } ?></span></div>
   <div class="table-wrap">
     <table class="table">
-      <thead><tr><th scope="col">Advisory</th><th scope="col">Severity</th><th scope="col">Title</th><th scope="col">Issued</th><th scope="col">Fixed packages</th><th scope="col">CVEs</th></tr></thead>
+      <thead><tr><th scope="col"><?php echo $v["os"] == "windows" ? "Update" : "Advisory"; ?></th><th scope="col">Severity</th><th scope="col">Title</th><th scope="col">Issued</th><th scope="col"><?php echo $v["os"] == "windows" ? "Products" : "Fixed packages"; ?></th><th scope="col">CVEs</th></tr></thead>
       <tbody>
 <?php foreach($v["advisories"] as $a) {
   $cl = array();
-  foreach($a["cves"] as $c) $cl[] = drsm_vuln_link($c);
+  foreach($a["cves"] as $c) $cl[] = drsm_vuln_link($c, $v["os"]);
 ?>
         <tr>
-          <th scope="row"><?php echo drsm_vuln_link($a["id"]); ?></th>
+          <th scope="row"><?php echo drsm_vuln_link($a["id"], $v["os"]); ?></th>
           <td><?php echo drsm_vuln_badge($a["severity"]); ?></td>
           <td class="small"><?php echo h($a["title"]); ?></td>
           <td class="small"><?php echo h($a["issued"]); ?></td>
@@ -280,12 +292,32 @@ else {
         </tr>
 <?php } ?>
 <?php if(count($v["advisories"]) == 0) { ?>
-        <tr><td colspan="6" class="muted"><?php echo $v["status"] == "ok" ? "No security advisories apply to this host." : ($v["status"] == "disabled" ? "No vulnerability scan yet on this host." : "No scan results."); ?></td></tr>
+        <tr><td colspan="6" class="muted"><?php echo $v["status"] == "ok" ? ($v["os"] == "windows" ? "No security updates to install on this host." : "No security advisories apply to this host.") : ($v["status"] == "disabled" ? "No vulnerability scan yet on this host." : "No scan results."); ?></td></tr>
 <?php } ?>
       </tbody>
     </table>
   </div>
 </section>
+<?php if(count($v["other"]) > 0) { ?>
+<section class="panel flush">
+  <div class="panel-head pad"><h2><?php echo drsm_icon("list"); ?>Other updates</h2><span class="muted small"><?php echo count($v["other"]); ?> updates waiting that are not security updates: drivers, definitions, feature and preview updates</span></div>
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th scope="col">Update</th><th scope="col">Classification</th><th scope="col">Title</th><th scope="col">Issued</th></tr></thead>
+      <tbody>
+<?php foreach($v["other"] as $o) { ?>
+        <tr>
+          <th scope="row"><?php echo drsm_vuln_link($o["id"], $v["os"]); ?></th>
+          <td class="small"><?php echo h($o["classification"]); ?></td>
+          <td class="small"><?php echo h($o["title"]); ?></td>
+          <td class="small"><?php echo h($o["issued"]); ?></td>
+        </tr>
+<?php } ?>
+      </tbody>
+    </table>
+  </div>
+</section>
+<?php } ?>
 <?php if(count($v["unfixed"]) > 0) { ?>
 <section class="panel flush">
   <div class="panel-head pad"><h2><?php echo drsm_icon("alert"); ?>No fix yet</h2><span class="muted small"><?php echo (int)$v["nunfixed"]; ?> CVEs affect installed packages and Red Hat has no update for them yet</span></div>

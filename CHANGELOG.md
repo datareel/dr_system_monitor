@@ -24,6 +24,19 @@ All notable changes to the DataReel System Monitor (DRSM) are listed here.
 
 ### Added
 
+- windows/vulnerabilities: the security updates a Windows host still
+  needs (KB number, MSRC severity, CVEs) from the DataReel Reporting
+  Agent for Windows 3.5 Windows Update scan (drra_svc.exe scan, by
+  hand unless [scan] enabled=1). Prints the linux/vulnerabilities VULN
+  lines plus VULN other for non-security updates, so Windows hosts
+  show on the Vulnerabilities page, with Microsoft support and MSRC
+  links. Unrated security updates count as UNRATED_SEVERITY
+  (Important). Not in the default Windows plugin list. New
+  tests/wra_vuln_test.sh, wra_kv in plugins/windows/wra_report.sh.
+- Vulnerabilities page: says "agent hosts" instead of "Linux agent
+  hosts", names the scan command for each OS, Windows Update source,
+  Other updates table on a Windows host's page.
+
 - cluster/drcm shows DRCM 1.43 standby: a node in Standby or Releasing
   is a warning with its own message (STANDBY_STATE, WARNING, INFO or
   ERROR), not Down; resources its peers run meanwhile say so;

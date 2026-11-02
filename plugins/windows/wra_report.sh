@@ -82,6 +82,46 @@ function wra_has_section()
     grep -q "^${1}:" "${2}"
 }
 
+function wra_kv()
+{
+    # Splits name=value lines on stdin into tab separated fields in the
+    # order of the names given, for example
+    #   wra_section "VULNERABILITIES" "${REPORT}" | sed -n 's/^advisory //p' | wra_kv id severity
+    # Quoted values ("..." with \" and \\ escapes) keep their spaces.
+    awk -v names="$*" '
+	BEGIN { n = split(names, want, " ") }
+	{
+	    delete v
+	    s = $0
+	    while (match(s, /^[ ]*[A-Za-z0-9_]+=/)) {
+		key = substr(s, RSTART, RLENGTH - 1)
+		sub(/^[ ]*/, "", key)
+		s = substr(s, RSTART + RLENGTH)
+		if (substr(s, 1, 1) == "\"") {
+		    val = ""
+		    i = 2
+		    while (i <= length(s)) {
+			c = substr(s, i, 1)
+			if (c == "\\") { val = val substr(s, i + 1, 1); i += 2; continue }
+			if (c == "\"") break
+			val = val c
+			i++
+		    }
+		    s = substr(s, i + 1)
+		}
+		else {
+		    match(s, /^[^ ]*/)
+		    val = substr(s, 1, RLENGTH)
+		    s = substr(s, RLENGTH + 1)
+		}
+		v[key] = val
+	    }
+	    out = ""
+	    for (i = 1; i <= n; i++) out = out (i > 1 ? "\t" : "") v[want[i]]
+	    print out
+	}'
+}
+
 function wra_newest_date()
 {
     # Newest of the dates on stdin as YYYY-MM-DD. Takes the agent's
