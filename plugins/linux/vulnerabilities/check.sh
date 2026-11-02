@@ -119,6 +119,8 @@ fi
 
 crit=${V[critical]:-0}; imp=${V[important]:-0}; mod=${V[moderate]:-0}; low=${V[low]:-0}; unk=${V[unknown]:-0}
 total=${V[total]:-0}; cves=${V[cves]:-0}; unfixed=${V[unfixed]:-}
+# Only CSAF/VEX scans can tell which CVEs have no fix yet
+if [ "${src}" != "csaf" ]; then unfixed=""; fi
 summary="${total} security advisories apply: ${crit} critical, ${imp} important, ${mod} moderate, ${low} low, ${cves} CVEs (${src} scan)"
 declare -A UC
 ucounts=$(lra_section "VULNERABILITIES" "${REPORT}" | sed -n 's/^unfixed_counts //p' | head -1)
