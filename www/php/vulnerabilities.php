@@ -255,7 +255,7 @@ else {
 <section class="kpis" aria-label="Summary">
   <div class="kpi <?php echo h(drsm_state_class($v["state"])); ?>"><span class="kpi-label">State</span><span class="kpi-value"><?php echo h(drsm_state_label($v["state"])); ?></span><span class="kpi-sub"><?php echo vuln_scan_text($v); ?></span></div>
 <?php foreach(array("Critical", "Important", "Moderate", "Low") as $s) { ?>
-  <div class="kpi <?php echo $v["counts"][$s] > 0 ? h($sevs[$s]) : "ok"; ?>"><span class="kpi-label"><?php echo h($s); ?></span><span class="kpi-value"><?php echo (int)$v["counts"][$s]; ?></span><span class="kpi-sub">advisories</span></div>
+  <div class="kpi <?php echo $v["counts"][$s] > 0 ? h($sevs[$s]) : "ok"; ?>"><span class="kpi-label"><?php echo h($s); ?></span><span class="kpi-value"><?php echo (int)$v["counts"][$s]; ?></span><span class="kpi-sub"><?php echo $v["os"] == "windows" ? "updates" : "advisories"; ?></span></div>
 <?php } ?>
 </section>
 <?php if($scap != "" || $comp != "") { ?>
@@ -273,7 +273,7 @@ else {
 </section>
 <?php } ?>
 <section class="panel flush">
-  <div class="panel-head pad"><h2><?php echo drsm_icon("alert"); ?>Advisories</h2><span class="muted small"><?php echo (int)$v["total"]; ?> <?php echo $v["os"] == "windows" ? ($v["total"] == 1 ? "security update" : "security updates") : ($v["total"] == 1 ? "advisory" : "advisories"); ?>, <?php echo (int)$v["cves"]; ?> <?php echo $v["cves"] == 1 ? "CVE" : "CVEs"; ?>. <?php if($v["os"] == "windows") { ?>Install the updates with Windows Update (Settings &gt; Windows Update) or your WSUS or Intune server.<?php } else { ?>Install the updates with <code>dnf update --advisory=&lt;id&gt;</code> or <code>dnf update --security</code>.<?php } ?></span></div>
+  <div class="panel-head pad"><h2><?php echo drsm_icon("alert"); ?><?php echo $v["os"] == "windows" ? "Security updates" : "Advisories"; ?></h2><span class="muted small"><?php echo (int)$v["total"]; ?> <?php echo $v["os"] == "windows" ? ($v["total"] == 1 ? "security update" : "security updates") : ($v["total"] == 1 ? "advisory" : "advisories"); ?>, <?php echo (int)$v["cves"]; ?> <?php echo $v["cves"] == 1 ? "CVE" : "CVEs"; ?>. <?php if($v["os"] == "windows") { ?>Install the updates with Windows Update (Settings &gt; Windows Update) or your WSUS or Intune server.<?php } else { ?>Install the updates with <code>dnf update --advisory=&lt;id&gt;</code> or <code>dnf update --security</code>.<?php } ?></span></div>
   <div class="table-wrap">
     <table class="table">
       <thead><tr><th scope="col"><?php echo $v["os"] == "windows" ? "Update" : "Advisory"; ?></th><th scope="col">Severity</th><th scope="col">Title</th><th scope="col">Issued</th><th scope="col"><?php echo $v["os"] == "windows" ? "Products" : "Fixed packages"; ?></th><th scope="col">CVEs</th></tr></thead>
@@ -287,7 +287,7 @@ else {
           <td><?php echo drsm_vuln_badge($a["severity"]); ?></td>
           <td class="small"><?php echo h($a["title"]); ?></td>
           <td class="small"><?php echo h($a["issued"]); ?></td>
-          <td class="small"><code><?php echo implode("</code><br><code>", array_map("h", array_slice($a["packages"], 0, 6))); ?></code><?php if(count($a["packages"]) > 6) echo " <span class=\"muted\">+" . (count($a["packages"]) - 6) . " more</span>"; ?></td>
+          <td class="small"><?php if(count($a["packages"]) == 0) { ?><span class="muted">none listed</span><?php } else { ?><code><?php echo implode("</code><br><code>", array_map("h", array_slice($a["packages"], 0, 6))); ?></code><?php } ?><?php if(count($a["packages"]) > 6) echo " <span class=\"muted\">+" . (count($a["packages"]) - 6) . " more</span>"; ?></td>
           <td class="small"><?php if(count($cl) <= 4) { echo implode(", ", $cl); } else { ?><details><summary><?php echo count($cl); ?> CVEs</summary><?php echo implode(", ", $cl); ?></details><?php } ?></td>
         </tr>
 <?php } ?>
