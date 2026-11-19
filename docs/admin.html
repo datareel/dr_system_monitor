@@ -77,11 +77,13 @@ core_cpu_TIMEOUT=60</code></pre>
 
 <h2 id="upgrade">Upgrade</h2>
 <ol>
-<li>Unpack the new release beside the old source.</li>
+<li>Unpack the new release beside the old source and check its SHA-256 checksum against the downloads page.</li>
+<li>Run the read-only check against it and keep the output: <code>utils/drsm_preflight.sh --source=$HOME/git/dr_system_monitor-&lt;new&gt;</code>. It lists edited release files that the install replaces. Back up <code>$DRSMHOME</code>, <code>config/drsm.php</code>, <code>$WWWdir/site</code> and the crontab.</li>
 <li>Run <code>utils/install.sh</code> from it as the DRSM user. Host files, site files, <code>plugins/local</code>, <code>_defaults.conf</code>, <code>config/drsm.php</code> (the new one is written as <code>drsm.php_install_new</code>) and <code>$WWWdir/site</code> are kept.</li>
 <li>Compare <code>drsm.php_install_new</code> with <code>drsm.php</code> for new settings, read <a href="changelog.html">What's new</a>.</li>
 <li><code>drsm_run.sh -l</code>, then one run with <code>-n</code>.</li>
 </ol>
+<p>The full steps, with roll back and the move from <code>system_check.sh</code>, are in <a href="ai/upgrade.md">docs/ai/upgrade.md</a>.</p>
 
 <h2 id="trouble">Troubleshooting</h2>
 <div class="table-wrap"><table><thead><tr><th>Symptom</th><th>Look at</th></tr></thead><tbody>
@@ -91,7 +93,14 @@ core_cpu_TIMEOUT=60</code></pre>
 <tr><td>Host waits for its first report</td><td>It is new, or its report folder is left from a removed host (<code>drsm_remove_host.sh</code>)</td></tr>
 <tr><td>Page blank or wrong</td><td>The Web server error log, <code>php -l</code> on the page</td></tr>
 <tr><td>No alert email</td><td><code>-n</code> on the cron line, the address lists, <a href="alerts.html#relay">mail relay</a></td></tr>
+<tr><td>Not sure where to start</td><td><code>utils/drsm_preflight.sh</code>: a read-only summary of the install, cron and report ages</td></tr>
 </tbody></table></div>
+<h3 id="support">Support</h3>
+<p>Still stuck? Use the DataReel <a href="https://datareel.com/contact.php">contact page</a> (topic "Application support" or "Bug report") and include the DRSM version, the OS and the <code>utils/drsm_preflight.sh</code> output. Please allow 3 to 5 business days for a reply, and do not send passwords, keys or other sensitive information. If an AI agent helped, attach the support summary it wrote (<a href="ai/support.md">docs/ai/support.md</a>).</p>
+<div class="callout warn" id="ai-use">
+<p><strong>AI-assisted use.</strong> DRSM ships guides that let an AI agent assist your admins with upgrades, everyday jobs and troubleshooting, one step at a time; your admins run or approve every command. Before you use any AI assistance, review all of your agency's or company's AI usage policies and get formal written approval from your management team. Use only approved enterprise AI models that guarantee your information is not used to train public models; public or free, open source and self-built AI models may expose your information. The entire risk of AI-assisted use rests with you, see the <a href="https://datareel.com/terms.php#ai-assisted">terms of use</a>. Naming an AI tool is a reference only, not an endorsement. See <a href="ai-assistants.html">AI assistants</a>.</p>
+</div>
+
 <nav class="pager" aria-label="Previous and next page"><a class="card prev" href="databases.html"><small>Previous</small>MySQL and Postgres</a><a class="card next" href="ai-assistants.html"><small>Next</small>AI assistants</a></nav>
   </main>
 </div>

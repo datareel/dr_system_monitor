@@ -81,7 +81,8 @@ else
     fail "llms-full.txt or docs/ai is out of date, run docs/ai/make_llms.sh"
 fi
 rm -rf "${T}"
-for f in llms.txt AGENTS.md GEMINI.md CLAUDE.md .github/copilot-instructions.md; do
+for f in llms.txt AGENTS.md GEMINI.md CLAUDE.md .github/copilot-instructions.md utils/drsm_preflight.sh \
+    docs/ai/new-install.md docs/ai/upgrade.md docs/ai/build-and-release.md docs/ai/fork-and-contribute.md docs/ai/support.md; do
     if [ -s "${TOPdir}/${f}" ]; then pass "${f} present"; else fail "${f} missing"; fi
 done
 

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>AI assistants | DRSM Documentation</title>
-<meta name="description" content="Use GitHub Copilot, Gemini and Claude to maintain DRSM with the guide files it ships.">
+<meta name="description" content="AI-assisted install, upgrade, development and support for DRSM with the guide files it ships: human in the loop, never autonomous.">
 <link rel="icon" href="images/logo.svg" type="image/svg+xml">
 <link rel="stylesheet" href="docs.css">
 <script src="docs.js"></script>
@@ -24,61 +24,84 @@
 <div class="layout">
   <nav class="sidebar" aria-label="Documentation">
 
-    <h4>Get started</h4><a href="index.html">Overview</a><a href="install.html">Install and set up</a><a href="deployment.html">Deployment setups</a><h4>Using DRSM</h4><a href="dashboard.html">Web dashboard</a><a href="plugins.html">Plugins</a><a href="alerts.html">Thresholds and alerts</a><a href="databases.html">MySQL and Postgres</a><a href="admin.html">Day-to-day admin</a><a href="ai-assistants.html" class="active" aria-current="page">AI assistants</a><div class="toc"><a href="#files">The guide files</a><a href="#rules">Approved services</a><a href="#copilot">GitHub Copilot</a><a href="#gemini">Gemini</a><a href="#claude">Claude Code</a><a href="#chat">A plain chat</a><a href="#asks">Good requests</a><a href="#review">Review the result</a></div><h4>Reference</h4><a href="changelog.html">What's new</a><h4>Links</h4><a href="https://datareel.com/drsm/dashboard/">Live demo</a><a href="https://datareel.com/downloads/drsm/">Downloads</a><a href="https://datareel.com/contact.php">Report an issue</a>
+    <h4>Get started</h4><a href="index.html">Overview</a><a href="install.html">Install and set up</a><a href="deployment.html">Deployment setups</a><h4>Using DRSM</h4><a href="dashboard.html">Web dashboard</a><a href="plugins.html">Plugins</a><a href="alerts.html">Thresholds and alerts</a><a href="databases.html">MySQL and Postgres</a><a href="admin.html">Day-to-day admin</a><a href="ai-assistants.html" class="active" aria-current="page">AI assistants</a><div class="toc"><a href="#policy">Before you start</a><a href="#loop">Human in the loop</a><a href="#files">The guide files</a><a href="#preflight">Read-only check</a><a href="#copilot">GitHub Copilot</a><a href="#gemini">Gemini CLI</a><a href="#claude">Claude Code</a><a href="#chat">A plain chat</a><a href="#asks">Good requests</a><a href="#review">Review the result</a><a href="#support">Support</a></div><h4>Reference</h4><a href="changelog.html">What's new</a><h4>Links</h4><a href="https://datareel.com/drsm/dashboard/">Live demo</a><a href="https://datareel.com/downloads/drsm/">Downloads</a><a href="https://datareel.com/contact.php">Report an issue</a>
   
   </nav>
   <main class="content" id="main">
 <h1>AI assistants</h1>
-<p class="lead">DRSM ships guide files that teach AI coding assistants its layout, report format and rules, so an admin can ask one to add a host, write a plugin or change the dashboard and get changes that fit. This page shows how to connect GitHub Copilot, Gemini and Claude to an install.</p>
+<p class="lead">DRSM ships guide files that let an AI agent, such as Gemini CLI, Claude Code or GitHub Copilot, assist your own admins and developers to install, upgrade, maintain, change and troubleshoot DRSM, one step at a time. The agent assists people; it never acts on its own.</p>
+
+<h2 id="policy">Before you use AI assistance</h2>
+<div class="callout warn">
+<p>Before you use any AI assistance, review all of your agency's or company's AI usage policies, and get formal written approval from your management team in the form of a business use case and justification. AI desktops and command line tools may be used with DRSM and these guides only in strict compliance with those policies and that approval.</p>
+<p><strong>Use only approved enterprise AI models.</strong> An AI agent working on DRSM may process potentially sensitive data, such as host names, addresses, configuration files, reports, logs and command output. Use only your agency's or company's enterprise AI models that have built-in safeguards against disclosing information and that guarantee your internal information will not be used to train public models.</p>
+<p><strong>Warning:</strong> public or free AI tools, open source AI models and self-built AI models may expose your information to public learning models or to other parties, depending on how the model is hosted, configured and licensed; use them only after a comprehensive review of what information might be exposed and what the potential risks are. The entire risk of AI-assisted use rests with you; see the <a href="https://datareel.com/terms.php#ai-assisted">terms of use</a>.</p>
+<p><strong>No endorsement.</strong> Any mention of a specific AI tool, model or product on this page or in the guide files, such as Gemini, Gemini CLI, Claude Code or GitHub Copilot, is a reference only. It is not an endorsement or a recommendation to use that product. Product names are trademarks of their respective owners.</p>
+</div>
+<p>The guide files and <code>utils/drsm_preflight.sh</code> send nothing to DataReel. Anything you give an AI tool goes to that tool's provider and is governed by the provider's terms and privacy policy and by your AI usage policies (see the <a href="https://datareel.com/privacy.php">privacy policy</a>). Never give an AI tool passwords, SSH keys, the dashboard login settings or agent keys.</p>
+
+<h2 id="loop">Human in the loop, never autonomous</h2>
+<ul>
+<li><strong>Advisory mode is the default.</strong> The agent explains each step and prints the exact command and the host it is for; your admin runs it and pastes the output back.</li>
+<li>Where your policy lets the agent run tools, each command still needs its own approval. Never use auto-approve modes: no Gemini CLI <code>--yolo</code> or auto-accept, no Claude Code permission bypass, no auto-run in other agents.</li>
+<li>Nothing runs unattended, in batches or in loops over hosts. Scripts that change files show a dry run first and need <code>--apply</code>.</li>
+<li>The guide files contain no code that runs by itself, and the pre-flight check is a read-only script your admins run, so everything works with advisory-only AI policies.</li>
+</ul>
 
 <h2 id="files">The guide files</h2>
 <div class="table-wrap"><table><thead><tr><th>File</th><th>Read by</th></tr></thead><tbody>
-<tr><td><code>AGENTS.md</code></td><td>The main guide, read by most assistants</td></tr>
-<tr><td><code>.github/copilot-instructions.md</code></td><td>GitHub Copilot</td></tr>
-<tr><td><code>GEMINI.md</code></td><td>Gemini CLI and Gemini Code Assist</td></tr>
-<tr><td><code>CLAUDE.md</code></td><td>Claude Code</td></tr>
-<tr><td><a href="ai/README.md">docs/ai/</a></td><td>Task guides: <a href="ai/maintain-a-site.md">maintain a site</a>, <a href="ai/write-a-plugin.md">write a plugin</a>, <a href="ai/change-the-dashboard.md">change the dashboard</a></td></tr>
-<tr><td><a href="ai/llms-full.txt">llms-full.txt</a></td><td>All of it in one file, to paste into a chat</td></tr>
+<tr><td><code>AGENTS.md</code></td><td>The main guide: AI usage policy, rules for agents, layout, coding rules, tests, support. Read directly by Claude Code, GitHub Copilot, Codex and other agents</td></tr>
+<tr><td><code>GEMINI.md</code></td><td>Gemini CLI and Gemini Code Assist; imports <code>AGENTS.md</code></td></tr>
+<tr><td><code>CLAUDE.md</code></td><td>Claude Code; imports <code>AGENTS.md</code></td></tr>
+<tr><td><code>.github/copilot-instructions.md</code></td><td>GitHub Copilot; points to <code>AGENTS.md</code></td></tr>
+<tr><td><a href="ai/README.md">docs/ai/</a></td><td>Task guides: <a href="ai/new-install.md">new install</a>, <a href="ai/upgrade.md">upgrade</a>, <a href="ai/maintain-a-site.md">maintain a site</a>, <a href="ai/write-a-plugin.md">write a plugin</a>, <a href="ai/change-the-dashboard.md">change the dashboard</a>, <a href="ai/build-and-release.md">build and release</a>, <a href="ai/fork-and-contribute.md">fork and contribute</a>, <a href="ai/support.md">support</a></td></tr>
+<tr><td><code>llms.txt</code>, <a href="ai/llms-full.txt">llms-full.txt</a></td><td>The list of guides, and all of them in one file to paste into an approved chat</td></tr>
 </tbody></table></div>
-<p>They are in the top folder of the DRSM source. For an install, open the source folder, or copy <code>AGENTS.md</code> and the pointer files to the folder you open (for example the DRSM account's home), so the assistant finds them.</p>
+<p>They are in the top folder of the DRSM source. For an install, open the source folder, or copy <code>AGENTS.md</code>, <code>GEMINI.md</code>, <code>CLAUDE.md</code> and <code>docs/ai/</code> to the folder you open (for example the DRSM account's home), so the agent finds them.</p>
 
-<h2 id="rules">Use approved services only</h2>
-<div class="callout warn"><p>Host names, addresses, reports and configuration describe your network. Use only AI services your organization has approved, and never paste passwords, tokens or keys. Keep the work on the monitor host, where the assistant reads files instead of you pasting them.</p></div>
+<h2 id="preflight">The read-only check</h2>
+<p>Start every install, upgrade and support case with the pre-flight check, run as the DRSM user, and give the output to the agent. It changes nothing, contacts no host and prints counts instead of host names or alert addresses:</p>
+<pre><code><span class="p">$ </span>~/drsm/utils/drsm_preflight.sh
+<span class="p">$ </span>~/drsm/utils/drsm_preflight.sh --source=$HOME/git/dr_system_monitor-&lt;new&gt;   # before an upgrade</code></pre>
 
 <h2 id="copilot">GitHub Copilot in VS Code</h2>
 <ol>
-<li>Install VS Code with the <em>Remote - SSH</em> and <em>GitHub Copilot</em> extensions, signed in with your organization's Copilot account.</li>
+<li>Install VS Code with the <em>Remote - SSH</em> and <em>GitHub Copilot</em> extensions, signed in with your organization's approved Copilot account.</li>
 <li>Connect to the monitor host as the DRSM user (<em>Remote-SSH: Connect to Host</em>) and open the DRSM source or home folder.</li>
-<li>Copilot Chat reads <code>.github/copilot-instructions.md</code> and <code>AGENTS.md</code> from the open folder. Use agent mode for changes that touch several files.</li>
+<li>Copilot Chat reads <code>.github/copilot-instructions.md</code> and <code>AGENTS.md</code> from the open folder. Leave terminal auto-approve off, so every command waits for you.</li>
 </ol>
 
 <h2 id="gemini">Gemini CLI or Gemini Code Assist</h2>
 <pre><code><span class="p">$ </span>cd ~/git/dr_system_monitor
-<span class="p">$ </span>gemini              # reads GEMINI.md, which points to AGENTS.md</code></pre>
+<span class="p">$ </span>gemini              # reads GEMINI.md, which imports AGENTS.md; no --yolo</code></pre>
 <p>Gemini Code Assist in VS Code reads <code>GEMINI.md</code> from the open folder too.</p>
 
 <h2 id="claude">Claude Code</h2>
 <pre><code><span class="p">$ </span>cd ~/git/dr_system_monitor
-<span class="p">$ </span>claude              # reads CLAUDE.md and AGENTS.md</code></pre>
+<span class="p">$ </span>claude              # reads CLAUDE.md, which imports AGENTS.md; no permission bypass</code></pre>
 
 <h2 id="chat">A chat with no access to the host</h2>
-<p>Paste <a href="ai/llms-full.txt">llms-full.txt</a> into an approved chat, describe the change, copy back only the code and test it on the host.</p>
+<p>Paste <a href="ai/llms-full.txt">llms-full.txt</a> into an approved chat, describe the change, copy back only the code and test it on the host. Remove host names, addresses and other site data first when your policy requires it.</p>
 
 <h2 id="asks">Good requests</h2>
 <ul>
-<li>"Add web2 as a production Linux host with a 90% disk warning, then run it once without alerts."</li>
+<li>"Help me install DRSM on this monitor host. Here is the drsm_preflight.sh output."</li>
+<li>"Plan the upgrade from 1.32 to the new release; here is the pre-flight with --source."</li>
+<li>"Add web2 as a production Linux host with a 90% disk warning, then show me the command to run it once without alerts."</li>
 <li>"Write a plugin in plugins/local that warns when /var/spool/app has more than 500 files, with a test."</li>
-<li>"Show the report /opt/scripts/backup_report.txt on the dashboard, stale after 26 hours."</li>
-<li>"web3 is Stale since yesterday. Find out why from the logs and cron."</li>
-<li>"Post a warning that the mail relay is down until 18:00."</li>
+<li>"web3 is Stale since yesterday. Tell me which logs and cron lines to check."</li>
 </ul>
 
 <h2 id="review">Review the result</h2>
 <ul>
-<li>Read every change before it is saved. Scripts that change files show a dry run first: check it before <code>--apply</code>.</li>
+<li>Read every command and change before it runs or is saved. Check a dry run before <code>--apply</code>.</li>
 <li>Run the tests in the source (<code>tests/*.sh</code>) after a code change, and <code>drsm_run.sh -n -H &lt;host&gt; -v</code> after a host change.</li>
 <li>Configuration belongs in host, site and config files, not in the DRSM code, so an upgrade keeps it.</li>
+<li>DRSM is free software under the GNU General Public License, provided as is; checking the agent's output and the changes made is your responsibility.</li>
 </ul>
+
+<h2 id="support">AI-assisted support</h2>
+<p>Start with your AI agent and <a href="ai/support.md">docs/ai/support.md</a>: where to look, common problems, and the cases where the agent must stop and hand over to your admins. The agent assists your admins; it does not replace them or DataReel. If you are still stuck, <a href="https://datareel.com/contact.php">contact DataReel</a> (topic "Application support" or "Bug report") and attach the <code>drsm_preflight.sh</code> output and the support summary the agent writes, without passwords, keys or other secrets. Please allow 3 to 5 business days for a reply.</p>
 <nav class="pager" aria-label="Previous and next page"><a class="card prev" href="admin.html"><small>Previous</small>Day-to-day admin</a><a class="card next" href="changelog.html"><small>Next</small>What's new</a></nav>
   </main>
 </div>

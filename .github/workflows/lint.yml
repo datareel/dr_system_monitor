@@ -31,6 +31,9 @@ jobs:
       - name: HTML docs tests
         run: bash tests/docs_test.sh
 
+      - name: Pre-flight check tests
+        run: bash tests/preflight_test.sh
+
   php:
     runs-on: ubuntu-latest
     strategy:

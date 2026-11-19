@@ -6,7 +6,7 @@ Built by docs/ai/make_llms.sh from AGENTS.md and docs/ai/*.md.
 File: AGENTS.md
 ----------------------------------------------------------------
 
-# AGENTS.md: DRSM for AI coding assistants
+# AGENTS.md: DRSM AI-assisted install, upgrade, development and support
 
 DRSM (DataReel System Monitor) monitors Linux and Windows hosts and
 shows them on a PHP dashboard. The checks are BASH plugins, run by
@@ -15,13 +15,154 @@ on Linux hosts over SSH, or from Windows and Linux agent report files. Each run
 writes plain text report files; the PHP pages only read those files.
 There is no database and no daemon.
 
-This file is for GitHub Copilot, Gemini, Claude and other assistants,
-and for the admins who use them. `.github/copilot-instructions.md`,
-`GEMINI.md` and `CLAUDE.md` point here. The task guides are in
-`docs/ai/`; `llms.txt` lists them and `llms-full.txt` has all of them
-in one file.
+This file is for AI-assisted work on DRSM: it tells an AI agent
+(Gemini CLI, Claude Code, GitHub Copilot, Codex and others) how to
+assist a site's own system administrators and developers to install,
+set up, upgrade, build, fork, change and troubleshoot DRSM. The agent
+assists; it does not replace the administrators or DataReel support,
+and it never acts autonomously (section 0). The people review and
+approve every step, and problems the agent cannot solve go to DataReel
+(section 9).
 
-## Two kinds of work
+`GEMINI.md` and `CLAUDE.md` import this file and
+`.github/copilot-instructions.md` points to it. The task guides are in
+`docs/ai/`; `llms.txt` lists them and `llms-full.txt` has all of them
+in one file. The full manuals are `README.txt`, `PLUGINS.md` and the
+HTML docs in `docs/` (also https://datareel.com/drsm/docs/). When this
+file and the manuals or the code disagree, the manuals and the code
+win: say so to the person you work for.
+
+## Before you use AI assistance
+
+Review all of your agency's or company's AI usage policies, and get
+formal written approval from your management team, in the form of a
+business use case and justification, before you use any AI assistance
+with DRSM. AI desktops and command line tools may be used with this
+guide only in strict compliance with those policies and that approval.
+
+- **Use only approved enterprise AI models.** An AI agent working on
+  DRSM may process potentially sensitive data: host names, addresses,
+  configuration files, reports, logs and command output. Use only your
+  agency's or company's enterprise AI models that have built-in
+  safeguards against disclosing information and that guarantee your
+  internal information will not be used to train public models.
+- **Warning:** public or free AI tools, open source AI models and
+  self-built AI models may expose your information to public learning
+  models or to other parties, depending on how the model is hosted,
+  configured and licensed. Use them only after a comprehensive review
+  of what information might be exposed and what the potential risks
+  are.
+- **The entire risk of AI-assisted use rests with the user.** DataReel
+  cannot be held accountable for actions taken, commands run or other
+  outcomes of AI assistance (see https://datareel.com/terms.php).
+- **No endorsement.** Any mention of a specific AI tool, model or
+  product in this guide, such as Gemini, Gemini CLI, Claude Code or
+  GitHub Copilot, is a reference only. It is not an endorsement or a
+  recommendation to use that product. Product names are trademarks of
+  their respective owners.
+- **Nothing goes to DataReel.** These guides and
+  `utils/drsm_preflight.sh` send nothing to DataReel. Anything you give
+  an AI tool goes to that tool's provider under its terms and privacy
+  policy (see https://datareel.com/privacy.php). Never give an AI tool
+  passwords, tokens, SSH keys, `$AUTH...` settings or the
+  `.htpasswd` and agent key files.
+
+**For the agent:** at the start of a session, ask the person to
+confirm that this AI-assisted use is approved under their
+organization's AI usage policy and that you are an approved enterprise
+AI model. If they cannot confirm it, stop and do not ask for or read
+any host, report or configuration data.
+
+## 0. Human in the loop: the agent never acts on its own
+
+AI-assisted means the agent assists a person; it never acts
+autonomously. Every change to a monitor host, a monitored host or the
+DRSM source is made by a person or explicitly approved by one, one
+step at a time.
+
+- **Advisory mode is the default.** The agent explains the next step
+  and prints the exact command and the host it is for. The person runs
+  it and pastes the output back. Use this mode unless the organization
+  allows the agent to run tools.
+- **If tool execution is allowed, each command still needs its own
+  explicit approval** before it runs. Never use auto-approve modes: no
+  Gemini CLI `--yolo` or auto-accept, no Claude Code permission bypass
+  (`--dangerously-skip-permissions`, bypass mode), no auto-run in other
+  agents.
+- **No unattended work:** no scheduled, background or batch runs of
+  changing commands set up by the agent, no loops over hosts, and no
+  changes across hosts over SSH loops, pdsh, Ansible or similar. One
+  host per approval. Cron lines for DRSM itself are written by the
+  person, after they have read them.
+- **Dry run first.** Scripts that copy, delete, rename or mirror
+  anything (`drsm_remove_host.sh`, `wra_hosts.sh`, `lra_hosts.sh`,
+  `drsm_web_sync.sh`, `drsm_message.sh` and others) show what they
+  would do unless given `--apply`. Show the dry run to the person; they
+  decide on `--apply`.
+- **Read-only diagnostics first.** The agent may propose read-only
+  checks (`utils/drsm_preflight.sh`, `drsm_run.sh -l`, reading reports
+  and logs) before anything else; they are shown and approved the same
+  way. `drsm_run.sh -n` is not read-only: it connects to hosts over SSH
+  and writes reports, but sends no alerts.
+
+**Works with strict AI policies.** These files contain no code that
+runs by itself: `AGENTS.md`, `GEMINI.md`, `CLAUDE.md`,
+`.github/copilot-instructions.md`, `llms.txt` and `docs/ai/*.md` are
+text, and `utils/drsm_preflight.sh` is a read-only script that the
+person runs. Everything in this guide works in advisory mode, with no
+tool execution by the agent.
+
+## 1. Rules for agents (read these first)
+
+DRSM sends alerts to people, runs as an account with SSH keys to many
+hosts, and its dashboard may be reachable from outside the network. A
+wrong step can page the on-call staff, lock the monitor out of hosts
+or publish site data. Follow these rules on every task:
+
+1. **Show, then the person runs or approves it.** Before any command
+   that changes something (`utils/install.sh`, `--apply`, `crontab`,
+   `ssh-copy-id`, edits under `$DRSMHOME/etc`, `$CONFIGdir` or
+   `$WWWdir`, `dnf`, `firewall-cmd`, Apache settings), print the
+   command and the host. In advisory mode the person runs it; otherwise
+   wait for an explicit yes for that one command (section 0).
+2. **Back up before changing.** Copy `$DRSMHOME/etc`,
+   `$CONFIGdir/drsm.php`, `$WWWdir/site` and the crontab
+   (`crontab -l > file`) into a dated backup folder first. Never
+   delete; move aside.
+3. **Test without alerts.** Use `drsm_run.sh -n -H <host> -v` to try a
+   change. A run without `-n` can send email and text alerts.
+4. **Stop on any failed check.** If a check fails or the output is not
+   what the guide says to expect, stop and report. Do not improvise a
+   fix on a production monitor.
+5. **Never touch secrets.** Do not print, copy or change SSH private
+   keys, `.htpasswd` files, `$AUTH...` values, the Windows and Linux
+   agent key files or the alert lists' addresses. Ask the person to do
+   those steps.
+6. **Never weaken security silently.** Do not turn off the dashboard
+   login, SELinux or firewalld, open the dashboard to the internet, set
+   `StrictHostKeyChecking=no`, or let a page read a path taken from the
+   request, to make something work. Report instead.
+7. **No secrets or site data in files you write** (host names,
+   addresses, accounts, passwords), unless the person asks for that file
+   on their own systems. Never put site data in the DRSM source or in
+   a change meant for DataReel.
+8. **Keep a log.** List each command, on which host, and its result,
+   and give it to the person at the end (section 10).
+
+## 2. Task guides
+
+| Task | Guide |
+| --- | --- |
+| New install on a monitor host | `docs/ai/new-install.md` |
+| Upgrade an install (also from old `system_check.sh` setups) | `docs/ai/upgrade.md` |
+| Run DRSM for a site: hosts, settings, sites, alerts, cron | `docs/ai/maintain-a-site.md` |
+| Write a plugin | `docs/ai/write-a-plugin.md` |
+| Change the dashboard | `docs/ai/change-the-dashboard.md` |
+| Build, test and package a release | `docs/ai/build-and-release.md` |
+| Fork DRSM or send changes to DataReel | `docs/ai/fork-and-contribute.md` |
+| Troubleshooting and support | `docs/ai/support.md` |
+
+## 3. Two kinds of change
 
 1. **Running DRSM for a site** (most admins): host files, plugin
    settings, sites and links, the dashboard settings, cron. Change the
@@ -31,7 +172,7 @@ in one file.
    the source tree, run the tests, then reinstall. See
    `docs/ai/write-a-plugin.md` and `docs/ai/change-the-dashboard.md`.
 
-## Where things are
+## 4. Where things are
 
 ```
 bin/drsm_run.sh          plugin runner, writes every report (cron runs it)
@@ -52,7 +193,7 @@ etc/sites/               <org>.org and <org>/<site>.site files
 www/php/                 dashboard pages; drsm_lib.php is the shared code
 www/css/drsm.css, www/js/drsm.js   one stylesheet and one script, no framework
 utils/install.sh         installs code to $DRSMHOME and pages to $WWWdir
-utils/                   migrate_systems_dat.sh, wra_hosts.sh, lra_hosts.sh, new_plugin.sh, drsm_web_sync.sh, ...
+utils/                   drsm_preflight.sh (read-only check), migrate_systems_dat.sh, wra_hosts.sh, lra_hosts.sh, new_plugin.sh, drsm_web_sync.sh, ...
 tests/*.sh               all tests, plain BASH; run every one before a change is done
 docs/*.html              user documentation (hand written HTML)
 docs/ai/                 these guides; docs/ai/make_llms.sh rebuilds llms-full.txt
@@ -66,7 +207,7 @@ Installed layout: code in `$DRSMHOME` (default `~/drsm`), dashboard in
 `systems/<host>/<host>_report.txt`, `archive/`). Every script reads
 `$DRSM_CONFIG` if set, else `~/.drsm.sh`, else `$BASEdir/etc/drsm.sh`.
 
-## Report format (the contract between plugins and pages)
+## 5. Report format (the contract between plugins and pages)
 
 - A plugin prints `INFO - text`, `WARNING - text`, `ERROR - text`,
   `UNKNOWN - text`, `METRIC name{labels}=value` and
@@ -95,7 +236,7 @@ Installed layout: code in `$DRSMHOME` (default `~/drsm`), dashboard in
   (note the spaces). Keep message text in that form: `<host> <what> is
   <value>`, for example `web1:/var is at 91% capacity.`
 
-## Rules
+## 6. Coding rules
 
 - BASH: `#!/bin/bash`, the file header block of the other scripts, tabs
   in nested blocks like the existing code, `function name()` style,
@@ -124,7 +265,7 @@ Installed layout: code in `$DRSMHOME` (default `~/drsm`), dashboard in
   editing anything in `docs/ai/` or this file run
   `docs/ai/make_llms.sh`.
 
-## Testing
+## 7. Testing
 
 ```
 $ for t in tests/*.sh; do bash "$t" || break; done
@@ -133,14 +274,251 @@ $ for t in tests/*.sh; do bash "$t" || break; done
 `drsm_run_test.sh` runs the runner and plugins against a temp tree,
 `www_test.sh` renders every page with the PHP command line,
 `auth_test.sh` covers the login, `docs_test.sh` checks the HTML docs
-links and that `llms-full.txt` is current. To try a change on a real
+links and that `llms-full.txt` is current, `preflight_test.sh` checks
+that `utils/drsm_preflight.sh` writes nothing. To try a change on a real
 install without alerts: `drsm_run.sh -n -H <host> -v`.
 
-## Releases
+## 8. Releases
 
 `version.txt` and `CHANGELOG.md` (`## <ver> - <date>`), annotated git
 tag `<ver>` (`<ver>-betaN` for betas), source tarball from
-`git archive --prefix=dr_system_monitor-<ver>/`.
+`git archive --prefix=dr_system_monitor-<ver>/`. See
+`docs/ai/build-and-release.md`.
+
+## 9. Support
+
+Troubleshooting steps, the cases where the agent must stop at once,
+and the support summary are in `docs/ai/support.md`. When a problem
+is not solved, give the person the support summary for their team or
+for DataReel (https://datareel.com/contact.php, topic "Application
+support" or "Bug report"). AI-assisted support ends there: the people
+take it from the summary. Never put passwords, keys or other secrets
+in it.
+
+DRSM is free software under the GNU General Public License version 3,
+provided as is, without warranty (`license.txt`). Check every command
+an agent proposes before it runs; the person running DRSM is
+responsible for the changes made.
+
+## 10. Report back
+
+End every task with: the hosts touched, each command and its result,
+the files changed (with the backup folder), the dry runs shown and
+what was applied, the test results (`tests/*.sh` or
+`drsm_run.sh -n -H <host> -v`), every WARN from
+`utils/drsm_preflight.sh` and what was decided, and anything left for
+the person to do.
+
+----------------------------------------------------------------
+File: docs/ai/new-install.md
+----------------------------------------------------------------
+
+# New DRSM install
+
+For admins (and their AI assistants) who set up DRSM on a new monitor
+host. Read the "Before you use AI assistance" part and sections 0 and 1
+of `AGENTS.md` first: the agent shows each step, the admin runs it or
+approves it, one host at a time. The full manual is `README.txt`
+(Requirements to Monitoring Crons) and `docs/install.html`.
+
+## 1. Read-only check first
+
+Unpack the release (step 3) and run the read-only check as the DRSM
+user. It changes nothing; give the output to the agent:
+
+```
+$ bash dr_system_monitor/utils/drsm_preflight.sh
+```
+
+Before the install it reports the missing install folder and
+dashboard folders as INFO or WARN. Every FAIL (for example no bash 4,
+no `ssh` or `curl`, PHP older than 7.2) must be fixed first.
+
+## 2. Packages and the DRSM user
+
+- Monitor host: bash 4 or later, OpenSSH 7.6 or later, `curl`, `ping`,
+  a mail command, and Apache with PHP 7.2 or later for the dashboard.
+  RHEL, Rocky, Alma, Fedora: `dnf install curl iputils procps-ng s-nail`.
+  Debian, Ubuntu: `apt install curl iputils-ping procps bsd-mailx`.
+- The DRSM user (default `sysadmin`, set by `SYSADMIN_USERNAME`) runs
+  every script and owns the reports. README.txt "Setting up the system
+  admin user" has the commands. The admin makes the account and its
+  SSH key (`ssh-keygen -t ed25519`); the agent never reads or copies
+  private keys.
+- Monitored Linux hosts over SSH need the DRSM user and its public key
+  in `authorized_keys`. The admin copies the key (`ssh-copy-id`), one
+  host at a time.
+
+## 3. Get and check the release
+
+```
+$ mkdir -p ~/git && cd ~/git
+$ wget https://datareel.com/downloads/drsm/dr_system_monitor-<version>.tar.gz
+$ sha256sum dr_system_monitor-<version>.tar.gz
+```
+
+Compare the checksum with the one on the downloads page
+(https://datareel.com/downloads/drsm/). Stop if it differs. Then
+`tar xzf`, and `mv dr_system_monitor-<version> dr_system_monitor`.
+
+## 4. Config and folders
+
+1. `cp etc/drsm.sh ~/.drsm.sh` (or `etc/drsm_dev.sh` for a development
+   workstation that runs from a user account), then set `WWWdir`,
+   `SYSADMIN_USERNAME`, `SYSADMIN_GROUPNAME` and `DRSMHOME` in it.
+   A second install in the same account uses its own file named by
+   `DRSM_CONFIG`.
+2. As root, make `$WWWdir` and give it to the DRSM user (README.txt
+   "Installing").
+3. Web server: README.txt "Web Server Setup" and docs/install.html
+   "Web". Turn on the dashboard login (README.txt "Login for Access
+   From Outside Your Network") before the dashboard is reachable from
+   outside the network. The admin types the password; the agent never
+   sees it.
+
+## 5. Install
+
+```
+$ cd ~/git/dr_system_monitor/utils
+$ ./install.sh
+```
+
+`install.sh` is not a dry run: it shows the EULA (GNU General Public
+License version 3, no warranty) and installs after `Yes`. The admin
+answers the EULA. `DRSM_ACCEPT_EULA=yes` is for the admin's own
+provisioning scripts only; an agent does not accept the license for
+the admin.
+
+## 6. Hosts and the first run
+
+1. `etc/hosts/_defaults.conf` holds shared settings, then one
+   `<host>.conf` per host (`docs/ai/maintain-a-site.md`, "Hosts").
+   Windows hosts and Linux agent hosts: `utils/wra_hosts.sh` and
+   `utils/lra_hosts.sh` (dry run, then `--apply`).
+2. `~/drsm/bin/drsm_run.sh -l` lists the hosts and plugins (read-only).
+3. `~/drsm/bin/drsm_run.sh -n -H <host> -v` checks one host with no
+   alerts. Fix every ERROR that is a setup problem (missing key,
+   missing command) before the next host.
+4. Open the dashboard and check the host page.
+
+## 7. Cron and alerts
+
+- Alert addresses: `$DRSMHOME/etc/alert.email.list` (`EMAILlist`,
+  `TEXTlist`), or `ALERT_EMAIL` in a site file. The admin enters the
+  addresses.
+- Cron lines: `crontabs/crontab_example.txt` and README.txt "Plugin
+  monitoring with drsm_run.sh". The admin reads and installs them with
+  `crontab -e`; an agent does not install cron lines.
+- Run `utils/drsm_preflight.sh` again: the newest report age and the
+  cron lines should now be OK.
+
+## Report back
+
+The packages added, the config values set (no passwords), the hosts
+added and their first run result, the cron lines the admin installed,
+and the final pre-flight summary.
+
+----------------------------------------------------------------
+File: docs/ai/upgrade.md
+----------------------------------------------------------------
+
+# Upgrade a DRSM install
+
+For admins (and their AI assistants) who move an install to a new
+DRSM release. Read the "Before you use AI assistance" part and
+sections 0 and 1 of `AGENTS.md` first. One step at a time; the admin
+runs or approves each command. Plan the upgrade for a quiet time: a
+cron run during the install can read half copied files.
+
+## What install.sh keeps and replaces
+
+- Kept: `etc/hosts` (host files and `_defaults.conf`), `etc/sites`,
+  `plugins/local`, `$CONFIGdir/drsm.php` (the new release's copy is
+  written beside it as `drsm.php_install_new`), `$WWWdir/site`, the
+  reports, and a config in `$DRSMHOME/etc/drsm.sh` named by
+  `DRSM_CONFIG`.
+- Replaced: everything else under `$DRSMHOME` (`bin`, `lib`,
+  `collectors`, `plugins` except `plugins/local`, `utils`, `docs`) and
+  the pages in `$WWWdir/php`, `css`, `js`. Edits made to release
+  files there are lost: move them to host files, `_defaults.conf`,
+  `plugins/local` or `site/` before the upgrade.
+
+## 1. Before the upgrade (read-only)
+
+1. Unpack the new release next to the old source and check its
+   sha256 against the downloads page (https://datareel.com/downloads/drsm/).
+2. Read the new release's `CHANGELOG.md` from the installed version
+   (`cat $DRSMHOME/version.txt`) up. Tell the admin about every changed
+   setting and every "Changed" entry.
+3. Run the read-only check against the new source and save the output:
+
+```
+$ bash ~/git/dr_system_monitor-<new>/utils/drsm_preflight.sh --source=$HOME/git/dr_system_monitor-<new> | tee ~/drsm_preflight_before.txt
+```
+
+   It shows how many files differ and lists edited release
+   `plugin.conf` files that `install.sh` will replace. Hand every WARN
+   to the admin. Fix every FAIL first.
+
+## 2. Back up
+
+```
+$ B=~/drsm_backups/$(date +%Y%m%d_%H%M)_before_<new>; mkdir -p "$B"
+$ cp -a "$DRSMHOME" "$B/drsm"
+$ cp -a "$CONFIGdir/drsm.php" "$WWWdir/site" "$B/" 2>/dev/null
+$ crontab -l > "$B/crontab.txt"
+```
+
+Use the values from `~/.drsm.sh` (or `$DRSM_CONFIG`) for the folders.
+
+## 3. Install
+
+1. Optional, to stop runs during the install: the admin comments out
+   the DRSM cron lines (`crontab -e`) and notes them.
+2. `cd ~/git/dr_system_monitor-<new>/utils && ./install.sh`, as the DRSM
+   user (or root), with `DRSM_CONFIG` set if the install uses it. The
+   admin answers the EULA.
+3. Compare `$CONFIGdir/drsm.php_install_new` with `drsm.php`
+   (`diff`). Tell the admin about new settings; the admin decides what
+   to copy into `drsm.php`. Then move `drsm.php_install_new` into the
+   backup folder.
+
+## 4. Check
+
+1. `cat $DRSMHOME/version.txt` shows the new version.
+2. `drsm_run.sh -l`, then `drsm_run.sh -n -H <host> -v` for one host of
+   each collector the site uses (ssh, local, wra, lra).
+3. Open the dashboard: Overview, one host page, the menus.
+4. The admin puts the cron lines back if they were commented out.
+5. `utils/drsm_preflight.sh` again: compare with the saved output.
+
+## Roll back
+
+Copy the backup back: `$B/drsm` to `$DRSMHOME`, `drsm.php` and `site/`
+to the dashboard, and reinstall the old pages with the old source's
+`utils/install.sh`. The reports and host files are not changed by an
+upgrade, so nothing else needs restoring.
+
+## From an old system_check.sh setup
+
+Releases before 1.30 ran `bin/system_check.sh` and
+`bin/system_report.sh` from `systems.dat`. They keep working after the
+upgrade. Moving to `drsm_run.sh` is its own change, after the upgrade:
+
+1. `utils/migrate_systems_dat.sh` writes one host file per
+   `systems.dat` row into `etc/hosts`. It is not a dry run, but it
+   never overwrites a host file without `-f` and leaves the old files
+   in place. Use `-o <empty folder>` first to review the result.
+2. `drsm_run.sh -l`, then `drsm_run.sh -n -H <host> -v` for each kind
+   of host.
+3. The admin swaps the old cron lines for the `drsm_run.sh` lines in
+   `crontabs/crontab_example.txt`.
+
+## Report back
+
+Old and new version, the backup folder, the pre-flight before and
+after, the `drsm.php_install_new` differences and what the admin
+decided, the test runs, and the cron state at the end.
 
 ----------------------------------------------------------------
 File: docs/ai/maintain-a-site.md
@@ -152,6 +530,9 @@ For admins (and their AI assistants) who run DRSM for an organization.
 Change configuration files, not the installed code. Everything below
 is plain text; check a change with `drsm_run.sh -l` and test with
 `drsm_run.sh -n -H <host> -v` (`-n` sends no alerts).
+Read the "Before you use AI assistance" part and sections 0 and 1
+of `AGENTS.md` first: the agent shows each step and the person runs
+it or approves it.
 
 ## Find the install
 
@@ -253,13 +634,10 @@ items), `$EXTreports` (reports from your own scripts), `$AUTH...`
 
 ## Upgrade
 
-1. Unpack the new release next to the old source.
-2. Run `utils/install.sh <new source>` as the DRSM user (or root),
-   with `DRSM_CONFIG` set if the install uses it. It keeps
-   `_defaults.conf`, host and site files, `plugins/local`, `config/drsm.php`
-   (it writes `drsm.php_install_new` beside it) and `$WWWdir/site`.
-3. Compare `drsm.php_install_new` with `drsm.php` for new settings.
-4. `drsm_run.sh -l`, then one run with `-n`.
+See `upgrade.md`: read-only check with `utils/drsm_preflight.sh
+--source=<new source>`, back up, `utils/install.sh <new source>`,
+compare `drsm.php_install_new` with `drsm.php`, then `drsm_run.sh -l`
+and one run with `-n`. Problems: `support.md`.
 
 ----------------------------------------------------------------
 File: docs/ai/write-a-plugin.md
@@ -271,6 +649,9 @@ A check is a folder `plugins/<category>/<name>/` with `plugin.conf`
 and `check.sh` (runs on the host) or `probe.sh` (runs on the monitor
 host against the host). Site-only plugins go in `plugins/local/`.
 The full reference is `PLUGINS.md`, section "Writing a plugin".
+Read the "Before you use AI assistance" part and sections 0 and 1
+of `AGENTS.md` first: the agent shows each step and the person runs
+it or approves it.
 
 ## Steps
 
@@ -336,6 +717,9 @@ The dashboard is plain PHP pages in `www/php/` (installed to
 `$WWWdir/php/`), one stylesheet `www/css/drsm.css` and one script
 `www/js/drsm.js`. Pages read the report files in `$REPORTdir`; they
 never run checks or write reports.
+Read the "Before you use AI assistance" part and sections 0 and 1
+of `AGENTS.md` first: the agent shows each step and the person runs
+it or approves it.
 
 ## Settings first
 
@@ -409,3 +793,235 @@ drsm_page_end();
 - Document it in `docs/dashboard.html` and `CHANGELOG.md`.
 - Screenshots for the docs: headless Chrome against `php -S` on a copy
   made by `utils/make_web_demo.sh -s`.
+
+----------------------------------------------------------------
+File: docs/ai/build-and-release.md
+----------------------------------------------------------------
+
+# Build, test and package DRSM
+
+For developers (and their AI assistants) who change the DRSM source and
+make a release or a site package. DRSM is BASH and PHP: there is no
+compile step. A build is the tests plus a source tarball. Read the
+"Before you use AI assistance" part and sections 0, 1 and 6 of
+`AGENTS.md` first.
+
+## Work tree
+
+- Work in a git clone or an unpacked source tree, never in the
+  installed `$DRSMHOME` or `$WWWdir`.
+- Test machine packages: bash 4 or later, PHP 7.2 or later command
+  line (`php`), `curl`, `git`. `shellcheck` and `node` are optional
+  (the GitHub workflow in `.github/workflows/lint.yml` runs them).
+
+## Test
+
+```
+$ for t in tests/*.sh; do bash "$t" || break; done
+```
+
+Every test must pass; never skip or remove a test to make a change
+pass. The tests use temp folders and the local collector; they do not
+contact other hosts or send alerts. `tests/docs_test.sh` also checks
+that `llms-full.txt` matches the guides: run `docs/ai/make_llms.sh`
+after editing `AGENTS.md` or `docs/ai/`.
+
+Optional, as in the workflow:
+
+```
+$ shellcheck -S error -s bash bin/*.sh etc/*.sh utils/*.sh lib/*.sh collectors/*.sh plugins/*/*/*.sh tests/*.sh
+$ node --check www/js/drsm.js
+```
+
+## Try it on a test install
+
+Install the tree on a test account or test monitor host
+(`utils/install.sh`, with `DRSM_CONFIG` naming a test config), then
+`drsm_run.sh -n -H <host> -v`. Never test a change on the production
+monitor first.
+
+## Release (DataReel)
+
+1. `version.txt` and `CHANGELOG.md`: rename "Unreleased" to
+   `## <ver> - <YYYY-MM-DD>` (`<ver>-betaN` for betas). Update
+   `docs/changelog.html`.
+2. Run every test again.
+3. Commit, then an annotated tag `<ver>`.
+4. Source tarball and checksum:
+
+```
+$ git archive --format=tar.gz --prefix=dr_system_monitor-<ver>/ -o dr_system_monitor-<ver>.tar.gz <ver>
+$ sha256sum dr_system_monitor-<ver>.tar.gz > dr_system_monitor-<ver>.tar.gz.sha256sum
+```
+
+Pushing tags and publishing to the website are steps for the
+maintainer, never for the agent.
+
+## Web only dashboard package
+
+`utils/make_web_demo.sh -p /url/path -o outdir` builds a dashboard
+copy that needs only PHP, for a hosted site fed by
+`utils/drsm_web_sync.sh`; `-s` adds made up sample reports for a demo.
+Check the output folder before it is copied anywhere.
+
+## Report back
+
+The files changed, the test results (every test name and PASS or
+FAIL), the version and tag, and the tarball checksum.
+
+----------------------------------------------------------------
+File: docs/ai/fork-and-contribute.md
+----------------------------------------------------------------
+
+# Fork DRSM or send changes to DataReel
+
+For developers (and their AI assistants) who keep their own copy of
+DRSM or send fixes back. Read the "Before you use AI assistance" part
+and sections 0 and 1 of `AGENTS.md` first.
+
+## Site changes first
+
+Most site needs do not need a fork. Host files, site files,
+`_defaults.conf`, `plugins/local`, `config/drsm.php`, `$NAVextra`,
+`$EXTreports`, `site/custom.css` and `site/page_header.php` survive
+every upgrade (`docs/ai/upgrade.md`). Suggest them before a fork.
+
+## License
+
+DRSM is free software under the GNU General Public License version 3
+or any later version (`license.txt`). A fork that is given to others
+must:
+
+- keep `license.txt` and the copyright and license header of every
+  file, and add your own name under "Contributor(s)" in the files you
+  change;
+- give its source code, with your changes, to everyone who gets the
+  program;
+- say that it is changed and when (a `CHANGELOG.md` entry is enough).
+
+DataReel is a name of DataReel Software Development (see
+https://datareel.com/terms.php, "Trademarks"). A fork that is
+distributed must not look like a DataReel release: give it its own name
+or a clear "modified" version (for example `1.33-site1`), and point its
+support at its own maintainers, not at DataReel.
+
+## Keeping a fork
+
+1. Start from a released source tarball (checked against its sha256 on
+   https://datareel.com/downloads/drsm/) or a git clone, on a branch of
+   your own.
+2. Keep each change small and in its own commit. Follow the coding
+   rules in `AGENTS.md` section 6 and run every `tests/*.sh`.
+3. For a new DRSM release, merge it into your branch, run the tests,
+   then upgrade your installs (`docs/ai/upgrade.md`).
+
+## Sending changes to DataReel
+
+The DataReel project accepts bug fixes, enhancements and additions
+from all developers (https://datareel.com/about.php). Send them from
+the contact page, https://datareel.com/contact.php, with the topic
+"Bug report" or "Project or development inquiry":
+
+- what the change does and why, the DRSM version it is based on, and
+  the test results;
+- the change as a patch (`git format-patch` or `diff -u`), or ask in the
+  message how to send it;
+- no host names, addresses, accounts, passwords or other site data in
+  the patch or the message.
+
+The contact page asks for 3 to 5 business days for a reply.
+
+## Report back
+
+The branch and commits, the files changed, the test results, and the
+license and naming points the developer still has to check.
+
+----------------------------------------------------------------
+File: docs/ai/support.md
+----------------------------------------------------------------
+
+# DRSM troubleshooting and support
+
+For admins (and their AI assistants) when DRSM does not work as
+expected. Read the "Before you use AI assistance" part and sections 0
+and 1 of `AGENTS.md` first. Diagnose read-only first; change nothing
+until the admin agrees on the cause and the fix. The manual parts are
+`docs/ai/maintain-a-site.md` "Why is a host red?", README.txt and
+`docs/admin.html`.
+
+## 1. Where to look (read-only)
+
+| What | Command or file |
+| --- | --- |
+| Whole install summary | `utils/drsm_preflight.sh` |
+| Hosts and plugins the runner sees | `drsm_run.sh -l` |
+| One host's last report | Dashboard host page, or `$REPORTdir/systems/<host>/<host>_report.txt` |
+| Group reports | `$REPORTdir/system_health_report*.txt`, `system_check*_report*.txt` |
+| Run logs | `$LOGdir/drsm_run*.log` |
+| What cron runs | `crontab -l` (and `/etc/cron.d` if the site uses it) |
+| Agent reports (Windows, Linux) | `WRA_REPORTS_DIR`, `LRA_REPORTS_DIR` in `_defaults.conf` |
+| Web server errors | the Apache error log (README.txt "Apache Log files") |
+
+## 2. Common problems
+
+- **Host is Stale or "Not reporting".** The report is older than
+  `$STALEminutes` or the site's `STALE_MINUTES`. Check the cron line for
+  its group and the last run log. Agent hosts: check the newest agent
+  report in `WRA_REPORTS_DIR` or `LRA_REPORTS_DIR`.
+- **"Waiting for the first report".** A host file exists but no run
+  has written its report: its group has no cron line, or
+  `ENABLED=no`.
+- **SSH host ERROR "cannot connect".** The DRSM user's key is not in
+  the host's `authorized_keys`, the host key changed, or the host is
+  down. The admin checks with `ssh <host> true` as the DRSM user. Do
+  not set `StrictHostKeyChecking=no`.
+- **Plugin UNKNOWN.** A command in the plugin's `REQUIRES` is missing
+  on the host, or the plugin ran past its `TIMEOUT`.
+- **No alerts.** No mail command on the monitor host, an empty
+  `alert.email.list`, cron lines with `-n`, or the site's
+  `ALERT_EMAIL`. Do not send a test alert without the admin's OK: it
+  reaches real people.
+- **Blank or broken dashboard page.** Run
+  `php -d error_reporting=-1 -l $CONFIGdir/drsm.php`, then read the
+  Apache error log. After an upgrade, compare `drsm.php_install_new`
+  with `drsm.php`.
+- **Login does not work.** The admin checks the `$AUTH...` settings
+  and the password file. The agent does not read or change them.
+
+## 3. Stop and hand over at once
+
+Do not try to fix these yourself. Report to the admin straight away,
+with the summary in section 4:
+
+- signs that someone else has the DRSM user's SSH key, the dashboard
+  password or an agent key, or the dashboard is open to the internet
+  without its login;
+- agent or hook uploads that look forged or that the dashboard shows
+  as raw HTML or script;
+- anything that needs changes on many monitored hosts, a new SSH key,
+  turning off a security setting, or deleting reports or archives.
+
+## 4. Support summary
+
+When a problem is not solved, give the admin a summary they can send
+to their team or to DataReel from https://datareel.com/contact.php
+(topic "Application support", or "Bug report" for a DRSM bug).
+AI-assisted support ends here: the people take it from this summary.
+
+1. DRSM version (`$DRSMHOME/version.txt`), OS, bash and PHP versions.
+2. The `utils/drsm_preflight.sh` output.
+3. The plugin section of the report that shows the problem, and the
+   run log lines around it (times included).
+4. What happened, when, what changed before it, and every command
+   already tried with its result.
+
+Never include passwords, SSH keys, `$AUTH...` values, agent keys or
+alert addresses. Remove host names, addresses and other site data when
+the admin asks for that or their policy requires it. The contact page
+asks for 3 to 5 business days for a reply, and not to send passwords,
+account numbers or other sensitive information. Messages are handled
+as described in https://datareel.com/privacy.php.
+
+DRSM is free software under the GNU General Public License version 3,
+provided as is. Check every command an agent proposes before it runs;
+the admin running DRSM is responsible for the changes made.

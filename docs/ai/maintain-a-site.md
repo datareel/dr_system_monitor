@@ -4,6 +4,9 @@ For admins (and their AI assistants) who run DRSM for an organization.
 Change configuration files, not the installed code. Everything below
 is plain text; check a change with `drsm_run.sh -l` and test with
 `drsm_run.sh -n -H <host> -v` (`-n` sends no alerts).
+Read the "Before you use AI assistance" part and sections 0 and 1
+of `AGENTS.md` first: the agent shows each step and the person runs
+it or approves it.
 
 ## Find the install
 
@@ -105,10 +108,7 @@ items), `$EXTreports` (reports from your own scripts), `$AUTH...`
 
 ## Upgrade
 
-1. Unpack the new release next to the old source.
-2. Run `utils/install.sh <new source>` as the DRSM user (or root),
-   with `DRSM_CONFIG` set if the install uses it. It keeps
-   `_defaults.conf`, host and site files, `plugins/local`, `config/drsm.php`
-   (it writes `drsm.php_install_new` beside it) and `$WWWdir/site`.
-3. Compare `drsm.php_install_new` with `drsm.php` for new settings.
-4. `drsm_run.sh -l`, then one run with `-n`.
+See `upgrade.md`: read-only check with `utils/drsm_preflight.sh
+--source=<new source>`, back up, `utils/install.sh <new source>`,
+compare `drsm.php_install_new` with `drsm.php`, then `drsm_run.sh -l`
+and one run with `-n`. Problems: `support.md`.

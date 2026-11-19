@@ -4,6 +4,40 @@ All notable changes to the DataReel System Monitor (DRSM) are listed here.
 
 ## Unreleased
 
+### AI-assisted guides
+
+- AGENTS.md, GEMINI.md, CLAUDE.md, .github/copilot-instructions.md,
+  llms.txt and docs/ai now follow the DataReel AI-assisted guide
+  (https://datareel.com/drcm/ai_assisted_guide.php) and the AI-assisted
+  use parts of the datareel.com terms, privacy, about and contact pages:
+  written management approval and approved enterprise AI models
+  first, no endorsement of any AI tool, the entire risk with the user,
+  human in the loop (advisory mode by default, one approved command at
+  a time, no auto-approve modes, no unattended runs), rules for agents,
+  a support summary and a report back at the end of every task.
+  GEMINI.md and CLAUDE.md import AGENTS.md.
+- New task guides in docs/ai: new-install.md, upgrade.md,
+  build-and-release.md, fork-and-contribute.md and support.md, in
+  llms.txt, llms-full.txt and docs/ai/README.md. maintain-a-site.md
+  points to upgrade.md.
+- New utils/drsm_preflight.sh: a read-only check of a monitor host for
+  new installs, upgrades (--source=DIR compares a new release with the
+  install) and support. It writes nothing, contacts no host and prints
+  counts, not host names or alert addresses. tests/preflight_test.sh.
+- README.txt "Support and Bug Tracking": contact page topics, reply
+  time, privacy, the pre-flight output, AI-assisted support.
+- docs/ai-assistants.html: the AI usage policy, human in the loop and
+  the new guides.
+- docs/index.html, install.html, admin.html: an "AI-assisted use" note
+  with the policy and a link to ai-assistants.html; index lists every
+  guide; install and upgrade steps check the SHA-256 checksum and run
+  the pre-flight check; admin.html has a Support section (contact page,
+  reply time, what to attach). plugins.html links the plugin and fork
+  guides.
+- drsm_preflight.sh also reads /etc/cron.d (and says when the DRSM
+  lines there are all commented out) and the organization and site
+  report folders under REPORTdir/orgs.
+
 ### Fixed
 
 - network/http, https and ftp probes: a server that answered but made

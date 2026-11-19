@@ -4,6 +4,9 @@ The dashboard is plain PHP pages in `www/php/` (installed to
 `$WWWdir/php/`), one stylesheet `www/css/drsm.css` and one script
 `www/js/drsm.js`. Pages read the report files in `$REPORTdir`; they
 never run checks or write reports.
+Read the "Before you use AI assistance" part and sections 0 and 1
+of `AGENTS.md` first: the agent shows each step and the person runs
+it or approves it.
 
 ## Settings first
 

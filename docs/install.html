@@ -33,6 +33,10 @@
 <p>In the examples, <code>$</code> commands run as the DRSM user (for example <code>sysadmin</code>) and <code>#</code> commands run as root.</p>
 </div>
 
+<div class="callout warn" id="ai-use">
+<p><strong>AI-assisted use.</strong> DRSM ships guides that let an AI agent assist your admins with a new install (docs/ai/new-install.md), one step at a time; your admins run or approve every command. Before you use any AI assistance, review all of your agency's or company's AI usage policies and get formal written approval from your management team. Use only approved enterprise AI models that guarantee your information is not used to train public models; public or free, open source and self-built AI models may expose your information. The entire risk of AI-assisted use rests with you, see the <a href="https://datareel.com/terms.php#ai-assisted">terms of use</a>. Naming an AI tool is a reference only, not an endorsement. See <a href="ai-assistants.html">AI assistants</a>.</p>
+</div>
+
 <h2 id="requirements">Requirements</h2>
 <div class="table-wrap"><table><thead><tr><th>Where</th><th>Needs</th></tr></thead><tbody><tr><td>Monitor host</td><td>Linux: RHEL, Rocky or Alma 8, 9 or 10, Fedora, Debian 11+ or Ubuntu 20.04+. Bash 4+, OpenSSH 7.6+, <code>curl</code>, <code>ping</code>, <code>procps</code>, and a mail command (<code>s-nail</code>, <code>mailx</code> or <code>bsd-mailx</code>).</td></tr><tr><td>Web dashboard</td><td>Apache with PHP 7.2 or higher, PHP 8 supported. Can be the monitor host or a separate Web host, see <a href="deployment.html">Deployment setups</a>.</td></tr><tr><td>Monitored hosts</td><td>A user account with keyed SSH access from the monitor host, and <code>procps</code>. <code>lm_sensors</code> (<code>lm-sensors</code> on Debian) is optional, for CPU temperatures.</td></tr></tbody></table></div>
 <pre><code><span class="c"># RHEL, Rocky, Alma and Fedora</span>
@@ -63,7 +67,8 @@
 <span class="p">$ </span>wget https://datareel.com/downloads/drsm/dr_system_monitor-&lt;version&gt;.tar.gz
 <span class="p">$ </span>tar xzf dr_system_monitor-&lt;version&gt;.tar.gz
 <span class="p">$ </span>mv dr_system_monitor-&lt;version&gt; dr_system_monitor
-<span class="p">$ </span>cd dr_system_monitor</code></pre></li>
+<span class="p">$ </span>cd dr_system_monitor</code></pre>
+<p>Check the tarball's SHA-256 checksum against the downloads page before you go on (<code>sha256sum dr_system_monitor-&lt;version&gt;.tar.gz</code>). The read-only check <code>bash utils/drsm_preflight.sh</code> lists missing packages and folders; it changes nothing.</p></li>
 <li><strong>Create your configuration</strong>
 <p>Copy the config and set the Web directory, user and group. <code>etc/drsm_dev.sh</code> is a version that runs from your own account and serves from <code>~/public_html/sysadmin</code>.</p>
 <pre><code><span class="p">$ </span>cp etc/drsm.sh ~/.drsm.sh
@@ -171,6 +176,8 @@ cms1,Primary CMS server,Web CMS is affected,no,yes,no,yes,yes</code></pre>
   <li>Tune alert levels per host: <a href="alerts.html">Thresholds and alerts</a></li>
   <li>Brand the dashboard: <a href="dashboard.html#customize">Customizing the dashboard</a></li>
   <li>Write a check for your own application: <a href="plugins.html#writing">Writing a plugin</a></li>
+  <li>AI-assisted install, upgrade and support: <a href="ai-assistants.html">AI assistants</a></li>
+  <li>Help: the <a href="https://datareel.com/contact.php">contact page</a> (topic "Application support"), with the <code>utils/drsm_preflight.sh</code> output</li>
 </ul>
 <nav class="pager" aria-label="Previous and next page"><a class="card prev" href="index.html"><small>Previous</small>Overview</a><a class="card next" href="deployment.html"><small>Next</small>Deployment setups</a></nav>
   </main>

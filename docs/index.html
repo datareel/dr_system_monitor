@@ -141,16 +141,24 @@
   <li><code>CHANGELOG.md</code>, the list of changes in each release</li>
 </ul>
 
-<h2 id="ai">Maintaining DRSM with AI assistants</h2>
-<p>DRSM ships guides for GitHub Copilot, Gemini, Claude and other AI coding assistants, so an admin can ask one to add a host, write a plugin or change the dashboard and get changes that follow the DRSM rules. The source has <code>AGENTS.md</code>, read by most assistants, with <code>.github/copilot-instructions.md</code>, <code>GEMINI.md</code> and <code>CLAUDE.md</code> pointing to it, and <code>llms.txt</code> as an index.</p>
+<h2 id="ai">AI-assisted install, upgrade and support</h2>
+<p>DRSM ships guides that let an AI agent, such as Gemini CLI, Claude Code or GitHub Copilot, assist your own admins and developers to install, upgrade, maintain, change and troubleshoot DRSM. Human in the loop, never autonomous: the agent explains each step and prints the exact command, and your admins run it or approve it. The source has <code>AGENTS.md</code>, read by most agents, with <code>GEMINI.md</code> and <code>CLAUDE.md</code> importing it, <code>.github/copilot-instructions.md</code> pointing to it, <code>llms.txt</code> as an index and <code>utils/drsm_preflight.sh</code> as a read-only check.</p>
+<div class="callout warn" id="ai-use">
+<p><strong>AI-assisted use.</strong> DRSM ships guides that let an AI agent assist your admins with installs, upgrades, changes and support, one step at a time; your admins run or approve every command. Before you use any AI assistance, review all of your agency's or company's AI usage policies and get formal written approval from your management team. Use only approved enterprise AI models that guarantee your information is not used to train public models; public or free, open source and self-built AI models may expose your information. The entire risk of AI-assisted use rests with you, see the <a href="https://datareel.com/terms.php#ai-assisted">terms of use</a>. Naming an AI tool is a reference only, not an endorsement. See <a href="ai-assistants.html">AI assistants</a>.</p>
+</div>
 <div class="grid">
-  <a class="card" href="ai/AGENTS.md"><h3>AGENTS.md</h3><p>Layout, report format, coding rules, tests and releases.</p></a>
-  <a class="card" href="ai/maintain-a-site.md"><h3>Maintain a site</h3><p>Hosts, plugin settings, sites, links, alerts, cron, upgrades, and why a host is red.</p></a>
+  <a class="card" href="ai/AGENTS.md"><h3>AGENTS.md</h3><p>AI usage policy, rules for agents, layout, report format, coding rules, tests, support.</p></a>
+  <a class="card" href="ai/new-install.md"><h3>New install</h3><p>Packages, the DRSM user, checksum, config, install, first hosts, cron.</p></a>
+  <a class="card" href="ai/upgrade.md"><h3>Upgrade</h3><p>Pre-flight check, backup, install, check, roll back, older setups.</p></a>
+  <a class="card" href="ai/maintain-a-site.md"><h3>Maintain a site</h3><p>Hosts, plugin settings, sites, links, alerts, cron, and why a host is red.</p></a>
   <a class="card" href="ai/write-a-plugin.md"><h3>Write a plugin</h3><p>The manifest, the script, the helpers and the rules for a new check.</p></a>
   <a class="card" href="ai/change-the-dashboard.md"><h3>Change the dashboard</h3><p>Settings, reports from your own scripts, menu items, styles and PHP page rules.</p></a>
+  <a class="card" href="ai/build-and-release.md"><h3>Build and release</h3><p>Tests, test installs, release tarball, web only dashboard.</p></a>
+  <a class="card" href="ai/fork-and-contribute.md"><h3>Fork and contribute</h3><p>GPL rules for forks, naming, sending changes to DataReel.</p></a>
+  <a class="card" href="ai/support.md"><h3>Support</h3><p>Where to look, common problems, when to stop, the support summary.</p></a>
 </div>
-<p>All of them in one file to paste into a chat: <a href="ai/llms-full.txt">llms-full.txt</a>.</p>
-<p>How to connect GitHub Copilot, Gemini and Claude to an install: <a href="ai-assistants.html">AI assistants</a>. Everyday jobs: <a href="admin.html">Day-to-day admin</a>.</p>
+<p>All of them in one file to paste into an approved chat: <a href="ai/llms-full.txt">llms-full.txt</a>.</p>
+<p>How to use the guides with Gemini CLI, Claude Code or GitHub Copilot: <a href="ai-assistants.html">AI assistants</a>. Everyday jobs: <a href="admin.html">Day-to-day admin</a>.</p>
 <nav class="pager" aria-label="Previous and next page"><a class="card next" href="install.html"><small>Next</small>Install and set up</a></nav>
   </main>
 </div>

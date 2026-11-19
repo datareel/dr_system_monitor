@@ -9,7 +9,8 @@ cp -f "${TOPdir}/AGENTS.md" "${A}/AGENTS.md"
     echo "# DRSM: all AI assistant guides in one file"
     echo ""
     echo "Built by docs/ai/make_llms.sh from AGENTS.md and docs/ai/*.md."
-    for f in "${TOPdir}/AGENTS.md" "${A}/maintain-a-site.md" "${A}/write-a-plugin.md" "${A}/change-the-dashboard.md"; do
+    for f in "${TOPdir}/AGENTS.md" "${A}/new-install.md" "${A}/upgrade.md" "${A}/maintain-a-site.md" "${A}/write-a-plugin.md" \
+	"${A}/change-the-dashboard.md" "${A}/build-and-release.md" "${A}/fork-and-contribute.md" "${A}/support.md"; do
 	echo ""
 	echo "----------------------------------------------------------------"
 	echo "File: ${f#"${TOPdir}"/}"

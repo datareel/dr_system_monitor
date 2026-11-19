@@ -1,16 +1,2 @@
-# CLAUDE.md: DRSM
-
-Read AGENTS.md in the top folder of this repository before you change
-anything. It has the layout, the report format, the coding rules and
-the tests. Task guides are in docs/ai/ (maintain-a-site.md,
-write-a-plugin.md, change-the-dashboard.md).
-
-Short version:
-- Site settings live in etc/hosts, etc/sites, config/drsm.php and
-  site/custom.css, not in the code.
-- BASH only for plugins and scripts; scripts that change files default
-  to a dry run and need --apply.
-- PHP 7.2 compatible, every value through h(), pages never read a path
-  taken from the request.
-- Run every tests/*.sh before you finish, and add the change to
-  CHANGELOG.md under Unreleased.
+<!-- DRSM: AI-assisted install, upgrade, development and support. Before any AI assistance: written management approval under your AI usage policy and approved enterprise AI models only (AGENTS.md, "Before you use AI assistance"). Each step is reviewed and approved by a person; never use permission bypass modes. Naming an AI tool is a reference only, not an endorsement. -->
+@AGENTS.md

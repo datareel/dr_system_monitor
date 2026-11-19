@@ -2,21 +2,29 @@
 
 > DRSM monitors Linux and Windows hosts with BASH plugins run from cron by bin/drsm_run.sh (locally, over SSH, or from Windows and Linux agent reports) and shows the plain text reports on a PHP dashboard. No database, no daemon. GPLv3.
 
-Configuration is plain KEY=value files (etc/hosts, etc/sites) and config/drsm.php; change those, not the installed code. Plugins print INFO/WARNING/ERROR/UNKNOWN lines and exit 0-3. PHP must stay 7.2 compatible and escape output with h(). Run tests/*.sh after every change.
+AI-assisted use: get written management approval under your organization's AI usage policy and use only approved enterprise AI models first. The agent assists people and never acts on its own: one step at a time, each command run or approved by a person, no auto-approve modes. Naming an AI tool is a reference only, not an endorsement. See AGENTS.md "Before you use AI assistance" and https://datareel.com/terms.php.
+
+Configuration is plain KEY=value files (etc/hosts, etc/sites) and config/drsm.php; change those, not the installed code. Plugins print INFO/WARNING/ERROR/UNKNOWN lines and exit 0-3. PHP must stay 7.2 compatible and escape output with h(). Run tests/*.sh after every change. utils/drsm_preflight.sh is a read-only check for installs, upgrades and support.
 
 ## Guides
 
-- [AGENTS.md](AGENTS.md): Layout, report format, coding rules, tests, releases
-- [Maintain a site](docs/ai/maintain-a-site.md): Hosts, plugin settings, sites, links, alerts, cron, upgrades, why a host is red
+- [AGENTS.md](AGENTS.md): AI usage policy, rules for agents, layout, report format, coding rules, tests, releases, support
+- [New install](docs/ai/new-install.md): Packages, DRSM user, checksum, config, install.sh, first hosts, cron
+- [Upgrade](docs/ai/upgrade.md): Pre-flight check, backup, install, check, roll back, from system_check.sh setups
+- [Maintain a site](docs/ai/maintain-a-site.md): Hosts, plugin settings, sites, links, alerts, cron, why a host is red
 - [Write a plugin](docs/ai/write-a-plugin.md): plugin.conf, check.sh and probe.sh, helpers, rules
 - [Change the dashboard](docs/ai/change-the-dashboard.md): Settings, other script reports, menu items, styles, PHP page rules
+- [Build and release](docs/ai/build-and-release.md): Tests, test installs, release tarball, web only dashboard
+- [Fork and contribute](docs/ai/fork-and-contribute.md): GPL rules for forks, naming, sending changes to DataReel
+- [Support](docs/ai/support.md): Where to look, common problems, when to stop, support summary
 
 ## Reference
 
 - [PLUGINS.md](PLUGINS.md): Plugins, host files, organizations and sites, tiers, links, Windows hosts, Linux agent hosts
-- [README.txt](README.txt): Install, Web server setup, alerts, utilities
+- [README.txt](README.txt): Install, Web server setup, alerts, utilities, support
 - [CHANGELOG.md](CHANGELOG.md): Changes by release
-- [HTML documentation](docs/index.html): Install, plugins, dashboard, alerts, deployment, with screenshots
+- [HTML documentation](docs/index.html): Install, plugins, dashboard, alerts, deployment, AI assistants, with screenshots
+- [Contact](https://datareel.com/contact.php): DataReel support and bug reports
 
 ## Optional
 

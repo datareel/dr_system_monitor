@@ -4,6 +4,9 @@ A check is a folder `plugins/<category>/<name>/` with `plugin.conf`
 and `check.sh` (runs on the host) or `probe.sh` (runs on the monitor
 host against the host). Site-only plugins go in `plugins/local/`.
 The full reference is `PLUGINS.md`, section "Writing a plugin".
+Read the "Before you use AI assistance" part and sections 0 and 1
+of `AGENTS.md` first: the agent shows each step and the person runs
+it or approves it.
 
 ## Steps
 

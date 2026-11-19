@@ -1040,6 +1040,35 @@ DataReel contact page:
 
 https://datareel.com/contact.php
 
+Pick the topic "Application support" or "Bug report". Please allow 3
+to 5 business days for a reply. Do not send passwords, account
+numbers or other sensitive information. Messages are handled as
+described in the privacy policy: https://datareel.com/privacy.php
+
+Include the DRSM version (version.txt), the OS, and the output of the
+read-only check:
+
+$ ~/drsm/utils/drsm_preflight.sh
+
 If you wish to contribute to the DRSM project, send your code updates
-through the contact page.
+through the contact page (topic "Project or development inquiry").
+docs/ai/fork-and-contribute.md has the details.
+
+AI-assisted support:
+AGENTS.md and the guides in docs/ai/ let an AI agent assist your own
+admins to install, upgrade, build and troubleshoot DRSM, one step at a
+time; the admins run or approve every command. Before you use any AI
+assistance, review all of your agency's or company's AI usage
+policies, and get formal written approval from your management team
+in the form of a business use case and justification. Use only
+approved enterprise AI models that guarantee your information is not
+used to train public models; public or free AI tools, open source AI
+models and self-built AI models may expose your information. The
+entire risk of AI-assisted use rests with you, see "AI-assisted use"
+in https://datareel.com/terms.php. Any mention of a specific AI tool,
+such as Gemini, Gemini CLI, Claude Code or GitHub Copilot, is a
+reference only, not an endorsement. If you used the guides and are
+still stuck, attach the drsm_preflight.sh output and the support
+summary your AI tool wrote (docs/ai/support.md), without passwords,
+keys or other secrets.
 
