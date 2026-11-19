@@ -208,6 +208,8 @@ $AUTHusers = array(
 <li>Host names in URLs are checked, so <code>../</code> paths are refused.</li>
 <li>The Web only package blocks direct downloads of <code>status.json</code>.</li>
 <li>Reports still contain process lists and user names: turn on the <a href="#login">login</a> or put the dashboard behind a firewall, as in <a href="install.html#web">Web server</a>.</li>
+<li>Uploaded hook files are untrusted: only DRSM line kinds are read, and uploaded HTML is shown in a sandbox with no scripts.</li>
+<li>The whole security model, the supported versions and how to report a vulnerability privately: <code>SECURITY.md</code> in the source, summed up in <a href="admin.html#security">Day-to-day admin</a>.</li>
 </ul>
 <nav class="pager" aria-label="Previous and next page"><a class="card prev" href="deployment.html"><small>Previous</small>Deployment setups</a><a class="card next" href="plugins.html"><small>Next</small>Plugins</a></nav>
   </main>

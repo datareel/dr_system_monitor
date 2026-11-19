@@ -1050,6 +1050,10 @@ read-only check:
 
 $ ~/drsm/utils/drsm_preflight.sh
 
+Security problems: report them privately through the contact page
+(topic "Bug report"), as SECURITY.md says. SECURITY.md also has the
+supported versions and the security model in short.
+
 If you wish to contribute to the DRSM project, send your code updates
 through the contact page (topic "Project or development inquiry").
 docs/ai/fork-and-contribute.md has the details.

@@ -153,6 +153,7 @@ or publish site data. Follow these rules on every task:
 | Build, test and package a release | `docs/ai/build-and-release.md` |
 | Fork DRSM or send changes to DataReel | `docs/ai/fork-and-contribute.md` |
 | Troubleshooting and support | `docs/ai/support.md` |
+| Security model, supported versions, reporting a vulnerability | `SECURITY.md` |
 
 ## 3. Two kinds of change
 
@@ -190,6 +191,7 @@ tests/*.sh               all tests, plain BASH; run every one before a change is
 docs/*.html              user documentation (hand written HTML)
 docs/ai/                 these guides; docs/ai/make_llms.sh rebuilds llms-full.txt
 PLUGINS.md               full plugin, host file, site, Windows and Linux agent reference
+SECURITY.md              security model, supported versions, how to report a vulnerability
 CHANGELOG.md             add every change under "Unreleased"
 ```
 
@@ -285,7 +287,8 @@ is not solved, give the person the support summary for their team or
 for DataReel (https://datareel.com/contact.php, topic "Application
 support" or "Bug report"). AI-assisted support ends there: the people
 take it from the summary. Never put passwords, keys or other secrets
-in it.
+in it. Security problems are reported privately, as `SECURITY.md`
+says.
 
 DRSM is free software under the GNU General Public License version 3,
 provided as is, without warranty (`license.txt`). Check every command

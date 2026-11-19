@@ -4,6 +4,36 @@ All notable changes to the DataReel System Monitor (DRSM) are listed here.
 
 ## Unreleased
 
+### Planned
+
+From the NHC dashboard port (their versions are in the NHC package,
+DEVIATIONS.md D1, D3, D4, D6, D10, D14):
+
+- Service group tiles: a status page of configured groups (Linux,
+  Windows, storage, network, phones and so on), each with a health
+  gauge and its reports, fed by host groups and report files cut into
+  items (blocks, lines, one item per file).
+- Heat map flow wall display: every report of every group in one
+  mosaic, problems pulsing, a gauge per group, full screen.
+- Hosts page with sections by tier and platform (Linux PROD/DEV/QA,
+  Windows laptops and other Windows, network, consoles).
+- Report viewer: script report files and folders shown inside the
+  dashboard layout, with a plain file link.
+- Overview paging or lazy host cards for sites with hundreds of hosts.
+
+## 1.34 - 2026-11-19
+
+### Security
+
+- New SECURITY.md: supported versions (1.34, 1.33), how to report a
+  vulnerability privately through the DataReel contact page, and the
+  security model in short (monitor host, SSH options, agents connect
+  out, pages read files only, no path from a request, h() escaping, the
+  login settings, hook uploads untrusted and sandboxed, dry run
+  scripts). Linked from AGENTS.md, llms.txt, llms-full.txt,
+  docs/ai/README.md, docs/ai/support.md, README.txt and docs/index.html;
+  new Security section in docs/admin.html.
+
 ### AI-assisted guides
 
 - AGENTS.md, GEMINI.md, CLAUDE.md, .github/copilot-instructions.md,
@@ -145,23 +175,6 @@ All notable changes to the DataReel System Monitor (DRSM) are listed here.
   that answers https://<host> passes, for web servers that now serve
   HTTPS only. Found at NHC, where the old DRSM 1.2 HTTP check never
   failed (it tested $? after another test) and hid closed ports.
-
-### Planned for the next version
-
-From the NHC dashboard port (their versions are in the NHC package,
-DEVIATIONS.md D1, D3, D4, D6, D10, D14):
-
-- Service group tiles: a status page of configured groups (Linux,
-  Windows, storage, network, phones and so on), each with a health
-  gauge and its reports, fed by host groups and report files cut into
-  items (blocks, lines, one item per file).
-- Heat map flow wall display: every report of every group in one
-  mosaic, problems pulsing, a gauge per group, full screen.
-- Hosts page with sections by tier and platform (Linux PROD/DEV/QA,
-  Windows laptops and other Windows, network, consoles).
-- Report viewer: script report files and folders shown inside the
-  dashboard layout, with a plain file link.
-- Overview paging or lazy host cards for sites with hundreds of hosts.
 
 ## 1.33 - 2026-10-28
 

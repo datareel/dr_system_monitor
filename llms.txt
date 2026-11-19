@@ -17,6 +17,7 @@ Configuration is plain KEY=value files (etc/hosts, etc/sites) and config/drsm.ph
 - [Build and release](docs/ai/build-and-release.md): Tests, test installs, release tarball, web only dashboard
 - [Fork and contribute](docs/ai/fork-and-contribute.md): GPL rules for forks, naming, sending changes to DataReel
 - [Support](docs/ai/support.md): Where to look, common problems, when to stop, support summary
+- [Security](SECURITY.md): Security model, supported versions, how to report a vulnerability privately
 
 ## Reference
 

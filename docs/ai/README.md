@@ -23,6 +23,7 @@ https://datareel.com/terms.php, "AI-assisted use".
 | [build-and-release.md](build-and-release.md) | Run the tests, try a change, make a release tarball or a web only dashboard |
 | [fork-and-contribute.md](fork-and-contribute.md) | Keep a fork under the GPL, send changes to DataReel |
 | [support.md](support.md) | Troubleshoot, when to stop, the support summary for DataReel |
+| [SECURITY.md](../../SECURITY.md) | Security model, supported versions, how to report a vulnerability privately |
 | [llms-full.txt](llms-full.txt) | All of the above in one file, to paste into an approved chat |
 
 The read-only check for installs, upgrades and support is

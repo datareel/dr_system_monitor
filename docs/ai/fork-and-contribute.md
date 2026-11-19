@@ -27,7 +27,7 @@ must:
 DataReel is a name of DataReel Software Development (see
 https://datareel.com/terms.php, "Trademarks"). A fork that is
 distributed must not look like a DataReel release: give it its own name
-or a clear "modified" version (for example `1.33-site1`), and point its
+or a clear "modified" version (for example `1.34-site1`), and point its
 support at its own maintainers, not at DataReel.
 
 ## Keeping a fork

@@ -59,6 +59,9 @@ with the summary in section 4:
 - anything that needs changes on many monitored hosts, a new SSH key,
   turning off a security setting, or deleting reports or archives.
 
+Security problems in DRSM itself (not a site's setup) are reported
+privately as `SECURITY.md` says, not in a support summary.
+
 ## 4. Support summary
 
 When a problem is not solved, give the admin a summary they can send

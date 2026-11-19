@@ -108,7 +108,7 @@ if [ ! -f ${DRSMHOME}/etc/hosts/_defaults.conf ]; then
     cp -fv ${BASEdir}/etc/hosts/_defaults.conf_example ${DRSMHOME}/etc/hosts/_defaults.conf
 fi
 
-files="README.txt PLUGINS.md CHANGELOG.md version.txt license.txt"
+files="README.txt PLUGINS.md CHANGELOG.md SECURITY.md version.txt license.txt"
 for f in ${files}
 do
     cp -fv ${BASEdir}/${f} ${DRSMHOME}/${f}
