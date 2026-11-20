@@ -16,7 +16,8 @@ All notable changes to the DataReel System Monitor (DRSM) are listed here.
   grows to fill a wall screen. The older layout stays as Cards. A
   Meters / Cards switch on both pages, kept per viewer in the
   drsm_layout cookie. With more than one site shown, the Overview
-  shows one tile per site to drill down from. New settings
+  shows one tile per site to drill down from, and the Heat map opens
+  by site, each site's meter opening its own heat map. New settings
   $PAGElayout, $METERtiles, $METERlabels, $METERsitesOnly and
   $METERsolidRed (www/php/drsm_meters.php).
 

@@ -557,6 +557,11 @@ expect "meters: group meters" 'class="m-gauges"'
 expect "meters: mosaic" 'class="m-field"'
 expect "meters: cell links to the check" 'readreport.php?n=db1#p-core-load'
 expect "meters: group by host link" 'by=host'
+expect "meters: more than one site opens by site" 'id="site-acme-hq"'
+expect "meters: site meter drills down to its heat map" 'href="/drsm/dashboard/php/heatmap.php?site=acme%2Fhq"'
+expect "meters: by check type link keeps by=type" 'by=type'
+render heatmap.php "layout=meters&site=acme/hq"
+expect "meters: one site opens by check type" 'id="cat-core"'
 render heatmap.php "layout=meters&by=host"
 expect "meters: host group" 'id="host-db1"'
 render heatmap.php "layout=meters&by=site"

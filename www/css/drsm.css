@@ -1037,3 +1037,4 @@ td > .tier:first-child { margin-left: 0; }
   .t-panel { min-width: 0; }
 }
 .m-foot { margin-top: 14px; }
+.m-grp h2 a { color: inherit; } .m-grp h2 a:hover { color: var(--accent); }

@@ -54,8 +54,12 @@ $multi = (count($sites) > 1);
 $bysite = ($multi && isset($_GET['by']) && $_GET['by'] == "site");
 $layout = drsm_layout();
 // Meters layout grouping: check type, host or site
-$groupby = (isset($_GET['by']) && in_array($_GET['by'], array("host", "site"), true)) ? $_GET['by'] : "type";
+// With more than one site shown, by site first ($METERsitesOnly), so
+// each site's meter drills down to that site's heat map
+$groupby = (isset($_GET['by']) && in_array($_GET['by'], array("type", "host", "site"), true)) ? $_GET['by'] : (($multi && !empty($METERsitesOnly)) ? "site" : "type");
 if($groupby == "site" && !$multi) $groupby = "type";
+// The grouping the head links keep
+$byarg = ($layout == "meters") ? $groupby : $bysite;
 
 $hosts = drsm_load_hosts($scope);
 $alltiers = drsm_tiers($hosts);
@@ -77,7 +81,7 @@ function drsm_heat_link($mode, $sortby, $bysite, $tier = null)
 {
   $args = array("mode" => $mode, "sort" => $sortby);
   if($bysite === true) $args["by"] = "site";
-  else if(is_string($bysite) && $bysite != "" && $bysite != "type") $args["by"] = $bysite;
+  else if(is_string($bysite) && $bysite != "") $args["by"] = $bysite;
   if($tier !== null) $args["tier"] = $tier;
   return drsm_url("heatmap.php", $args);
 }
@@ -239,7 +243,7 @@ function drsm_heat_mosaic($groups)
         $cls = ($g["state"] == "") ? "none" : drsm_state_class($g["state"]);
         if(drsm_meter_minor($g)) $cls .= " minor";
         $nb = $g["counts"]["ERROR"] + $g["counts"]["WARNING"] + $g["counts"]["STALE"]; ?>
-    <a class="m-g <?php echo h($cls); ?>" href="#<?php echo h($g["id"]); ?>" title="<?php echo h($g["title"] . ($g["about"] != "" && substr($g["id"], 0, 5) == "host-" ? " (" . $g["about"] . ")" : "") . ": " . ($g["state"] == "" ? "no reports" : drsm_state_label($g["state"]))); ?>">
+    <a class="m-g <?php echo h($cls); ?>" href="<?php echo h(isset($g["href"]) ? $g["href"] : "#" . $g["id"]); ?>" title="<?php echo h($g["title"] . ($g["about"] != "" && substr($g["id"], 0, 5) == "host-" ? " (" . $g["about"] . ")" : "") . ": " . ($g["state"] == "" ? "no reports" : drsm_state_label($g["state"]))); ?>">
       <?php echo drsm_meter_gauge($g["pct"], $g["state"], 64, $g["counts"]); ?>
       <span class="name"><?php echo h($g["title"]); ?></span>
       <span class="bad"><?php echo ($g["state"] == "") ? "no reports" : (($nb > 0) ? (int)$nb . " need attention" : count($g["cells"]) . " OK"); ?></span>
@@ -256,7 +260,7 @@ function drsm_heat_mosaic($groups)
         });
         $cols = max(4, (int)ceil(sqrt(count($cells) * 2.2))); ?>
     <div class="m-grp <?php echo h(drsm_state_class($g["state"] == "" ? "UNKNOWN" : $g["state"])); ?>" id="<?php echo h($g["id"]); ?>">
-      <h2><i></i><?php echo h($g["title"]); ?><?php if(substr($g["id"], 0, 5) == "host-" && $g["about"] != "") { ?><span class="muted"><?php echo h($g["about"]); ?></span><?php } ?><span class="muted"><?php echo count($cells); ?></span></h2>
+      <h2><i></i><?php if(isset($g["href"])) { ?><a href="<?php echo h($g["href"]); ?>"><?php echo h($g["title"]); ?></a><?php } else { echo h($g["title"]); } ?><?php if(substr($g["id"], 0, 5) == "host-" && $g["about"] != "") { ?><span class="muted"><?php echo h($g["about"]); ?></span><?php } ?><span class="muted"><?php echo count($cells); ?></span></h2>
       <div class="m-cells" style="--w: calc(<?php echo $cols; ?> * (var(--cell) + 3px))">
 <?php   foreach($cells as $c) {
           $tip = (($c["g"] != "" && strpos($c["t"], $c["g"]) !== 0) ? $c["g"] . ": " : "") . $c["t"] . " - " . drsm_state_label($c["s"]); ?>
@@ -281,7 +285,7 @@ function drsm_heat_meter_groups($hosts, $groupreports, $sites, $groupby)
   $sets = array();
   if($groupby == "site") {
     foreach(drsm_hosts_by_site($hosts, $sites) as $sid => $set) {
-      if(count($set) > 0) $sets["site-" . preg_replace('/[^A-Za-z0-9_-]/', "-", $sid)] = array(drsm_site_label($sid), "building", $set);
+      if(count($set) > 0) $sets["site-" . preg_replace('/[^A-Za-z0-9_-]/', "-", $sid)] = array($sites[$sid]["name"], "building", $set, $sites[$sid]["orgname"], $sid);
     }
   }
   else {
@@ -290,6 +294,18 @@ function drsm_heat_meter_groups($hosts, $groupreports, $sites, $groupby)
   $out = array();
   foreach($sets as $id => $set) {
     $t = drsm_meter_tile($id, $set[0], $set[1], isset($set[3]) ? $set[3] : "");
+    // A site's meter opens that site's heat map, with its group checks
+    if(isset($set[4])) {
+      $t["href"] = drsm_url("heatmap.php", array("site" => $set[4]));
+      foreach($groupreports as $gr) {
+        if($gr["site"] != $set[4]) continue;
+        $title = (($gr["kind"] == "check") ? "Connectivity" : "Health checks") . ", " . ucfirst($gr["group"]);
+        $url = ($gr["kind"] == "check") ? drsm_url("checks.php", ($gr["group"] == "production" ? array() : array("g" => $gr["group"])) + array("site" => $gr["site"]))
+                                        : drsm_url("checks.php", array("r" => "health", "g" => $gr["group"], "site" => $gr["site"]));
+        drsm_meter_add($t, drsm_meter_item($title, $gr["state"], $url));
+        $t["cells"][] = array("t" => $title, "s" => $gr["state"], "h" => $url, "g" => "");
+      }
+    }
     foreach($set[2] as $hst) {
       $hurl = drsm_host_url("readreport.php", $hst);
       if(count($hst["plugins"]) == 0) {
@@ -341,14 +357,14 @@ drsm_page_start("Heat map", "heatmap", $overall);
   </div>
   <div class="head-actions">
     <?php echo drsm_layout_switch("heatmap.php", array("mode" => $mode, "sort" => $sortby)); ?>
-    <?php echo drsm_tier_buttons($alltiers, $tier, function($t) use ($mode, $sortby, $bysite) { return drsm_heat_link($mode, $sortby, $bysite, $t); }); ?>
+    <?php echo drsm_tier_buttons($alltiers, $tier, function($t) use ($mode, $sortby, $byarg) { return drsm_heat_link($mode, $sortby, $byarg, $t); }); ?>
     <div class="seg" role="group" aria-label="Heat map type">
-      <a href="<?php echo h(drsm_heat_link("status", $sortby, $bysite)); ?>"<?php if($mode == "status") echo ' class="active" aria-current="page"'; ?>>Check status</a>
-      <a href="<?php echo h(drsm_heat_link("metrics", $sortby, $bysite)); ?>"<?php if($mode == "metrics") echo ' class="active" aria-current="page"'; ?>>Resource use</a>
+      <a href="<?php echo h(drsm_heat_link("status", $sortby, $byarg)); ?>"<?php if($mode == "status") echo ' class="active" aria-current="page"'; ?>>Check status</a>
+      <a href="<?php echo h(drsm_heat_link("metrics", $sortby, $byarg)); ?>"<?php if($mode == "metrics") echo ' class="active" aria-current="page"'; ?>>Resource use</a>
     </div>
     <div class="seg" role="group" aria-label="Sort hosts">
-      <a href="<?php echo h(drsm_heat_link($mode, "state", $bysite)); ?>"<?php if($sortby == "state") echo ' class="active"'; ?>>Worst first</a>
-      <a href="<?php echo h(drsm_heat_link($mode, "name", $bysite)); ?>"<?php if($sortby == "name") echo ' class="active"'; ?>>A to Z</a>
+      <a href="<?php echo h(drsm_heat_link($mode, "state", $byarg)); ?>"<?php if($sortby == "state") echo ' class="active"'; ?>>Worst first</a>
+      <a href="<?php echo h(drsm_heat_link($mode, "name", $byarg)); ?>"<?php if($sortby == "name") echo ' class="active"'; ?>>A to Z</a>
     </div>
 <?php if($layout == "meters" && $mode == "status") { ?>
     <div class="seg" role="group" aria-label="Group checks by">
