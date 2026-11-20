@@ -7,7 +7,7 @@
 // PHP Version: 7.2 or higher, tested with PHP 8
 // Original Author(s): DataReel Software Development 
 // File Creation Date: 05/25/2013
-// Date Last Modified: 10/23/2026
+// Date Last Modified: 11/20/2026
 //
 // Version control: 2.00
 //
@@ -107,12 +107,24 @@ uasort($cards, function($a, $b) {
 
 $metriccols = drsm_metric_columns();
 
+// Meters layout: one tile per group of reports, see drsm_meters.php
+$layout = drsm_layout();
+$hero = $overall;
+if($layout == "meters") {
+  $tiles = drsm_meter_tiles($hosts, $groupreports, $sites);
+  // Banner tone with the solid red rule of the tiles
+  if(count($hosts) > 0) list($hero, $nbadtiles) = drsm_meter_overall($tiles);
+}
+
 drsm_page_start("Overview", "overview", $overall);
 ?>
+<div class="layout-bar">
 <?php if(drsm_multi_site()) { ?>
 <p class="scope-line muted"><?php echo drsm_icon("building"); ?><?php echo h(drsm_scope_label($scope)); ?></p>
 <?php } ?>
-<section class="hero <?php echo h(drsm_state_class($overall)); ?>">
+<?php echo drsm_layout_switch("index.php", drsm_multi_site() && $scope != "" ? array("site" => $scope) : array()); ?>
+</div>
+<section class="hero <?php echo h(drsm_state_class($hero)); ?>">
   <div class="hero-status">
     <span class="pulse" aria-hidden="true"></span>
     <div>
@@ -126,6 +138,39 @@ drsm_page_start("Overview", "overview", $overall);
   </div>
 </section>
 
+<?php if($layout == "meters") { ?>
+<?php   echo drsm_meter_tiles_html($tiles); ?>
+<?php   if(count($problems) > 0) { ?>
+<section class="panel m-attn">
+  <div class="panel-head">
+    <h2><?php echo drsm_icon("alert"); ?>Needs attention</h2>
+    <span class="count"><?php echo count($problems); ?></span>
+  </div>
+  <ul class="alerts">
+<?php     foreach($problems as $pr) {
+            $hst = $pr["host"];
+            $shown = array_slice($pr["msgs"], 0, 4); ?>
+    <li class="alert <?php echo h(drsm_state_class($hst["state"])); ?>">
+      <a class="alert-host" href="<?php echo h(drsm_host_url("readreport.php", $hst)); ?>">
+        <?php echo drsm_badge($hst["state"]); ?>
+        <strong><?php echo h($hst["name"]); ?></strong>
+        <span class="muted truncate"><?php echo h(implode(" - ", array_filter(array($multi ? drsm_site_label($hst["site"]) : "", $hst["description"]), "strlen"))); ?></span>
+      </a>
+      <ul class="alert-lines">
+<?php       foreach($shown as $msg) {
+              $link = drsm_host_url("readreport.php", $hst) . ($msg["plugin"] != "" ? "#" . drsm_plugin_anchor($msg["plugin"]) : ""); ?>
+        <li class="<?php echo h(drsm_state_class($msg["level"])); ?>"><a href="<?php echo h($link); ?>"><?php if($msg["plugin"] != "") { ?><span class="chip-id"><?php echo h($msg["plugin"]); ?></span><?php } ?><?php echo h(preg_replace('/^(ERROR|WARNING) - /', "", $msg["text"])); ?></a></li>
+<?php       } ?>
+<?php       if(count($pr["msgs"]) > count($shown)) { ?>
+        <li class="more"><a href="<?php echo h(drsm_host_url("readreport.php", $hst)); ?>"><?php echo count($pr["msgs"]) - count($shown); ?> more</a></li>
+<?php       } ?>
+      </ul>
+    </li>
+<?php     } ?>
+  </ul>
+</section>
+<?php   } ?>
+<?php } else { ?>
 <section class="kpis" aria-label="Host counts">
   <a class="kpi" href="#hosts" data-set-filter="all"><span class="kpi-label">Hosts</span><span class="kpi-value"><?php echo (int)$counts["total"]; ?></span><span class="kpi-sub"><?php echo count($groups); ?> group<?php echo count($groups) == 1 ? "" : "s"; ?></span></a>
   <a class="kpi ok" href="#hosts" data-set-filter="OK"><span class="kpi-label">Healthy</span><span class="kpi-value"><?php echo (int)$counts["OK"]; ?></span><span class="kpi-sub"><?php echo $counts["total"] ? round($counts["OK"] / $counts["total"] * 100) : 0; ?>% of hosts</span></a>
@@ -273,6 +318,7 @@ drsm_page_start("Overview", "overview", $overall);
     </section>
   </aside>
 </div>
+<?php } ?>
 
 <section class="panel" id="hosts">
   <div class="panel-head wrap">
@@ -310,7 +356,13 @@ drsm_page_start("Overview", "overview", $overall);
           <?php echo drsm_badge($hst["state"]); ?>
         </header>
         <p class="desc"><?php echo $hst["description"] != "" ? h($hst["description"]) : "<span class=\"muted\">No description</span>"; ?></p>
-<?php   if(isset($hst["metrics"]) && count($hst["metrics"]) > 0) { ?>
+<?php   if($layout == "meters" && isset($hst["metrics"]) && count($hst["metrics"]) > 0) { ?>
+        <div class="m-uses">
+<?php     foreach(array("cpu", "mem", "disk", "load") as $key) {
+            if(isset($hst["metrics"][$key])) echo drsm_meter_use($hst["metrics"][$key], $metriccols[$key], $key);
+          } ?>
+        </div>
+<?php   } else if(isset($hst["metrics"]) && count($hst["metrics"]) > 0) { ?>
         <div class="bars">
 <?php     foreach(array("cpu", "mem", "disk") as $key) {
             if(!isset($hst["metrics"][$key])) continue;

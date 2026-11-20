@@ -84,6 +84,7 @@ cat > "${W}/config/drsm.php" <<PHPCONF
 \$REPORTarchivevpath = '/drsm/dashboard/reports/archive';
 \$CONFIGdir = '${W}/config';
 \$SITEincludes = '${W}/site';
+\$PAGElayout = 'cards';
 ?>
 PHPCONF
 
@@ -341,6 +342,13 @@ expect "heat map link cell shows the drops" '<span class="hcell-text">2 links</s
 expect "heat map drops cell" 'clusters.php?c=node1%2Bnode2#cl-strips'
 render heatmap.php "mode=metrics"
 expect "clusters table on resource use too" 'class="heat clusters"'
+render index.php "layout=meters"
+expect "meters layout: clusters tile" 'id="tile-clusters"'
+expect "meters layout: cluster item links to its page" 'clusters.php?c=node1%2Bnode2'
+reject "meters layout: no cluster check tile next to the Clusters tile" 'id="tile-cat-cluster"'
+render heatmap.php "layout=meters"
+expect "meters layout: clusters group in the mosaic" 'id="clusters"'
+expect "meters layout: cluster cell" 'node1+node2 Keep alive drops 24 h: 2'
 render readreport.php "n=n1"
 reject "page data hidden on the host page" 'DRCM node|'
 expect "host page links to the cluster page" 'Cluster diagram, keep alive timeline and events'
@@ -522,6 +530,36 @@ expect "heat map site heading" "Acme Corp / Branch"
 render heatmap.php ""
 expect "heat map rows name the site" '<span class="site-tag">Acme Corp / Head office</span>'
 
+echo "== Meters layout"
+render index.php "layout=meters"
+expect "meters: layout switch" 'class="seg layout-seg"'
+expect "meters: sites tile" 'id="tile-sites"'
+expect "meters: Linux hosts tile" 'id="tile-platform-linux"'
+expect "meters: check category tile" 'id="tile-cat-core"'
+expect "meters: group checks tile" 'id="tile-groupchecks"'
+expect "meters: ring slices" '<circle class="seg err"'
+expect "meters: percent healthy" 'percent healthy'
+expect "meters: problem host under its item" 'readreport.php?n=db1#p-core-load'
+expect "meters: host resource meters" 'class="m-uses"'
+reject "meters: no cards layout site table" 'id="site-table"'
+render index.php "" "drsm_layout=meters"
+expect "meters: cookie picks the layout" 'id="tile-sites"'
+render index.php "layout=bogus" "drsm_layout=bogus"
+expect "meters: bad layout falls back to the setting" 'id="site-table"'
+render heatmap.php "layout=meters"
+expect "meters: group meters" 'class="m-gauges"'
+expect "meters: mosaic" 'class="m-field"'
+expect "meters: cell links to the check" 'readreport.php?n=db1#p-core-load'
+expect "meters: group by host link" 'by=host'
+render heatmap.php "layout=meters&by=host"
+expect "meters: host group" 'id="host-db1"'
+render heatmap.php "layout=meters&by=site"
+expect "meters: site group" 'id="site-acme-branch"'
+render heatmap.php "layout=meters&mode=metrics"
+expect "meters: resource meters per host" 'class="m-host '
+render heatmap.php "layout=meters&tier=dev"
+reject "meters: tier filter" 'readreport.php?n=db1#'
+
 render readreport.php "n=web1"
 expect "same name in two sites asks for the site" "web1 is in more than one site"
 expect "choice links name the site" 'readreport.php?n=web1&amp;site=acme%2Fhq'
@@ -665,7 +703,7 @@ if [ -s "${T}/page.err" ]; then fail "demo index.php PHP messages: $(head -3 "${
 expect "demo title" "DRSM Live Demo"
 expect "demo sample host" ">mail1</strong>"
 expect "demo links use the URL path" 'href="/drsm/dashboard/php/heatmap.php"'
-expect "demo sites table" 'id="site-table"'
+expect "demo default layout is meters" 'id="tile-sites"'
 render orgs.php ""
 expect "demo organizations" "Northwind Traders"
 expect "demo second organization" "Blue Ridge Clinics"

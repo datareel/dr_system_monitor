@@ -247,12 +247,30 @@
     }
   }
 
+  // ---------- Heat map mosaic (meters layout) ----------
+
+  // Cells as big as the window allows, so a small site still fills
+  // the screen and a big one still fits on a wall monitor
+  function fitMosaic() {
+    var f = document.querySelector(".m-field");
+    if (!f) return;
+    var top = f.getBoundingClientRect().top + window.pageYOffset;
+    var avail = Math.max(260, window.innerHeight - top - (root.classList.contains("wall") ? 50 : 110));
+    var size = 56;
+    f.style.setProperty("--cell", size + "px");
+    while (size > 12 && f.offsetHeight > avail) {
+      size -= 2;
+      f.style.setProperty("--cell", size + "px");
+    }
+  }
+
   // ---------- Wall display ----------
 
   function toggleWall() {
     var on = !root.classList.contains("wall");
     root.classList.toggle("wall", on);
     store("localStorage", "wall", on ? "1" : null);
+    setTimeout(fitMosaic, 300);
     try {
       if (on && root.requestFullscreen && !document.fullscreenElement) root.requestFullscreen();
       else if (!on && document.fullscreenElement && document.exitFullscreen) document.exitFullscreen();
@@ -365,6 +383,9 @@
       store("sessionStorage", "scroll." + location.pathname + location.search, null);
       window.scrollTo(0, parseInt(y, 10) || 0);
     }
+
+    fitMosaic();
+    window.addEventListener("resize", fitMosaic);
 
     updateTimes();
     localTimes();

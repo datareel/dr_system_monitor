@@ -786,7 +786,10 @@ drsm_page_end();
   `drsm_icon($name)`, `drsm_read_lines($file)`, `drsm_worst($a, $b)`,
   states OK, WARNING, ERROR, UNKNOWN, STALE. Sites and links are in
   `drsm_sites.php`, other script reports in `drsm_ext.php`, login in
-  `drsm_auth.php`, trends in `trends_lib.php`.
+  `drsm_auth.php`, trends in `trends_lib.php`, the page layouts
+  (Meters tiles, ring meters, heat map mosaic; `drsm_layout()`) in
+  `drsm_meters.php`. The Overview and Heat map have two layouts,
+  meters (default) and cards: change and test both.
 - The top bar is `default_header.php` (`$drsm_nav`, `$drsm_sub`).
 - PHP 7.2 compatible code only, no PHP warnings or notices.
 - A request may pick an ID, never a file path.

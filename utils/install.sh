@@ -177,6 +177,7 @@ help.php \
 help_admin.php \
 drsm_sites.php \
 drsm_clusters.php \
+drsm_meters.php \
 drsm_vulns.php \
 vulnerabilities.php \
 scap_report.php \

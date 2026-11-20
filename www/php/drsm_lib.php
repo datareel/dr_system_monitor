@@ -84,6 +84,11 @@ $UPLOADSdir     = '';   // Report server [hooks] dir, only on the
                         // text and html hook uploads (upload_view.php)
 $UPLOADdisplayDir = ''; // Site display plug-ins for hook uploads,
                         // default php/uploads, see drsm_uploads.php
+$PAGElayout     = 'meters'; // Overview and Heat map layout: meters
+                        // (round percentage meters and the heat map
+                        // mosaic) or cards (host cards and the host by
+                        // check table); viewers can switch, see
+                        // drsm_meters.php for the $METER settings
 
 Login for access from outside the internal networks is off by
 default, see drsm_auth.php for the $AUTH settings.
@@ -818,6 +823,8 @@ require_once("{$WWWdir}/php/drsm_clusters.php");
 require_once("{$WWWdir}/php/drsm_vulns.php");
 // Hook uploads: uploads/<id> plugins
 require_once("{$WWWdir}/php/drsm_uploads.php");
+// Page layouts: round meters (default) or cards
+require_once("{$WWWdir}/php/drsm_meters.php");
 
 // Optional login for requests from outside the internal networks,
 // see drsm_auth.php. login.php does its own checks.

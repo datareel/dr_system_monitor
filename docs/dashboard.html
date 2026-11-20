@@ -31,7 +31,9 @@
 <p>It reads the report files that <code>drsm_run.sh</code>, <code>system_report.sh</code> and <code>system_check.sh</code> write, so it works with old and new setups. It needs PHP 7.2 or higher and loads no fonts or scripts from the internet. Try it in the <a href="https://datareel.com/drsm/dashboard/">live demo</a>.</p>
 
 <h2 id="overview">Overview</h2>
-<p>The Overview is the situational awareness page, built to read from across a room.</p>
+<p>The Overview is the situational awareness page, built to read from across a room. It has two layouts, picked with the <strong>Meters</strong> and <strong>Cards</strong> switch at the top of the Overview and the Heat map (each viewer's choice is kept in a cookie). The site default is <code>$PAGElayout</code>, <code>meters</code> unless you set <code>cards</code>.</p>
+<p><strong>Meters</strong> (the default) shows the status banner, then one tile per group of reports, each with a round meter: the percent of its reports that are OK in the middle, and a ring split into a slice per state, so one error out of 60 reports is a thin red slice, not a red ring. The tiles are the sites, the host platforms (Linux hosts, Windows hosts, other devices), the group checks, the DRCM clusters, your own script reports, and each check category (core system, Linux and Windows agent checks, network, storage and so on). Select a tile for its reports, with the problem hosts under each one. A tile turns solid red only when most of it is in error (<code>$METERsolidRed</code>, 80% by default); below that it keeps a red top line, badge and ring slice, and the banner stays amber. Under the tiles are <strong>Needs attention</strong> and the host cards, with round CPU, memory, disk and load meters.</p>
+<p><strong>Cards</strong> is the layout of DRSM 1.31 to 1.34:</p>
 <ul>
 <li><strong>Status banner</strong>: the overall state in one line, such as <em>8 hosts need attention</em>, with the time of the latest report.</li>
 <li><strong>Counters</strong>: hosts, healthy, warning, error, not reporting, and failing plugin checks. A Windows or Linux agent host is not reporting when its agent's own last report is older than the stale time, even though the monitor host reads that report every run.</li>
@@ -58,7 +60,8 @@
 <p>To limit users to their own organizations or sites, list them in <code>$AUTHscopes</code>, see <a href="#login">Login</a>.</p>
 
 <h2 id="heatmap">Heat map</h2>
-<p>The heat map puts every host against every check. <strong>Check status</strong> shows a status icon per plugin: a green check for OK, an amber triangle for a warning, a red cross for an error, and a gray question mark for unknown. Problem cells are shaded so they stand out. Select a cell to open that check in the host report. The bottom row shows the worst state in each column.</p>
+<p>In the <strong>Meters</strong> layout the heat map is a mosaic: one small square per check on every host, grouped <strong>By check type</strong> (the Overview tiles), <strong>By host</strong> or <strong>By site</strong>, with a round meter per group across the top. Errors pulse, warnings beat slower, a light wave runs across the squares, and the squares grow to fill the window, so it works as a wall display (full screen button in the top bar). Select a square to open that check. <strong>Resource use</strong> shows round CPU, memory, disk, load and swap meters for each host.</p>
+<p>In the <strong>Cards</strong> layout the heat map puts every host against every check. <strong>Check status</strong> shows a status icon per plugin: a green check for OK, an amber triangle for a warning, a red cross for an error, and a gray question mark for unknown. Problem cells are shaded so they stand out. Select a cell to open that check in the host report. The bottom row shows the worst state in each column.</p>
 <figure><img src="images/heatmap.png" width="1400" height="900" loading="lazy" alt="Heat map in check status mode, with green, amber and red status icons per host and plugin"><figcaption>Check status: hosts against plugins, worst first</figcaption></figure>
 <p><strong>Resource use</strong> shows CPU, memory, disk, load per CPU and swap as a percentage, colored from teal through green, amber and orange to red, so the busiest hosts stand out before they alert. Sort <strong>Worst first</strong> or <strong>A to Z</strong>.</p>
 <figure><img src="images/heatmap_metrics.png" width="1400" height="900" loading="lazy" alt="Heat map in resource use mode, with CPU, memory, disk, load and swap percentages colored by level"><figcaption>Resource use from the latest plugin metrics</figcaption></figure>
@@ -121,6 +124,10 @@ $REFRESHseconds = 60;              // Auto refresh, 0 turns it off
 $STALEminutes = 60;                // Report age that counts as not reporting, 0 turns it off
 $SITElogo = '/images/logo.png';    // Logo before the name in the top bar
 $METRICSskip = array("windows");   // No gauges or trends for these platforms or groups
+$PAGElayout = 'meters';            // Overview and Heat map: meters (default) or cards
+$METERtiles = array('sites', 'platforms', 'groupchecks', 'clusters', 'ext', 'checks'); // Overview tiles, in order
+$METERlabels = array('storage' =&gt; 'Disks and RAID'); // your own check category titles
+$METERsolidRed = 0.80;             // share of a tile in error that turns it solid red
 $NAVhome = array("label" =&gt; "Status", "url" =&gt; "/dashboard/status.php", "icon" =&gt; "check");
 $NAVurl = array("hosts" =&gt; "/dashboard/myhosts.php");     // built in item to your page
 $NAVsub = array("heatmap" =&gt; array(array("Wall", "/dashboard/wall.php")));

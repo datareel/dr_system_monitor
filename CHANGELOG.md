@@ -4,6 +4,20 @@ All notable changes to the DataReel System Monitor (DRSM) are listed here.
 
 ## Unreleased
 
+### Added
+
+- Meters layout, now the default for the Overview and the Heat map,
+  from the NHC status tiles: one tile per group of reports (sites,
+  host platforms, group checks, clusters, script reports, check
+  categories) with a round meter of the percent OK and a ring slice
+  per state, opening the list of its reports; host cards with round
+  CPU, memory, disk and load meters; a heat map mosaic of every check
+  grouped by check type, host or site, with a meter per group, that
+  grows to fill a wall screen. The older layout stays as Cards. A
+  Meters / Cards switch on both pages, kept per viewer in the
+  drsm_layout cookie. New settings $PAGElayout, $METERtiles,
+  $METERlabels and $METERsolidRed (www/php/drsm_meters.php).
+
 ### Fixed
 
 - Windows and Linux agent hosts (wra and lra collectors) showed as
@@ -19,12 +33,9 @@ All notable changes to the DataReel System Monitor (DRSM) are listed here.
 From the NHC dashboard port (their versions are in the NHC package,
 DEVIATIONS.md D1, D3, D4, D6, D10, D14):
 
-- Service group tiles: a status page of configured groups (Linux,
-  Windows, storage, network, phones and so on), each with a health
-  gauge and its reports, fed by host groups and report files cut into
-  items (blocks, lines, one item per file).
-- Heat map flow wall display: every report of every group in one
-  mosaic, problems pulsing, a gauge per group, full screen.
+- Configured service group tiles for the Meters layout (groups such
+  as phones or offsite backups fed by report files cut into items:
+  blocks, lines, one item per file).
 - Hosts page with sections by tier and platform (Linux PROD/DEV/QA,
   Windows laptops and other Windows, network, consoles).
 - Report viewer: script report files and folders shown inside the
