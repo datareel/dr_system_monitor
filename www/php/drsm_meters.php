@@ -58,8 +58,12 @@ $METERlabels  = array();  // Check category titles, such as
                           // array('storage' => 'Disks and RAID')
 $METERsitesOnly = true;   // With more than one site shown (All
                           // sites, an organization), the Overview
-                          // shows one tile per site only: select a
-                          // site to drill down to its own tiles
+                          // shows one tile per site only and the
+                          // Heat map opens by site: select a site to
+                          // drill down. Viewers can switch the
+                          // Overview to Sites and hosts (cookie
+                          // drsm_view, or ?view=all / ?view=sites);
+                          // false makes Sites and hosts the default
 $METERsolidRed = 0.80;    // A tile turns solid red only when this
                           // share of its reports is in error; below
                           // that it keeps a red top line, badge and
@@ -80,28 +84,64 @@ if(!isset($METERsitesOnly)) $METERsitesOnly = true;
 // cookie), then the cookie, then $PAGElayout
 function drsm_layout()
 {
-  global $PAGElayout, $WWWvpath;
+  global $PAGElayout;
   static $layout = null;
   if($layout !== null) return $layout;
   $all = explode(" ", DRSM_LAYOUTS);
   $layout = $PAGElayout;
   if(isset($_GET["layout"]) && in_array($_GET["layout"], $all, true)) {
     $layout = $_GET["layout"];
-    if(!headers_sent() && PHP_SAPI != "cli") {
-      $path = (isset($WWWvpath) && $WWWvpath != "") ? $WWWvpath : "/";
-      $secure = !empty($_SERVER["HTTPS"]) && $_SERVER["HTTPS"] != "off";
-      if(PHP_VERSION_ID >= 70300) {
-        setcookie("drsm_layout", $layout, array("expires" => time() + 365 * 86400, "path" => $path, "secure" => $secure, "httponly" => true, "samesite" => "Lax"));
-      }
-      else {
-        setcookie("drsm_layout", $layout, time() + 365 * 86400, $path . "; samesite=Lax", "", $secure, true);
-      }
-    }
+    drsm_meter_cookie("drsm_layout", $layout);
   }
   else if(isset($_COOKIE["drsm_layout"]) && in_array($_COOKIE["drsm_layout"], $all, true)) {
     $layout = $_COOKIE["drsm_layout"];
   }
   return $layout;
+}
+
+// Keep a viewer's choice for a year
+function drsm_meter_cookie($name, $value)
+{
+  global $WWWvpath;
+  if(headers_sent() || PHP_SAPI == "cli") return;
+  $path = (isset($WWWvpath) && $WWWvpath != "") ? $WWWvpath : "/";
+  $secure = !empty($_SERVER["HTTPS"]) && $_SERVER["HTTPS"] != "off";
+  if(PHP_VERSION_ID >= 70300) {
+    setcookie($name, $value, array("expires" => time() + 365 * 86400, "path" => $path, "secure" => $secure, "httponly" => true, "samesite" => "Lax"));
+  }
+  else {
+    setcookie($name, $value, time() + 365 * 86400, $path . "; samesite=Lax", "", $secure, true);
+  }
+}
+
+// Overview view with more than one site shown: "sites" (one tile per
+// site) or "all" (sites and hosts). ?view= (kept in the drsm_view
+// cookie), then the cookie, then $METERsitesOnly
+function drsm_overview_view()
+{
+  global $METERsitesOnly;
+  static $view = null;
+  if($view !== null) return $view;
+  $view = !empty($METERsitesOnly) ? "sites" : "all";
+  if(isset($_GET["view"]) && in_array($_GET["view"], array("sites", "all"), true)) {
+    $view = $_GET["view"];
+    drsm_meter_cookie("drsm_view", $view);
+  }
+  else if(isset($_COOKIE["drsm_view"]) && in_array($_COOKIE["drsm_view"], array("sites", "all"), true)) {
+    $view = $_COOKIE["drsm_view"];
+  }
+  return $view;
+}
+
+function drsm_overview_view_switch($args = array())
+{
+  $cur = drsm_overview_view();
+  $out = "<div class=\"seg\" role=\"group\" aria-label=\"Overview view\">";
+  foreach(array("sites" => array("Sites", "One tile per site"), "all" => array("Sites and hosts", "Site, host and check tiles, problems and host cards")) as $id => $l) {
+    $out .= "<a href=\"" . h(drsm_url("index.php", array("view" => $id) + $args)) . "\"" . ($cur == $id ? " class=\"active\" aria-current=\"true\"" : "")
+      . " title=\"" . h($l[1]) . "\">" . h($l[0]) . "</a>";
+  }
+  return $out . "</div>";
 }
 
 // Layout switch for a page head: links back to $page with $args

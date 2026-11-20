@@ -112,7 +112,7 @@ $layout = drsm_layout();
 $hero = $overall;
 // Sites only: with more than one site shown, a tile per site to drill
 // down from
-$sitesonly = ($layout == "meters" && $multi && !empty($METERsitesOnly));
+$sitesonly = ($layout == "meters" && $multi && drsm_overview_view() == "sites");
 if($layout == "meters") {
   $tiles = $sitesonly ? drsm_meter_site_tiles($hosts, $sites) : drsm_meter_tiles($hosts, $groupreports, $sites);
   // Banner tone with the solid red rule of the tiles
@@ -125,7 +125,10 @@ drsm_page_start("Overview", "overview", $overall);
 <?php if(drsm_multi_site()) { ?>
 <p class="scope-line muted"><?php echo drsm_icon("building"); ?><?php echo h(drsm_scope_label($scope)); ?></p>
 <?php } ?>
+<div class="head-actions">
+<?php if($layout == "meters" && $multi) echo drsm_overview_view_switch(drsm_multi_site() && $scope != "" ? array("site" => $scope) : array()); ?>
 <?php echo drsm_layout_switch("index.php", drsm_multi_site() && $scope != "" ? array("site" => $scope) : array()); ?>
+</div>
 </div>
 <section class="hero <?php echo h(drsm_state_class($hero)); ?>">
   <div class="hero-status">

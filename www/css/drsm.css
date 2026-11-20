@@ -934,7 +934,7 @@ td > .tier:first-child { margin-left: 0; }
 
 .layout-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
 .layout-bar .scope-line { margin-bottom: 0; }
-.layout-bar .layout-seg { margin-left: auto; }
+.layout-bar .head-actions { margin-left: auto; }
 .m-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 14px; }
 .m-tile { position: relative; --tone: var(--unk); --tone-bg: var(--unk-bg); }
 .m-tile.ok { --tone: var(--ok); --tone-bg: var(--ok-bg); }

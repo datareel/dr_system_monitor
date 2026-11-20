@@ -538,6 +538,13 @@ expect "meters: site tile opens the site" 'href="/drsm/dashboard/php/index.php?s
 expect "meters: site tile lists the site's tiles" 'index.php?site=acme%2Fbranch#tile-platform-linux'
 reject "meters: sites only, no platform tiles" 'id="tile-platform-linux"'
 reject "meters: sites only, no host cards" 'id="host-cards"'
+expect "meters: Sites / Sites and hosts switch" 'index.php?view=all'
+render index.php "layout=meters&view=all"
+expect "meters: sites and hosts view has the sites tile" 'id="tile-sites"'
+expect "meters: sites and hosts view has the platform tiles" 'id="tile-platform-linux"'
+expect "meters: sites and hosts view has host cards" 'id="host-cards"'
+render index.php "layout=meters" "drsm_view=all"
+expect "meters: view cookie" 'id="tile-sites"'
 render index.php "layout=meters&site=default/default"
 expect "meters: one site drills down to its tiles" 'id="tile-platform-linux"'
 reject "meters: no sites tile for one site" 'id="tile-sites"'
@@ -560,6 +567,8 @@ expect "meters: group by host link" 'by=host'
 expect "meters: more than one site opens by site" 'id="site-acme-hq"'
 expect "meters: site meter drills down to its heat map" 'href="/drsm/dashboard/php/heatmap.php?site=acme%2Fhq"'
 expect "meters: by check type link keeps by=type" 'by=type'
+render heatmap.php "layout=meters" "drsm_heatby=host"
+expect "meters: heat map grouping cookie" 'id="host-db1"'
 render heatmap.php "layout=meters&site=acme/hq"
 expect "meters: one site opens by check type" 'id="cat-core"'
 render heatmap.php "layout=meters&by=host"

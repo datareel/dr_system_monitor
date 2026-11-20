@@ -56,7 +56,15 @@ $layout = drsm_layout();
 // Meters layout grouping: check type, host or site
 // With more than one site shown, by site first ($METERsitesOnly), so
 // each site's meter drills down to that site's heat map
-$groupby = (isset($_GET['by']) && in_array($_GET['by'], array("type", "host", "site"), true)) ? $_GET['by'] : (($multi && !empty($METERsitesOnly)) ? "site" : "type");
+// A viewer's pick is kept in the drsm_heatby cookie
+$groupby = ($multi && !empty($METERsitesOnly)) ? "site" : "type";
+if(isset($_GET['by']) && in_array($_GET['by'], array("type", "host", "site"), true)) {
+  $groupby = $_GET['by'];
+  if($layout == "meters") drsm_meter_cookie("drsm_heatby", $groupby);
+}
+else if(isset($_COOKIE['drsm_heatby']) && in_array($_COOKIE['drsm_heatby'], array("type", "host", "site"), true)) {
+  $groupby = $_COOKIE['drsm_heatby'];
+}
 if($groupby == "site" && !$multi) $groupby = "type";
 // The grouping the head links keep
 $byarg = ($layout == "meters") ? $groupby : $bysite;
