@@ -4,6 +4,16 @@ All notable changes to the DataReel System Monitor (DRSM) are listed here.
 
 ## Unreleased
 
+### Fixed
+
+- Windows and Linux agent hosts (wra and lra collectors) showed as
+  reporting while their agent was off or offline: drsm_run.sh writes a
+  new report every run from the agent's last report, so the dashboard
+  saw a fresh report. A host now counts as not reporting when its
+  agent's own report (the windows/checkin or linux/checkin report age)
+  is older than the stale time ($STALEminutes or the site's
+  STALE_MINUTES), with "No agent report for over ..." on the host.
+
 ### Planned
 
 From the NHC dashboard port (their versions are in the NHC package,

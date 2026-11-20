@@ -34,7 +34,7 @@
 <p>The Overview is the situational awareness page, built to read from across a room.</p>
 <ul>
 <li><strong>Status banner</strong>: the overall state in one line, such as <em>8 hosts need attention</em>, with the time of the latest report.</li>
-<li><strong>Counters</strong>: hosts, healthy, warning, error, not reporting, and failing plugin checks.</li>
+<li><strong>Counters</strong>: hosts, healthy, warning, error, not reporting, and failing plugin checks. A Windows or Linux agent host is not reporting when its agent's own last report is older than the stale time, even though the monitor host reads that report every run.</li>
 <li><strong>Needs attention</strong>: every current error and warning, worst first, each linked to the plugin that raised it.</li>
 <li><strong>Group checks</strong>: the connectivity and health result for each host group.</li>
 <li><strong>Host matrix</strong>: one colored square per host, for a quick scan.</li>

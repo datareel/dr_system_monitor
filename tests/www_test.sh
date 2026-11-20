@@ -346,6 +346,23 @@ reject "page data hidden on the host page" 'DRCM node|'
 expect "host page links to the cluster page" 'Cluster diagram, keep alive timeline and events'
 rm -rf "${W}/reports/systems/n1" "${W}/reports/systems/n2"
 
+echo "== Agent hosts"
+# A Windows agent host: drsm_run.sh made the report just now, but the
+# agent's own last report is 3 hours old (VM powered off)
+now=$(date +%s)
+mkdir -p "${W}/reports/systems/winvm"
+printf 'HOSTNAME:winvm\nETIME:%s\nGROUP:dev\nPLATFORM:windows\nCOLLECTOR:wra\n=== windows/checkin [OK] 0s ===\nINFO - winvm reported 3 hours ago\nMETRIC wra_report_age_seconds=10800\n' "${now}" > "${W}/reports/systems/winvm/winvm_report.txt"
+printf '{"host":"winvm","group":"dev","time":%s,"plugins":[{"id":"windows/checkin","state":"OK","secs":0}]}\n' "${now}" > "${W}/reports/systems/winvm/status.json"
+render readreport.php "n=winvm"
+expect "agent host not reporting when its agent report is old" "No agent report for over 60 minutes, last one 3 hours ago"
+render host_status.php "n=winvm"
+expect "host status stale for an old agent report" '"stale":true'
+expect "host status agent age" '"agent_age_secs":108'
+sed -i 's/wra_report_age_seconds=10800/wra_report_age_seconds=900/' "${W}/reports/systems/winvm/winvm_report.txt"
+render readreport.php "n=winvm"
+reject "agent host with a recent agent report is current" "No agent report"
+rm -rf "${W}/reports/systems/winvm"
+
 echo "== Organizations and sites"
 mkdir -p "${T}/sites/acme" "${T}/sites/beta"
 printf 'NAME="Acme Corp"\nCONTACT="ops@acme.test"\n' > "${T}/sites/acme.org"

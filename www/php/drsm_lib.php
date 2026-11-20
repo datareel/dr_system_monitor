@@ -415,7 +415,25 @@ function drsm_load_host($hostdir, $site = DRSM_LEGACY_SITE)
     }
   }
 
-  if($stale > 0 && $host["time"] > 0 && (time() - $host["time"]) > ($stale * 60)) {
+  // Agent hosts (wra and lra collectors): drsm_run.sh writes a new
+  // report every run from the agent's last report, so the host is only
+  // as current as that agent report. Its age is the windows/checkin or
+  // linux/checkin metric; a host whose agent stopped reporting (powered
+  // off, offline, agent stopped) is not reporting.
+  foreach(array("wra_report_age_seconds", "lra_report_age_seconds") as $mn) {
+    $lab = "";
+    $age = drsm_metric_max($rep["metrics"], $mn, $lab);
+    if($age !== null && $host["time"] > 0) {
+      $host["agent_time"] = $host["time"] - max(0, (int)$age);
+      break;
+    }
+  }
+  if($stale > 0 && isset($host["agent_time"]) && (time() - $host["agent_time"]) > ($stale * 60)) {
+    $host["stale"] = true;
+    $host["state"] = drsm_worst($host["state"], "STALE");
+    $host["note"] = "No agent report for over " . drsm_age_text($stale * 60) . ", last one " . drsm_age_text(time() - $host["agent_time"]) . " ago";
+  }
+  else if($stale > 0 && $host["time"] > 0 && (time() - $host["time"]) > ($stale * 60)) {
     $host["stale"] = true;
     $host["state"] = drsm_worst($host["state"], "STALE");
     $host["note"] = "Last report is over " . drsm_age_text($stale * 60) . " old";
