@@ -8,9 +8,9 @@ report a security problem.
 
 | Version | Security fixes |
 | --- | --- |
+| 1.35 | Yes |
 | 1.34 | Yes |
-| 1.33 | Yes |
-| 1.32 and older | No, upgrade (`docs/ai/upgrade.md`) |
+| 1.33 and older | No, upgrade (`docs/ai/upgrade.md`) |
 
 ## Report a vulnerability
 

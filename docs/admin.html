@@ -78,7 +78,7 @@ core_cpu_TIMEOUT=60</code></pre>
 <h2 id="security">Security</h2>
 <p>The full notes are in <code>SECURITY.md</code> in the top folder of the source. In short:</p>
 <ul>
-<li><strong>Supported versions:</strong> 1.34 and 1.33 get security fixes; upgrade older installs.</li>
+<li><strong>Supported versions:</strong> 1.35 and 1.34 get security fixes; upgrade older installs.</li>
 <li><strong>Monitor host:</strong> DRSM runs as one user from cron, with no root and no daemon. The SSH private key stays on the monitor host; connections use <code>BatchMode</code>, no passwords and <code>StrictHostKeyChecking=accept-new</code> (<a href="deployment.html#cloud">SSH options</a>). The Reporting Agents connect out; DRSM never connects to Windows hosts.</li>
 <li><strong>Dashboard:</strong> pages only read report files, a request picks an ID and never a file path, and every value is escaped. Turn on the login (<code>$AUTHenable</code>: bcrypt hashes, internal networks, lockout, CSRF tokens, Secure cookies on HTTPS) before the dashboard is reachable from outside your network, and block direct access to the report folder (<a href="dashboard.html#login">Login</a>, <a href="dashboard.html#security">dashboard security</a>).</li>
 <li><strong>Hook uploads</strong> are untrusted: only DRSM line kinds are read, and uploaded HTML is shown in a sandbox with no scripts.</li>
