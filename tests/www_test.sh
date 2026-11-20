@@ -533,8 +533,14 @@ expect "heat map rows name the site" '<span class="site-tag">Acme Corp / Head of
 echo "== Meters layout"
 render index.php "layout=meters"
 expect "meters: layout switch" 'class="seg layout-seg"'
-expect "meters: sites tile" 'id="tile-sites"'
-expect "meters: Linux hosts tile" 'id="tile-platform-linux"'
+expect "meters: one tile per site with more than one site" 'id="tile-site-acme-hq"'
+expect "meters: site tile opens the site" 'href="/drsm/dashboard/php/index.php?site=acme%2Fhq"'
+expect "meters: site tile lists the site's tiles" 'index.php?site=acme%2Fbranch#tile-platform-linux'
+reject "meters: sites only, no platform tiles" 'id="tile-platform-linux"'
+reject "meters: sites only, no host cards" 'id="host-cards"'
+render index.php "layout=meters&site=default/default"
+expect "meters: one site drills down to its tiles" 'id="tile-platform-linux"'
+reject "meters: no sites tile for one site" 'id="tile-sites"'
 expect "meters: check category tile" 'id="tile-cat-core"'
 expect "meters: group checks tile" 'id="tile-groupchecks"'
 expect "meters: ring slices" '<circle class="seg err"'
@@ -543,7 +549,7 @@ expect "meters: problem host under its item" 'readreport.php?n=db1#p-core-load'
 expect "meters: host resource meters" 'class="m-uses"'
 reject "meters: no cards layout site table" 'id="site-table"'
 render index.php "" "drsm_layout=meters"
-expect "meters: cookie picks the layout" 'id="tile-sites"'
+expect "meters: cookie picks the layout" 'id="tile-site-acme-hq"'
 render index.php "layout=bogus" "drsm_layout=bogus"
 expect "meters: bad layout falls back to the setting" 'id="site-table"'
 render heatmap.php "layout=meters"
@@ -701,9 +707,9 @@ W="${T}/demo/dashboard"
 (cd "${W}" && php -d error_reporting=-1 -d display_errors=stderr index.php > "${T}/page.html" 2> "${T}/page.err")
 if [ -s "${T}/page.err" ]; then fail "demo index.php PHP messages: $(head -3 "${T}/page.err")"; else pass "demo index.php renders without PHP messages"; fi
 expect "demo title" "DRSM Live Demo"
-expect "demo sample host" ">mail1</strong>"
+expect "demo site tiles" 'id="tile-site-'
 expect "demo links use the URL path" 'href="/drsm/dashboard/php/heatmap.php"'
-expect "demo default layout is meters" 'id="tile-sites"'
+expect "demo default layout is meters" 'class="m-tile '
 render orgs.php ""
 expect "demo organizations" "Northwind Traders"
 expect "demo second organization" "Blue Ridge Clinics"

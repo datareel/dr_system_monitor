@@ -56,6 +56,10 @@ $METERtiles   = array('sites', 'platforms', 'groupchecks', 'clusters',
                       'ext', 'checks'); // Overview tiles, in order
 $METERlabels  = array();  // Check category titles, such as
                           // array('storage' => 'Disks and RAID')
+$METERsitesOnly = true;   // With more than one site shown (All
+                          // sites, an organization), the Overview
+                          // shows one tile per site only: select a
+                          // site to drill down to its own tiles
 $METERsolidRed = 0.80;    // A tile turns solid red only when this
                           // share of its reports is in error; below
                           // that it keeps a red top line, badge and
@@ -70,6 +74,7 @@ if(!isset($PAGElayout) || !in_array($PAGElayout, explode(" ", DRSM_LAYOUTS))) $P
 if(!isset($METERtiles) || !is_array($METERtiles)) $METERtiles = array("sites", "platforms", "groupchecks", "clusters", "ext", "checks");
 if(!isset($METERlabels) || !is_array($METERlabels)) $METERlabels = array();
 if(!isset($METERsolidRed) || !is_numeric($METERsolidRed)) $METERsolidRed = 0.80;
+if(!isset($METERsitesOnly)) $METERsitesOnly = true;
 
 // The layout for this request: ?layout= (kept in the drsm_layout
 // cookie), then the cookie, then $PAGElayout
@@ -342,6 +347,65 @@ function drsm_meter_tiles($hosts, $groupreports, $sites, $kinds = null)
 }
 
 /*
+Site tiles for an Overview of more than one site: one tile per site,
+with its hosts and group checks in the ring. Its list has a link to
+the site's own Overview, then the site's tiles (Linux hosts, group
+checks, check categories and so on), each opening that tile on the
+site's page.
+*/
+function drsm_meter_site_tiles($hosts, $sites)
+{
+  global $METERtiles;
+  $bysite = drsm_hosts_by_site($hosts, $sites);
+  $kinds = array_values(array_diff($METERtiles, array("sites")));
+  $out = array();
+  foreach($sites as $sid => $s) {
+    $sh = $bysite[$sid];
+    $sg = drsm_site_group_reports($sid);
+    $surl = drsm_url("index.php", array("site" => $sid));
+    $about = implode(", ", array_filter(array($s["orgname"], $s["location"]), "strlen"));
+    $t = drsm_meter_tile("site-" . preg_replace('/[^A-Za-z0-9_-]/', "-", $sid), $s["name"], "building", $about);
+    $t["href"] = $surl;
+    $t["hostcount"] = count($sh);
+    $t["checkcount"] = count($sg);
+    // The ring: every host and every group check of the site
+    $hi = drsm_meter_hosts_item("Hosts", $sh, $surl);
+    $sm = drsm_site_summary($s, $sh);
+    if(count($sh) > 0) {
+      foreach($hi["counts"] as $st => $n) { $t["counts"][$st] += $n; $t["units"] += $n; }
+      $t["state"] = $hi["state"];
+      $t["time"] = $hi["time"];
+    }
+    foreach($sg as $gr) {
+      $st = isset($t["counts"][$gr["state"]]) ? $gr["state"] : "UNKNOWN";
+      $t["counts"][$st]++;
+      $t["units"]++;
+      $t["state"] = ($t["state"] == "") ? $st : drsm_worst($t["state"], $st);
+    }
+    if($sm["down"]) $t["state"] = ($t["state"] == "") ? "STALE" : drsm_worst($t["state"], "STALE");
+    // The list: open the site, then its own tiles
+    $open = drsm_meter_item("Open the " . $s["name"] . " status page", "", $surl, $sm["down"] ? "Collector not reporting" : "");
+    $t["items"][] = $open;
+    foreach(drsm_meter_tiles($sh, $sg, array($sid => $s), $kinds) as $st) {
+      $it = drsm_meter_item($st["title"], $st["state"], $surl . "#tile-" . $st["id"]);
+      $it["counts"] = $st["counts"];
+      foreach($st["items"] as $sub) {
+        foreach($sub["hosts"] as $hh) {
+          // Check category lists name the check with the host
+          if(substr($st["id"], 0, 4) == "cat-") $hh["name"] .= " " . drsm_plugin_short($sub["title"]);
+          $it["hosts"][] = $hh;
+        }
+        if(count($sub["counts"]) == 0 && $sub["state"] != "" && $sub["state"] != "OK") $it["hosts"][] = array("name" => $sub["title"], "state" => $sub["state"], "href" => $sub["href"]);
+      }
+      $t["items"][] = $it;
+    }
+    $t["pct"] = ($t["units"] > 0) ? (int)floor(100 * $t["counts"]["OK"] / $t["units"]) : null;
+    $out[] = $t;
+  }
+  return $out;
+}
+
+/*
 Ring segments: each state gets its share of the ring, so one error out
 of 60 reports is a thin red slice, not a red ring. A state that is not
 OK gets at least a small visible slice. SVG circles with class
@@ -442,7 +506,12 @@ function drsm_meter_tiles_html($tiles)
         <span class="t-sum">
           <?php if($t["state"] != "") { echo drsm_badge($t["state"]); } else { ?><span class="badge unk"><span class="dot"></span>No reports</span><?php } ?>
           <span class="t-counts"><?php echo drsm_meter_counts_html($t["counts"]); ?></span>
+<?php     if(isset($t["hostcount"])) { ?>
+          <span class="muted small"><?php echo (int)$t["hostcount"] . " host" . ($t["hostcount"] == 1 ? "" : "s") . ", " . (int)$t["checkcount"] . " group check" . ($t["checkcount"] == 1 ? "" : "s") . ($t["time"] > 0 ? " &middot; " . drsm_time_html($t["time"]) : ""); ?></span>
+<?php       if($t["about"] != "") { ?><span class="muted small"><?php echo h($t["about"]); ?></span><?php } ?>
+<?php     } else { ?>
           <span class="muted small"><?php echo ($t["units"] > 0) ? (int)$t["units"] . " " . drsm_meter_units_word($t) . ($t["time"] > 0 ? " &middot; " . drsm_time_html($t["time"]) : "") : h($t["about"]); ?></span>
+<?php     } ?>
         </span>
       </span>
     </summary>

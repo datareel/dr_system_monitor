@@ -110,8 +110,11 @@ $metriccols = drsm_metric_columns();
 // Meters layout: one tile per group of reports, see drsm_meters.php
 $layout = drsm_layout();
 $hero = $overall;
+// Sites only: with more than one site shown, a tile per site to drill
+// down from
+$sitesonly = ($layout == "meters" && $multi && !empty($METERsitesOnly));
 if($layout == "meters") {
-  $tiles = drsm_meter_tiles($hosts, $groupreports, $sites);
+  $tiles = $sitesonly ? drsm_meter_site_tiles($hosts, $sites) : drsm_meter_tiles($hosts, $groupreports, $sites);
   // Banner tone with the solid red rule of the tiles
   if(count($hosts) > 0) list($hero, $nbadtiles) = drsm_meter_overall($tiles);
 }
@@ -140,7 +143,10 @@ drsm_page_start("Overview", "overview", $overall);
 
 <?php if($layout == "meters") { ?>
 <?php   echo drsm_meter_tiles_html($tiles); ?>
-<?php   if(count($problems) > 0) { ?>
+<?php   if($sitesonly) { ?>
+<p class="muted small m-foot">Select a site for its hosts and checks, or open its status page from the list. <a href="<?php echo h(drsm_url("heatmap.php", array("by" => "site"))); ?>">Heat map by site</a></p>
+<?php   } ?>
+<?php   if(count($problems) > 0 && !$sitesonly) { ?>
 <section class="panel m-attn">
   <div class="panel-head">
     <h2><?php echo drsm_icon("alert"); ?>Needs attention</h2>
@@ -320,6 +326,7 @@ drsm_page_start("Overview", "overview", $overall);
 </div>
 <?php } ?>
 
+<?php if(!$sitesonly) { ?>
 <section class="panel" id="hosts">
   <div class="panel-head wrap">
     <h2><?php echo drsm_icon("grid"); ?>Hosts</h2>
@@ -398,6 +405,7 @@ drsm_page_start("Overview", "overview", $overall);
   </div>
   <p class="empty filtered" hidden>No hosts match the filter.</p>
 </section>
+<?php } ?>
 <?php
 drsm_page_end();
 

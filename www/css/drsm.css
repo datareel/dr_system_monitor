@@ -1036,3 +1036,4 @@ td > .tier:first-child { margin-left: 0; }
   .m-hosts { grid-template-columns: 1fr; }
   .t-panel { min-width: 0; }
 }
+.m-foot { margin-top: 14px; }
