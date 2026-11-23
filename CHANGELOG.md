@@ -4,6 +4,18 @@ All notable changes to the DataReel System Monitor (DRSM) are listed here.
 
 ## Unreleased
 
+### Added
+
+- Meters layout for the Organizations page, the default like the
+  Overview and the Heat map, with the same Meters | Cards switch and
+  cookie: an overall ring per organization in its heading (percent of
+  its hosts and group checks that are OK, with a slice per state), and
+  one meter tile per site (Check status), opening the site's list.
+  Resource use shows a CPU, memory, disk and load meter per site, each
+  at the site's busiest host for that resource and naming it; the tile
+  lists the site's hosts, busiest first. The tier filter, the totals
+  row and the Cards layout (the site cards) are unchanged.
+
 ### Planned
 
 From the NHC dashboard port (their versions are in the NHC package,

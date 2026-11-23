@@ -84,7 +84,7 @@ $UPLOADSdir     = '';   // Report server [hooks] dir, only on the
                         // text and html hook uploads (upload_view.php)
 $UPLOADdisplayDir = ''; // Site display plug-ins for hook uploads,
                         // default php/uploads, see drsm_uploads.php
-$PAGElayout     = 'meters'; // Overview and Heat map layout: meters
+$PAGElayout     = 'meters'; // Overview, Heat map, Organizations: meters
                         // (round percentage meters and the heat map
                         // mosaic) or cards (host cards and the host by
                         // check table); viewers can switch, see

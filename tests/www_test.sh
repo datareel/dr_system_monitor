@@ -419,6 +419,32 @@ reject "org scope hides other orgs" 'data-site="acme/hq"'
 expect "scoped view names its scope" 'Showing <strong>Beta Labs</strong> only.'
 expect "scoped view offers all organizations" 'href="/drsm/dashboard/php/orgs.php?site=" data-show-all>Show all organizations</a>'
 expect "mode switch keeps the scope" 'href="/drsm/dashboard/php/orgs.php?mode=metrics&amp;site=beta"'
+render orgs.php "layout=meters"
+expect "orgs meters: layout switch" 'class="seg layout-seg"'
+expect "orgs meters: layout switch keeps the scope" 'href="/drsm/dashboard/php/orgs.php?layout=cards&amp;site="'
+expect "orgs meters: ring per organization" 'class="org-head">
+    <span class="m-gauge'
+expect "orgs meters: tile per site" 'id="tile-site-acme-hq" data-site="acme/hq"'
+expect "orgs meters: site tile opens the site" 'href="/drsm/dashboard/php/index.php?site=acme%2Fhq"'
+expect "orgs meters: ring slices" '<circle class="seg '
+expect "orgs meters: stale collector" "Collector not reporting"
+expect "orgs meters: KPI row kept" 'class="kpis org-kpis"'
+reject "orgs meters: no host tile matrix" 'class="matrix tiles'
+render orgs.php "layout=meters&site=beta"
+expect "orgs meters: org scope shows its sites" 'data-site="beta/lab"'
+reject "orgs meters: org scope hides other orgs" 'data-site="acme/hq"'
+render orgs.php "layout=meters&mode=metrics"
+expect "orgs meters: resource tiles" 'class="m-tiles m-res"'
+expect "orgs meters: resource meter names the busiest host" 'class="m-res-h">db1</span>'
+expect "orgs meters: resource tile lists its hosts" 'readreport.php?n=db1'
+expect "orgs meters: resource tile opens the site resource heat map" 'heatmap.php?site=acme%2Fhq&amp;mode=metrics'
+expect "orgs meters: resource layout switch keeps the mode" 'orgs.php?layout=cards&amp;mode=metrics&amp;site='
+render orgs.php "layout=meters&tier=qa"
+reject "orgs meters: tier filter" 'readreport.php?n=db1'
+render orgs.php "" "drsm_layout=meters"
+expect "orgs meters: layout cookie" 'class="m-tiles"'
+render orgs.php "layout=cards"
+expect "orgs cards: site cards kept" 'class="site-card '
 render orgs.php "" "drsm_site=acme/hq"
 expect "picker cookie scopes the page" 'data-site="acme/hq"'
 reject "picker cookie hides other sites" 'data-site="beta/lab"'

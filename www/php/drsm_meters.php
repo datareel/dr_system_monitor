@@ -42,15 +42,19 @@ Two layouts:
           category) with a ring of state slices and the percent that
           is healthy; a tile opens the list of its reports. The Heat
           map is a mosaic of every check, grouped by tile, with the
-          tile meters across the top.
-  cards   The host cards Overview and the host by check table heat
-          map of DRSM 1.31 to 1.34.
+          tile meters across the top. The Organizations page shows
+          an overall ring per organization and a tile per site: its
+          health ring (Check status), or a meter per resource at the
+          site's busiest host (Resource use).
+  cards   The host cards Overview, the host by check table heat map
+          and the site cards Organizations page of DRSM 1.31 to 1.34.
 
 Settings in config/drsm.php:
 
 $PAGElayout   = 'meters'; // Default layout: meters or cards. Viewers
                           // pick their own with the Layout switch on
-                          // the Overview and Heat map pages (cookie
+                          // the Overview, Heat map and Organizations
+                          // pages (cookie
                           // drsm_layout, or ?layout= in the URL)
 $METERtiles   = array('sites', 'platforms', 'groupchecks', 'clusters',
                       'ext', 'checks'); // Overview tiles, in order
@@ -406,6 +410,7 @@ function drsm_meter_site_tiles($hosts, $sites)
     $about = implode(", ", array_filter(array($s["orgname"], $s["location"]), "strlen"));
     $t = drsm_meter_tile("site-" . preg_replace('/[^A-Za-z0-9_-]/', "-", $sid), $s["name"], "building", $about);
     $t["href"] = $surl;
+    $t["site"] = $sid;
     $t["hostcount"] = count($sh);
     $t["checkcount"] = count($sg);
     // The ring: every host and every group check of the site
@@ -530,31 +535,10 @@ function drsm_meter_units_word($t)
   return ($t["units"] == 1) ? "report" : "reports";
 }
 
-// The tiles grid of the Overview
-function drsm_meter_tiles_html($tiles)
+// The list a tile opens: its items, with the problem hosts under each
+function drsm_meter_panel_html($t)
 {
   ob_start(); ?>
-<section class="m-tiles" aria-label="Report groups">
-<?php foreach($tiles as $t) {
-        $cls = ($t["state"] == "") ? "none" : drsm_state_class($t["state"]);
-        if(drsm_meter_minor($t)) $cls .= " minor"; ?>
-  <details class="m-tile <?php echo h($cls); ?>" id="tile-<?php echo h($t["id"]); ?>" data-menu>
-    <summary title="<?php echo h($t["about"]); ?>">
-      <span class="t-head"><?php echo drsm_icon($t["icon"]); ?><span class="t-title"><?php echo h($t["title"]); ?></span><?php echo drsm_icon("chevron"); ?></span>
-      <span class="t-body">
-        <?php echo drsm_meter_gauge($t["pct"], $t["state"], 84, $t["counts"]); ?>
-        <span class="t-sum">
-          <?php if($t["state"] != "") { echo drsm_badge($t["state"]); } else { ?><span class="badge unk"><span class="dot"></span>No reports</span><?php } ?>
-          <span class="t-counts"><?php echo drsm_meter_counts_html($t["counts"]); ?></span>
-<?php     if(isset($t["hostcount"])) { ?>
-          <span class="muted small"><?php echo (int)$t["hostcount"] . " host" . ($t["hostcount"] == 1 ? "" : "s") . ", " . (int)$t["checkcount"] . " group check" . ($t["checkcount"] == 1 ? "" : "s") . ($t["time"] > 0 ? " &middot; " . drsm_time_html($t["time"]) : ""); ?></span>
-<?php       if($t["about"] != "") { ?><span class="muted small"><?php echo h($t["about"]); ?></span><?php } ?>
-<?php     } else { ?>
-          <span class="muted small"><?php echo ($t["units"] > 0) ? (int)$t["units"] . " " . drsm_meter_units_word($t) . ($t["time"] > 0 ? " &middot; " . drsm_time_html($t["time"]) : "") : h($t["about"]); ?></span>
-<?php     } ?>
-        </span>
-      </span>
-    </summary>
     <div class="menu-panel t-panel">
       <p class="menu-head"><?php echo h($t["title"]); ?></p>
       <ul class="t-items">
@@ -583,6 +567,36 @@ function drsm_meter_tiles_html($tiles)
 <?php   } ?>
       </ul>
     </div>
+<?php
+  return ob_get_clean();
+}
+
+// The tiles grid of the Overview
+function drsm_meter_tiles_html($tiles)
+{
+  ob_start(); ?>
+<section class="m-tiles" aria-label="Report groups">
+<?php foreach($tiles as $t) {
+        $cls = ($t["state"] == "") ? "none" : drsm_state_class($t["state"]);
+        if(drsm_meter_minor($t)) $cls .= " minor"; ?>
+  <details class="m-tile <?php echo h($cls); ?>" id="tile-<?php echo h($t["id"]); ?>"<?php if(isset($t["site"])) echo ' data-site="' . h($t["site"]) . '"'; ?> data-menu>
+    <summary title="<?php echo h($t["about"]); ?>">
+      <span class="t-head"><?php echo drsm_icon($t["icon"]); ?><span class="t-title"><?php echo h($t["title"]); ?></span><?php echo drsm_icon("chevron"); ?></span>
+      <span class="t-body">
+        <?php echo drsm_meter_gauge($t["pct"], $t["state"], 84, $t["counts"]); ?>
+        <span class="t-sum">
+          <?php if($t["state"] != "") { echo drsm_badge($t["state"]); } else { ?><span class="badge unk"><span class="dot"></span>No reports</span><?php } ?>
+          <span class="t-counts"><?php echo drsm_meter_counts_html($t["counts"]); ?></span>
+<?php     if(isset($t["hostcount"])) { ?>
+          <span class="muted small"><?php echo (int)$t["hostcount"] . " host" . ($t["hostcount"] == 1 ? "" : "s") . ", " . (int)$t["checkcount"] . " group check" . ($t["checkcount"] == 1 ? "" : "s") . ($t["time"] > 0 ? " &middot; " . drsm_time_html($t["time"]) : ""); ?></span>
+<?php       if($t["about"] != "") { ?><span class="muted small"><?php echo h($t["about"]); ?></span><?php } ?>
+<?php     } else { ?>
+          <span class="muted small"><?php echo ($t["units"] > 0) ? (int)$t["units"] . " " . drsm_meter_units_word($t) . ($t["time"] > 0 ? " &middot; " . drsm_time_html($t["time"]) : "") : h($t["about"]); ?></span>
+<?php     } ?>
+        </span>
+      </span>
+    </summary>
+<?php echo drsm_meter_panel_html($t); ?>
   </details>
 <?php } ?>
 </section>
@@ -604,6 +618,113 @@ function drsm_meter_overall($tiles)
     $state = drsm_worst($state, $tone);
   }
   return array($state, $bad);
+}
+
+/*
+Organizations page, meters layout. Check status shows the site tiles
+of drsm_meter_site_tiles() for each organization, with one ring for
+the organization from all of its site tiles. Resource use shows one
+tile per site with a meter for each resource at the site's busiest
+host for that resource; the tile opens its hosts, busiest first.
+*/
+function drsm_meter_org_ring($tiles)
+{
+  $r = drsm_meter_tile("org", "", "building", "");
+  foreach($tiles as $t) {
+    foreach($t["counts"] as $s => $n) { $r["counts"][$s] += $n; $r["units"] += $n; }
+    if($t["state"] != "") $r["state"] = ($r["state"] == "") ? $t["state"] : drsm_worst($r["state"], $t["state"]);
+  }
+  $r["pct"] = ($r["units"] > 0) ? (int)floor(100 * $r["counts"]["OK"] / $r["units"]) : null;
+  return $r;
+}
+
+// The resources on a resource tile, in order
+function drsm_meter_resource_keys()
+{
+  return array("cpu", "mem", "disk", "load");
+}
+
+function drsm_meter_resource_tiles($hosts, $sites)
+{
+  $bysite = drsm_hosts_by_site($hosts, $sites);
+  $cols = drsm_metric_columns();
+  $out = array();
+  foreach($sites as $sid => $s) {
+    $sh = $bysite[$sid];
+    $t = drsm_meter_tile("site-" . preg_replace('/[^A-Za-z0-9_-]/', "-", $sid), $s["name"], "building",
+                         $s["location"] != "" ? $s["location"] : ($s["legacy"] ? "Hosts in no site" : $sid));
+    $t["site"] = $sid;
+    $t["hostcount"] = count($sh);
+    $sm = drsm_site_summary($s, $sh);
+    $t["down"] = $sm["down"];
+    $t["worst"] = array();
+    $t["peak"] = null;
+    $rows = array();
+    foreach($sh as $hst) {
+      $url = drsm_host_url("readreport.php", $hst);
+      $peak = null;
+      $note = array();
+      foreach(drsm_meter_resource_keys() as $k) {
+        if(!isset($hst["metrics"][$k])) continue;
+        $mt = $hst["metrics"][$k];
+        $note[] = $cols[$k]["label"] . " " . (($k == "load") ? round($mt["pct"]) . "%" : $mt["text"]);
+        if($peak === null || $mt["pct"] > $peak) $peak = $mt["pct"];
+        if(!isset($t["worst"][$k]) || $mt["pct"] > $t["worst"][$k]["m"]["pct"]) $t["worst"][$k] = array("m" => $mt, "host" => $hst["name"]);
+        if($hst["time"] > $t["time"]) $t["time"] = $hst["time"];
+      }
+      if($peak !== null && ($t["peak"] === null || $peak > $t["peak"])) $t["peak"] = $peak;
+      $rows[] = array("peak" => $peak, "item" => drsm_meter_item($hst["name"], "", $url, count($note) ? implode(", ", $note) : "No resource data"));
+    }
+    // Busiest host first, hosts with no data last
+    usort($rows, function($a, $b) {
+      if($a["peak"] === $b["peak"]) return strcmp($a["item"]["title"], $b["item"]["title"]);
+      if($a["peak"] === null) return 1;
+      if($b["peak"] === null) return -1;
+      return ($b["peak"] > $a["peak"]) ? 1 : -1;
+    });
+    $t["items"][] = drsm_meter_item("Open the " . $s["name"] . " resource heat map", "", drsm_url("heatmap.php", array("site" => $sid, "mode" => "metrics")));
+    foreach($rows as $row) $t["items"][] = $row["item"];
+    // Top line: red from 95% used, amber from 85%
+    $lvl = drsm_heat_level($t["peak"]);
+    $t["tone"] = ($lvl < 0) ? "none" : (($lvl >= 5) ? "err" : (($lvl >= 4) ? "warn" : "ok"));
+    $out[] = $t;
+  }
+  return $out;
+}
+
+function drsm_meter_resource_tiles_html($tiles)
+{
+  $cols = drsm_metric_columns();
+  ob_start(); ?>
+<section class="m-tiles m-res" aria-label="Resource use by site">
+<?php foreach($tiles as $t) { ?>
+  <details class="m-tile <?php echo h($t["tone"]); ?>" id="tile-<?php echo h($t["id"]); ?>" data-site="<?php echo h($t["site"]); ?>" data-menu>
+    <summary title="<?php echo h($t["about"]); ?>">
+      <span class="t-head"><?php echo drsm_icon($t["icon"]); ?><span class="t-title"><?php echo h($t["title"]); ?></span><?php echo drsm_icon("chevron"); ?></span>
+<?php   if(count($t["worst"]) == 0) { ?>
+      <span class="muted small"><?php echo $t["hostcount"] > 0 ? "No resource data from these hosts yet." : "No host reports yet."; ?></span>
+<?php   } else { ?>
+      <span class="m-uses">
+<?php     foreach(drsm_meter_resource_keys() as $k) {
+            if(!isset($t["worst"][$k])) continue;
+            $w = $t["worst"][$k];
+            $col = $cols[$k];
+            $col["title"] = $w["host"] . ": " . $col["title"]; ?>
+        <span class="m-res-u"><?php echo drsm_meter_use($w["m"], $col, $k); ?><span class="m-res-h"><?php echo h($w["host"]); ?></span></span>
+<?php     } ?>
+      </span>
+<?php   } ?>
+<?php   if($t["down"]) { ?>
+      <span class="badge stale"><span class="dot"></span>Collector not reporting</span>
+<?php   } ?>
+      <span class="muted small"><?php echo (int)$t["hostcount"] . " host" . ($t["hostcount"] == 1 ? "" : "s") . " &middot; busiest host per resource" . ($t["time"] > 0 ? " &middot; " . drsm_time_html($t["time"]) : ""); ?></span>
+    </summary>
+<?php echo drsm_meter_panel_html($t); ?>
+  </details>
+<?php } ?>
+</section>
+<?php
+  return ob_get_clean();
 }
 
 // SCRIPT CONTENT ENDS ABOVE.

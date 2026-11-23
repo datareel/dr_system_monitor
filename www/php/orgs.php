@@ -33,8 +33,12 @@ along with the DataReel software distribution.  If not, see
 <http://www.gnu.org/licenses/>.
 
 DRSM Organizations page: every organization and site at a glance.
-Each site card shows its worst state, host counts, a tile per host
-(check status, or resource use with mode=metrics), and its collector.
+Meters layout (the default, see drsm_meters.php): an overall ring per
+organization and a meter tile per site, its health ring with Check
+status, or a meter per resource at its busiest host with Resource use
+(mode=metrics). Cards layout: each site card shows its worst state,
+host counts, a tile per host (check status, or resource use), and its
+collector.
 A site whose collector has stopped writing site.json gets a "Collector
 not reporting" banner. The landing page when there is more than one
 site. The menu and brand links open it with site= to clear the site
@@ -102,6 +106,25 @@ uksort($orgs, function($a, $b) use ($orgstate, $orgs) {
   return ($d != 0) ? $d : strcmp($orgs[$a]["name"], $orgs[$b]["name"]);
 });
 
+// Meters layout: the site tiles of each organization and its ring
+$layout = drsm_layout();
+$orgtiles = array();
+$orgring = array();
+if($layout == "meters") {
+  foreach($orgs as $oid => $o) {
+    $oh = array();
+    foreach($o["sites"] as $id => $s) $oh += $bysite[$id];
+    $sitetiles = drsm_meter_site_tiles($oh, $o["sites"]);
+    // The organization is in the heading: the tiles name the location
+    foreach($sitetiles as $i => $t) {
+      $s = $o["sites"][$t["site"]];
+      $sitetiles[$i]["about"] = $s["location"] != "" ? $s["location"] : ($s["legacy"] ? "Hosts in no site" : $t["site"]);
+    }
+    $orgtiles[$oid] = ($mode == "metrics") ? drsm_meter_resource_tiles($oh, $o["sites"]) : $sitetiles;
+    $orgring[$oid] = drsm_meter_org_ring($sitetiles);
+  }
+}
+
 // What a scoped view is limited to: an organization or one site
 $scopename = "";
 if($scope != "") $scopename = isset($orgs[$scope]) ? $orgs[$scope]["name"] : drsm_site_label($scope);
@@ -121,7 +144,11 @@ drsm_page_start("Organizations", "orgs", $overall);
 <section class="page-head">
   <div>
     <h1>Organizations</h1>
+<?php if($layout == "meters") { ?>
+    <p class="muted"><?php echo $mode == "status" ? "Every site at a glance: the ring is the percent of hosts and group checks that are OK. Select a site for its list." : "Resource use at each site: each meter is the busiest host for that resource. Select a site for its hosts."; ?></p>
+<?php } else { ?>
     <p class="muted"><?php echo $mode == "status" ? "Every site at a glance. Each tile is one host, worst first. Select a tile for its report." : "Resource use on each host: the tile shows its busiest resource."; ?></p>
+<?php } ?>
 <?php if($scope != "") { ?>
     <p class="scope-note">Showing <strong><?php echo h($scopename); ?></strong> only. <a class="link" href="<?php echo h(drsm_orgs_link($mode, "")); ?>" data-show-all>Show all organizations</a></p>
 <?php } ?>
@@ -132,6 +159,7 @@ drsm_page_start("Organizations", "orgs", $overall);
       <a href="<?php echo h(drsm_orgs_link("status", $scope)); ?>"<?php if($mode == "status") echo ' class="active" aria-current="page"'; ?>>Check status</a>
       <a href="<?php echo h(drsm_orgs_link("metrics", $scope)); ?>"<?php if($mode == "metrics") echo ' class="active" aria-current="page"'; ?>>Resource use</a>
     </div>
+    <?php echo drsm_layout_switch("orgs.php", ($mode != "status" ? array("mode" => $mode) : array()) + array("site" => $scope)); ?>
   </div>
 </section>
 
@@ -150,10 +178,21 @@ drsm_page_start("Organizations", "orgs", $overall);
 <?php foreach($orgs as $oid => $o) { ?>
 <section class="org" aria-labelledby="org-<?php echo h($oid); ?>">
   <div class="org-head">
+<?php   if($layout == "meters") {
+          $ring = $orgring[$oid]; ?>
+    <?php echo drsm_meter_gauge($ring["pct"], $ring["state"], 58, $ring["counts"]); ?>
+    <h2 id="org-<?php echo h($oid); ?>"><?php echo h($o["name"]); ?></h2>
+<?php   } else { ?>
     <h2 id="org-<?php echo h($oid); ?>"><span class="dot-lg <?php echo h(drsm_state_class($orgstate[$oid])); ?>" aria-hidden="true"></span><?php echo h($o["name"]); ?></h2>
+<?php   } ?>
     <?php echo drsm_badge($orgstate[$oid]); ?>
-    <span class="muted"><?php echo count($o["sites"]); ?> site<?php echo count($o["sites"]) == 1 ? "" : "s"; ?><?php if($o["contact"] != "") echo " &middot; " . h($o["contact"]); ?></span>
+    <span class="muted"><?php echo count($o["sites"]); ?> site<?php echo count($o["sites"]) == 1 ? "" : "s"; ?><?php if($layout == "meters" && $ring["pct"] !== null) echo " &middot; " . (int)$ring["pct"] . "% OK"; ?><?php if($o["contact"] != "") echo " &middot; " . h($o["contact"]); ?></span>
   </div>
+<?php   if($layout == "meters") {
+          echo ($mode == "metrics") ? drsm_meter_resource_tiles_html($orgtiles[$oid]) : drsm_meter_tiles_html($orgtiles[$oid]); ?>
+</section>
+<?php     continue;
+        } ?>
   <div class="site-grid">
 <?php   foreach($o["sites"] as $id => $s) {
           $sm = $sum[$id];
@@ -229,7 +268,7 @@ drsm_page_start("Organizations", "orgs", $overall);
 <?php   if($mode == "status") { ?>
   <span><i class="ok"></i>OK</span><span><i class="warn"></i>Warning</span><span><i class="err"></i>Error</span><span><i class="stale"></i>Stale</span><span><i class="unk"></i>Unknown</span>
 <?php   } else { ?>
-  <span>0%</span><i class="h0"></i><i class="h1"></i><i class="h2"></i><i class="h3"></i><i class="h4"></i><i class="h5"></i><span>100%</span><span class="muted">Highest of CPU, memory, disk, load per CPU and swap.</span>
+  <span>0%</span><i class="h0"></i><i class="h1"></i><i class="h2"></i><i class="h3"></i><i class="h4"></i><i class="h5"></i><span>100%</span><span class="muted"><?php echo $layout == "meters" ? "Each meter is the busiest host at the site for CPU, memory, disk or load per CPU." : "Highest of CPU, memory, disk, load per CPU and swap."; ?></span>
 <?php   } ?>
 </div>
 <?php } ?>
