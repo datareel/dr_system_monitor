@@ -6,9 +6,9 @@
 # Shell: BASH shell
 # Original Author(s): DataReel Software Development
 # File Creation Date: 08/01/2008
-# Date Last Modified: 10/23/2026
+# Date Last Modified: 11/23/2026
 #
-# Version control: 1.16
+# Version control: 1.17
 #
 # Contributor(s):
 # ----------------------------------------------------------- 
@@ -127,7 +127,9 @@ if [ "${EMAILlist}" == "" ]
 	echo "# Set your comma delimited email list here" >> $ALERTdir/${LISTNAME}.email.list
 	echo 'export EMAILlist="root"' >> $ALERTdir/${LISTNAME}.email.list
 	echo "#" >> $ALERTdir/${LISTNAME}.email.list
-	echo "# Set your comma delimited text list here" >> $ALERTdir/${LISTNAME}.email.list
+	echo "# Text alerts: set up Pushover or another push provider in alert.push.conf" >> $ALERTdir/${LISTNAME}.email.list
+	echo "# (see etc/alert.push.conf_example). An email to text gateway list here" >> $ALERTdir/${LISTNAME}.email.list
+	echo "# is still used when alert.push.conf sets no PUSH_PROVIDERS." >> $ALERTdir/${LISTNAME}.email.list
 	echo '##export TEXTlist=""' >> $ALERTdir/${LISTNAME}.email.list
 	echo "" >> $ALERTdir/${LISTNAME}.email.list
 	source $ALERTdir/${LISTNAME}.email.list
@@ -198,10 +200,15 @@ function email_alert() {
 	${MAILcmd} -s "$SUBJECT" ${EMAILlist//,/ } < $BODY 
     fi
 
-    if [ "$TEXTlist" != "" ]  && [ "${SENDTEXT}" == "TRUE" ] && [ "${MAILcmd}" != "" ]
+    # Texts go to the push providers in alert.push.conf (Pushover, ntfy,
+    # Gotify, webhook), or to TEXTlist by email when none are set
+    if [ "${SENDTEXT}" == "TRUE" ]
     then
-	echo "Text messaging to: $TEXTlist"
-	${MAILcmd} -s "$SUBJECT" ${TEXTlist//,/ } < $BODY 
+	if ! declare -F drsm_push_alert > /dev/null; then
+	    # shellcheck source=lib/drsm_notify.sh
+	    source "${DRSMHOME:-${BASEdir}}/lib/drsm_notify.sh"
+	fi
+	drsm_push_alert "$SUBJECT" "$BODY"
     fi
     
     # Remove any temp files

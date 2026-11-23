@@ -1,0 +1,52 @@
+# DRSM push alerts, the replacement for email to text (SMS) gateways.
+#
+# Copy to $DRSMHOME/etc/alert.push.conf, keep it private, and fill in
+# your own keys:
+#
+#   cp $DRSMHOME/etc/alert.push.conf_example $DRSMHOME/etc/alert.push.conf
+#   chmod 600 $DRSMHOME/etc/alert.push.conf
+#   vi $DRSMHOME/etc/alert.push.conf
+#   $DRSMHOME/bin/test_alert.sh push
+#
+# Push alerts go out for errors on production hosts, the alerts that
+# used to send texts, with the same 4 hour throttle as the email.
+# This file is read as KEY=value lines, never run as a script.
+
+# Providers to send to, comma delimited:
+# pushover, ntfy, gotify, webhook, smsgateway (mails TEXTlist from
+# alert.email.list, the old way)
+PUSH_PROVIDERS="pushover"
+
+# Link sent with each alert, for example your dashboard
+#PUSH_URL="https://example.com/dashboard/"
+
+# Longest alert text sent (Pushover allows 1024)
+#PUSH_MAXCHARS=900
+
+# Pushover, https://pushover.net
+# Create an application at https://pushover.net/apps/build for its API
+# token. The user key is on your Pushover dashboard; a group key or
+# several user keys (comma delimited) send to more people.
+PUSHOVER_TOKEN=""
+PUSHOVER_USER=""
+# -2 lowest, -1 quiet, 0 normal, 1 high (skips quiet hours),
+# 2 emergency (repeats every PUSHOVER_RETRY seconds until acknowledged)
+#PUSHOVER_PRIORITY=1
+#PUSHOVER_RETRY=300
+#PUSHOVER_EXPIRE=3600
+#PUSHOVER_DEVICE=""
+#PUSHOVER_SOUND="siren"
+
+# ntfy, https://ntfy.sh or your own ntfy server
+#NTFY_URL="https://ntfy.sh/your-private-topic"
+#NTFY_TOKEN=""
+#NTFY_PRIORITY=4
+
+# Gotify, your own server
+#GOTIFY_URL="https://gotify.example.com"
+#GOTIFY_TOKEN=""
+#GOTIFY_PRIORITY=8
+
+# Webhook: POST of {"title","text","message"} JSON, works with Slack
+# incoming webhooks and similar. The URL is a secret too.
+#WEBHOOK_URL=""
