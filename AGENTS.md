@@ -127,9 +127,9 @@ or publish site data. Follow these rules on every task:
    what the guide says to expect, stop and report. Do not improvise a
    fix on a production monitor.
 5. **Never touch secrets.** Do not print, copy or change SSH private
-   keys, `.htpasswd` files, `$AUTH...` values, the Windows and Linux
-   agent key files or the alert lists' addresses. Ask the person to do
-   those steps.
+   keys, `.htpasswd` files, `$AUTH...` values, the push alert tokens
+   in `alert.push.conf`, the Windows and Linux agent key files or the
+   alert lists' addresses. Ask the person to do those steps.
 6. **Never weaken security silently.** Do not turn off the dashboard
    login, SELinux or firewalld, open the dashboard to the internet, set
    `StrictHostKeyChecking=no`, or let a page read a path taken from the

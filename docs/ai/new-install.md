@@ -88,9 +88,12 @@ the admin.
 
 ## 7. Cron and alerts
 
-- Alert addresses: `$DRSMHOME/etc/alert.email.list` (`EMAILlist`,
-  `TEXTlist`), or `ALERT_EMAIL` in a site file. The admin enters the
-  addresses.
+- Alert addresses: `$DRSMHOME/etc/alert.email.list` (`EMAILlist`), or
+  `ALERT_EMAIL` in a site file. The admin enters the addresses.
+- Text alerts: `$DRSMHOME/etc/alert.push.conf` (`PUSH_PROVIDERS`, see
+  `etc/alert.push.conf_example`). It holds API tokens: the admin fills
+  it in and sets mode 600; the agent never reads or prints it. Test
+  with `bin/test_alert.sh push`.
 - Cron lines: `crontabs/crontab_example.txt` and README.txt "Plugin
   monitoring with drsm_run.sh". The admin reads and installs them with
   `crontab -e`; an agent does not install cron lines.

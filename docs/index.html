@@ -48,14 +48,14 @@
   <div class="card"><h3>System health</h3><p>CPU (including cloud steal time), load, memory and swap, disk space and inodes, software and hardware RAID, network errors, and logged in users.</p></div>
   <div class="card"><h3>Plugins</h3><p>Every check is a folder with a manifest and one BASH script. Add your own check without touching a core script.</p></div>
   <div class="card"><h3>Situational awareness</h3><p>Overview, heat map, hosts and connectivity pages, on desktop, phone and NOC wall screen, in light or dark.</p></div>
-  <div class="card"><h3>Alerts</h3><p>Email and email to text alerts, throttled to one per problem every 4 hours, with the business impact in each message.</p></div>
+  <div class="card"><h3>Alerts</h3><p>Email and push alerts (Pushover, ntfy, Gotify), throttled to one per problem every 4 hours, with the business impact in each message.</p></div>
   <div class="card"><h3>Organizations and sites</h3><p>Customers and offices on one dashboard: an Organizations page with a heat map per site, a site picker, per site alerts, several monitor hosts feeding one dashboard, and logins limited to their own sites.</p></div>
   <div class="card"><h3>Tiers and site links</h3><p>DEV, QA and OPS tiers with a tier filter and per tier alert addresses, and a Site links menu with nested submenus for each site's own tools and runbooks.</p></div>
   <div class="card"><h3>Databases</h3><p>MySQL and Postgres backup, statistics and maintenance scripts, with stored credentials for unattended runs.</p></div>
 </div>
 
 <h2 id="how">How it works</h2>
-<p>DRSM runs from cron on one <strong>monitor host</strong>. <code>bin/drsm_run.sh</code> reads one file per host from <code>etc/hosts</code>, probes each host from the outside, and runs the host's plugins on it in a single SSH session. It writes plain text reports and a <code>status.json</code> per host. The Web dashboard reads those files, and errors go out as email and text alerts.</p>
+<p>DRSM runs from cron on one <strong>monitor host</strong>. <code>bin/drsm_run.sh</code> reads one file per host from <code>etc/hosts</code>, probes each host from the outside, and runs the host's plugins on it in a single SSH session. It writes plain text reports and a <code>status.json</code> per host. The Web dashboard reads those files, and errors go out as email and push alerts.</p>
 
 <svg class="diagram" viewBox="0 0 860 330" role="img" aria-labelledby="dg-t">
 <title id="dg-t">How DRSM works: the monitor host runs drsm_run.sh from cron, probes hosts from outside, runs plugins on hosts over SSH, and writes reports that the Web dashboard reads.</title>

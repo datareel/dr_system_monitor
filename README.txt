@@ -635,25 +635,36 @@ $ source ~/.drsm.sh
 $ cd $DRSMHOME/bin
 $ ./test_alert.sh
 
-To add or remove email addresses or SMS addresses, edit the email list
-file:
+To add or remove email addresses, edit the email list file:
 
 $ source ~/.drsm.sh
 $ cd $DRSMHOME/etc
 $ vi alert.email.list
 
 export EMAILlist="root,example@example.com"
-export TEXTlist="5555555555@vtext.com,5555555555@txt.att.net"
 
-For SMS, text messaging, use the “mobile number”@”domain” for mobile
-provider, for example:
-  
-Verizon Wireless: mobile_number@vtext.com
-T-Mobile: mobile_number@tmomail.net
+Text alerts go out as push alerts (Pushover, ntfy, Gotify, or a
+webhook), because most carriers have shut down or filter their email
+to text gateways, including AT&T (2025), Sprint, Nextel, and Cingular.
+To set up Pushover:
 
-NOTE: Several carriers have shut down their email to text gateways,
-including AT&T (2025), Sprint, Nextel, and Cingular. Check with your
-carrier before relying on text alerts.
+$ source ~/.drsm.sh
+$ cd $DRSMHOME/etc
+$ cp alert.push.conf_example alert.push.conf
+$ chmod 600 alert.push.conf
+$ vi alert.push.conf
+
+PUSH_PROVIDERS="pushover"
+PUSHOVER_TOKEN="your application API token"
+PUSHOVER_USER="your user or group key"
+
+$ ../bin/test_alert.sh push
+
+The file holds API tokens: keep it mode 600. Push alerts go out for
+errors on production hosts, with the same 4 hour throttle as the email.
+See alert.push.conf_example for ntfy, Gotify and webhook settings. A
+TEXTlist in alert.email.list is still mailed when alert.push.conf sets
+no PUSH_PROVIDERS, or with PUSH_PROVIDERS="smsgateway".
 
 DRSM uses the first mail, mailx, or s-nail command found in the PATH.
 To use another mailer set MAILcmd in your ~/.drsm.sh file.

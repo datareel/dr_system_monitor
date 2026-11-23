@@ -4,6 +4,25 @@ All notable changes to the DataReel System Monitor (DRSM) are listed here.
 
 ## Unreleased
 
+### Added
+
+- Push alerts replace the carriers' email to text (SMS) gateways. The
+  new `lib/drsm_notify.sh` sends the alerts that used to be texts
+  (errors on production hosts, same 4 hour throttle) to the
+  `PUSH_PROVIDERS`: `pushover`, `ntfy`, `gotify`, `webhook` (Slack
+  style JSON) and `smsgateway` (the old `TEXTlist` email).
+- Settings and tokens are in `$ALERTdir/alert.push.conf`, mode 600,
+  read as KEY=value lines and never sourced. See
+  `etc/alert.push.conf_example`.
+- Tokens and webhook URLs go to curl in a private config file, never
+  on the command line, and are never printed.
+- With no `PUSH_PROVIDERS`, a `TEXTlist` is still mailed as before.
+- `bin/test_alert.sh` takes `all` (the default), `email` or `push`.
+- `utils/drsm_preflight.sh` names the push providers (not the keys)
+  and warns when `alert.push.conf` can be read by other users or curl
+  is missing.
+- `tests/notify_test.sh`.
+
 ### Planned
 
 From the NHC dashboard port (their versions are in the NHC package,

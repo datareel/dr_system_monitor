@@ -81,8 +81,12 @@ manage them (file `$CONFIGdir/messages.conf`).
 
 ## Alerts
 
-- Addresses: `$ALERTdir/alert.email.list` (`EMAILlist`, `TEXTlist`), or
+- Addresses: `$ALERTdir/alert.email.list` (`EMAILlist`), or
   `ALERT_EMAIL` / `ALERT_EMAIL_<TIER>` in a site file.
+- Text alerts: `$ALERTdir/alert.push.conf` (`PUSH_PROVIDERS`, see
+  `etc/alert.push.conf_example`). It holds API tokens: the person fills
+  it in and sets mode 600; the agent never reads or prints it. Test
+  with `bin/test_alert.sh push`.
 - `drsm_run.sh` alerts on ERROR; `-n` turns alerts off for a run (use
   it in cron for groups that should only show on the dashboard).
 
