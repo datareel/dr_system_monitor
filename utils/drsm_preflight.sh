@@ -228,6 +228,21 @@ if [ -f "${ALERTdir}/alert.email.list" ]; then
 else
     info "no ${ALERTdir}/alert.email.list yet: the first alert makes one that mails root"
 fi
+# Push alerts (lib/drsm_notify.sh): the providers are named, the keys
+# and URLs are not printed
+pconf="${PUSH_CONF:-${ALERTdir}/alert.push.conf}"
+if [ -f "${pconf}" ]; then
+    pprov=$(grep -E '^[[:space:]]*(export[[:space:]]+)?PUSH_PROVIDERS=' "${pconf}" | tail -n 1 | sed -E 's/^[^=]*=//; s/[" '"'"']//g')
+    if [ "${pprov}" != "" ]; then ok "push alerts with ${pprov} (${pconf})"; else info "${pconf} sets no PUSH_PROVIDERS: no push alerts"; fi
+    if [ -n "$(find "${pconf}" -maxdepth 0 -perm /077 2> /dev/null)" ]; then
+	warn "${pconf} holds API tokens and can be read by other users: chmod 600 it"
+    fi
+    if [ "${pprov}" != "" ] && [ "${pprov}" != "smsgateway" ] && ! command -v curl > /dev/null 2>&1; then
+	warn "push alerts need curl, curl not found"
+    fi
+else
+    info "no ${pconf}: no push alerts (see etc/alert.push.conf_example)"
+fi
 
 # --- Cron ---------------------------------------------------------
 echo ""

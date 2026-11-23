@@ -135,9 +135,9 @@ or publish site data. Follow these rules on every task:
    what the guide says to expect, stop and report. Do not improvise a
    fix on a production monitor.
 5. **Never touch secrets.** Do not print, copy or change SSH private
-   keys, `.htpasswd` files, `$AUTH...` values, the Windows and Linux
-   agent key files or the alert lists' addresses. Ask the person to do
-   those steps.
+   keys, `.htpasswd` files, `$AUTH...` values, the push alert tokens
+   in `alert.push.conf`, the Windows and Linux agent key files or the
+   alert lists' addresses. Ask the person to do those steps.
 6. **Never weaken security silently.** Do not turn off the dashboard
    login, SELinux or firewalld, open the dashboard to the internet, set
    `StrictHostKeyChecking=no`, or let a page read a path taken from the
@@ -406,9 +406,12 @@ the admin.
 
 ## 7. Cron and alerts
 
-- Alert addresses: `$DRSMHOME/etc/alert.email.list` (`EMAILlist`,
-  `TEXTlist`), or `ALERT_EMAIL` in a site file. The admin enters the
-  addresses.
+- Alert addresses: `$DRSMHOME/etc/alert.email.list` (`EMAILlist`), or
+  `ALERT_EMAIL` in a site file. The admin enters the addresses.
+- Text alerts: `$DRSMHOME/etc/alert.push.conf` (`PUSH_PROVIDERS`, see
+  `etc/alert.push.conf_example`). It holds API tokens: the admin fills
+  it in and sets mode 600; the agent never reads or prints it. Test
+  with `bin/test_alert.sh push`.
 - Cron lines: `crontabs/crontab_example.txt` and README.txt "Plugin
   monitoring with drsm_run.sh". The admin reads and installs them with
   `crontab -e`; an agent does not install cron lines.
@@ -610,8 +613,12 @@ manage them (file `$CONFIGdir/messages.conf`).
 
 ## Alerts
 
-- Addresses: `$ALERTdir/alert.email.list` (`EMAILlist`, `TEXTlist`), or
+- Addresses: `$ALERTdir/alert.email.list` (`EMAILlist`), or
   `ALERT_EMAIL` / `ALERT_EMAIL_<TIER>` in a site file.
+- Text alerts: `$ALERTdir/alert.push.conf` (`PUSH_PROVIDERS`, see
+  `etc/alert.push.conf_example`). It holds API tokens: the person fills
+  it in and sets mode 600; the agent never reads or prints it. Test
+  with `bin/test_alert.sh push`.
 - `drsm_run.sh` alerts on ERROR; `-n` turns alerts off for a run (use
   it in cron for groups that should only show on the dashboard).
 
