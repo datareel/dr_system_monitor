@@ -189,6 +189,7 @@ check "push hours: Sat noon outside" '! drsm_push_in_hours "${biz}" ${sat1200}'
 check "push hours: day list and ;" 'drsm_push_in_hours "Mon,Wed 09:00-10:00; Sat 10:00-14:00" ${sat1200} && ! drsm_push_in_hours "Mon,Wed 09:00-10:00" ${fri1200}'
 check "push hours: wrapping days and midnight" 'drsm_push_in_hours "Fri-Mon 22:00-06:00" ${sun2330} && ! drsm_push_in_hours "Fri-Mon 22:00-06:00" ${sat1200}'
 check "push hours: no days is daily" 'drsm_push_in_hours "11:00-13:00" ${sat1200}'
+check "push hours: 8x5 and 24x7" 'drsm_push_in_hours 8x5 ${mon0800} && ! drsm_push_in_hours 8x5 ${sat1200} && drsm_push_in_hours 24x7 ${sat1200}'
 check "push hours: always and never" 'drsm_push_in_hours always ${sat1200} && ! drsm_push_in_hours never ${mon0800} && ! drsm_push_in_hours "" ${mon0800}'
 drsm_push_in_hours "Mon-Fri 8-17" ${mon0800} 2> /dev/null; rv=$?
 check "push hours: bad time is not valid" '[ ${rv} -eq 2 ]'

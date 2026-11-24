@@ -28,14 +28,14 @@ PUSH_PROVIDERS="pushover"
 # DEV and QA hosts (drsm_run.sh -g dev, -g qa): their errors push only
 # inside these hours, at most once every 4 hours, with a throttle of
 # their own so an error found before the hours pushes when they start.
-# Unset or "never": DEV and QA errors send email only. "always": any
-# time. Else "[DAYS] HH:MM-HH:MM" windows separated by ";", DAYS such
+# Unset or "never": DEV and QA errors send email only. "always" or
+# "24x7": any time. "8x5": Mon-Fri 08:00-17:00. Else "[DAYS] HH:MM-HH:MM" windows separated by ";", DAYS such
 # as Mon-Fri or Sat,Sun (no DAYS: every day). The end time is not
 # included, 08:00-17:00 is 8 AM up to 5 PM. The times are in the site's
 # TZ (site file), else the monitor's. PUSH_DEV_HOURS in a site file
 # replaces this one for that site.
-#PUSH_DEV_HOURS="Mon-Fri 08:00-17:00"
-#PUSH_QA_HOURS="Mon-Fri 08:00-17:00"
+#PUSH_DEV_HOURS="8x5"
+#PUSH_QA_HOURS="8x5"
 
 # Pushover, https://pushover.net
 # Create an application at https://pushover.net/apps/build for its API

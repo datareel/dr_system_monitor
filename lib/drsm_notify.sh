@@ -295,7 +295,7 @@ function drsm_push_hhmm()
 function drsm_push_in_hours()
 {
     # Is time $2 (epoch seconds, default now) inside push hours $1?
-    # $1 is "always", "never", or windows separated by ";", each
+    # $1 is "always" (or 24x7), "never", 8x5 (Mon-Fri 08:00-17:00), or windows separated by ";", each
     # "[DAYS] HH:MM-HH:MM" in the local time zone (TZ). DAYS is a comma
     # list of days and day ranges (Mon-Fri, Sat,Sun, Mon-Wed,Fri) or
     # daily, the default. The end time is not included: 08:00-17:00 is
@@ -303,8 +303,9 @@ function drsm_push_in_hours()
     # Returns 0 inside, 1 outside, 2 when $1 is not valid.
     local spec="${1}" now="${2:-$(date +%s)}"
     case "${spec,,}" in
-	always) return 0 ;;
+	always|24x7) return 0 ;;
 	""|never|off|none) return 1 ;;
+	8x5) spec="Mon-Fri 08:00-17:00" ;;
     esac
     local dow hm w days range extra s e d a b dayok parts wins rv=1
     dow=$(date -d "@${now}" +%u)
