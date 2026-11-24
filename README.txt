@@ -662,6 +662,9 @@ $ ../bin/test_alert.sh push
 
 The file holds API tokens: keep it mode 600. Push alerts go out for
 errors on production hosts, with the same 4 hour throttle as the email.
+Errors on DEV and QA hosts push only inside their push hours, for
+example PUSH_DEV_HOURS="Mon-Fri 08:00-17:00" and PUSH_QA_HOURS in
+alert.push.conf (8 AM up to 5 PM, site time zone).
 See alert.push.conf_example for ntfy, Gotify and webhook settings. A
 TEXTlist in alert.email.list is still mailed when alert.push.conf sets
 no PUSH_PROVIDERS, or with PUSH_PROVIDERS="smsgateway".

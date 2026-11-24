@@ -126,6 +126,32 @@ run -n -g dev
 expect "dev group uses the local collector" "${R}/systems/box2/box2_report.txt" "=== core/memory [OK]"
 expect "dev group report name" "${R}/system_health_report_dev.txt" "Start of box2"
 
+echo "== DEV push hours"
+# box2 errors, alerts on, fake mail and curl
+printf 'HOST=box2\nCOLLECTOR=local\nGROUP=dev\nPLUGINS="core/load"\ncore_load_CRIT=-1\n' > "${T}/hosts/box2.conf"
+mkdir -p "${T}/fake"
+printf '#!/bin/bash\ncat > /dev/null\necho "$@" >> %s/fake/mail.log\n' "${T}" > "${T}/fake/mail"
+printf '#!/bin/bash\necho "$@" >> %s/fake/curl.log\necho -n 200\n' "${T}" > "${T}/fake/curl"
+chmod 755 "${T}/fake/mail" "${T}/fake/curl"
+printf 'PUSH_PROVIDERS=pushover\nPUSHOVER_TOKEN=t\nPUSHOVER_USER=u\nPUSH_DEV_HOURS="never"\n' > "${T}/alert.push.conf"
+chmod 600 "${T}/alert.push.conf"
+printf 'export EMAILlist="dev@example.com"\n' > "${T}/alert.email.list"
+function arun() { HOME="${T}/home" MAILcmd="${T}/fake/mail" DRSM_CURL="${T}/fake/curl" bash "${TOPdir}/bin/drsm_run.sh" "$@" > "${T}/run.log" 2>&1; }
+arun -g dev
+expect "dev error emails" "${T}/fake/mail.log" "dev@example.com"
+expect "dev error outside push hours does not push" "${T}/run.log" "Outside DEV push hours (never), no push alert"
+if [ ! -f "${T}/fake/curl.log" ]; then pass "no push sent outside the hours"; else fail "push sent outside the hours"; fi
+sed -i 's/PUSH_DEV_HOURS="never"/PUSH_DEV_HOURS="always"/' "${T}/alert.push.conf"
+arun -g dev
+expect "email throttled on the second run" "${T}/run.log" "INFO - No alert message will be sent."
+expect "dev error inside push hours pushes despite the email throttle" "${T}/run.log" "Push alert sent with pushover (HTTP 200)"
+expect "push logged in the site log" "${T}/tmp/logs/drsm_run_dev_all.log" "Push alert sent with pushover"
+arun -g dev
+expect "dev push throttled" "${T}/run.log" "INFO - DEV push alert sent 0 minutes ago"
+if [ "$(grep -c . "${T}/fake/curl.log")" -eq 1 ]; then pass "one push in two runs"; else fail "pushes: $(grep -c . "${T}/fake/curl.log")"; fi
+rm -rf "${T}/fake" "${T}/alert.push.conf" "${T}/alert.email.list" "${T}"/tmp/var/email_alert* "${T}"/tmp/var/push_alert*
+printf 'HOST=box2\nCOLLECTOR=local\nGROUP=dev\n' > "${T}/hosts/box2.conf"
+
 echo "== probes"
 cat > "${T}/hosts/box1.conf" <<'HOSTS'
 HOST=box1

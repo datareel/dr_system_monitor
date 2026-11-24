@@ -6,7 +6,7 @@
 # Shell: BASH shell
 # Original Author(s): DataReel Software Development
 # File Creation Date: 11/23/2026
-# Date Last Modified: 11/23/2026
+# Date Last Modified: 11/24/2026
 #
 # Version control: 1.00
 #
@@ -33,6 +33,8 @@
 # Push alerts, the replacement for the carriers' email to text (SMS)
 # gateways. bin/text_email_alert.sh calls drsm_push_alert for every
 # alert that would have sent a text: errors on production hosts.
+# Errors on DEV and QA hosts push only inside their push hours,
+# PUSH_DEV_HOURS and PUSH_QA_HOURS (drsm_push_tier_alert).
 #
 # Settings are KEY=value lines in ${ALERTdir}/alert.push.conf (or the
 # file named by PUSH_CONF). The file holds API tokens: keep it mode 600.
@@ -43,6 +45,10 @@
 #                                    smsgateway (the old TEXTlist email)
 #   PUSH_URL=https://...             link sent with the alert (dashboard)
 #   PUSH_MAXCHARS=900                longest alert text sent
+#   PUSH_DEV_HOURS="Mon-Fri 08:00-17:00"
+#   PUSH_QA_HOURS="Mon-Fri 08:00-17:00"
+#                                    when DEV and QA errors push, in the
+#                                    site's time zone; unset: never
 #
 #   PUSHOVER_TOKEN, PUSHOVER_USER    application token, user or group key
 #                                    (several user keys, comma delimited)
@@ -265,6 +271,127 @@ function drsm_push_alert()
     done
     rm -rf "${tmp}"
     return ${rv}
+}
+function drsm_push_day()
+{
+    # Day number of day name $1, 1 (Mon) to 7 (Sun) as date +%u
+    case "${1,,}" in
+	mon|monday) echo 1 ;; tue|tues|tuesday) echo 2 ;; wed|wednesday) echo 3 ;;
+	thu|thur|thurs|thursday) echo 4 ;; fri|friday) echo 5 ;;
+	sat|saturday) echo 6 ;; sun|sunday) echo 7 ;;
+	*) return 1 ;;
+    esac
+}
+
+function drsm_push_hhmm()
+{
+    # HH:MM $1 as a number HHMM, 0000 to 2400
+    if [[ ! "${1}" =~ ^([0-9]{1,2}):([0-9]{2})$ ]]; then return 1; fi
+    local h=$((10#${BASH_REMATCH[1]})) m=$((10#${BASH_REMATCH[2]}))
+    if [ ${m} -gt 59 ] || [ ${h} -gt 24 ] || { [ ${h} -eq 24 ] && [ ${m} -gt 0 ]; }; then return 1; fi
+    echo $((h * 100 + m))
+}
+
+function drsm_push_in_hours()
+{
+    # Is time $2 (epoch seconds, default now) inside push hours $1?
+    # $1 is "always", "never", or windows separated by ";", each
+    # "[DAYS] HH:MM-HH:MM" in the local time zone (TZ). DAYS is a comma
+    # list of days and day ranges (Mon-Fri, Sat,Sun, Mon-Wed,Fri) or
+    # daily, the default. The end time is not included: 08:00-17:00 is
+    # 8 AM up to 5 PM. An end before the start runs past midnight.
+    # Returns 0 inside, 1 outside, 2 when $1 is not valid.
+    local spec="${1}" now="${2:-$(date +%s)}"
+    case "${spec,,}" in
+	always) return 0 ;;
+	""|never|off|none) return 1 ;;
+    esac
+    local dow hm w days range extra s e d a b dayok parts wins rv=1
+    dow=$(date -d "@${now}" +%u)
+    hm=$((10#$(date -d "@${now}" +%H%M)))
+    IFS=';' read -ra wins <<< "${spec}"
+    for w in "${wins[@]}"
+    do
+	read -r days range extra <<< "${w}"
+	if [ "${days}" == "" ]; then continue; fi
+	if [ "${range}" == "" ]; then range="${days}"; days="daily"; fi
+	if [ "${extra}" != "" ] || [[ ! "${range}" =~ ^([^-]+)-([^-]+)$ ]] || \
+	   ! s=$(drsm_push_hhmm "${BASH_REMATCH[1]}") || ! e=$(drsm_push_hhmm "${BASH_REMATCH[2]}"); then
+	    echo "WARNING - Push hours \"${spec}\" not valid, use for example \"Mon-Fri 08:00-17:00\"" >&2
+	    return 2
+	fi
+	dayok=1
+	if [[ "${days,,}" =~ ^(daily|all|every|\*)$ ]]; then
+	    dayok=0
+	else
+	    IFS=',' read -ra parts <<< "${days}"
+	    for d in "${parts[@]}"
+	    do
+		if [[ "${d}" == *-* ]]; then
+		    a=$(drsm_push_day "${d%%-*}") && b=$(drsm_push_day "${d#*-}") || { a=""; }
+		else
+		    a=$(drsm_push_day "${d}") && b="${a}" || { a=""; }
+		fi
+		if [ "${a}" == "" ]; then
+		    echo "WARNING - Push hours \"${spec}\" has a bad day \"${d}\", use Mon to Sun" >&2
+		    return 2
+		fi
+		if { [ ${a} -le ${b} ] && [ ${dow} -ge ${a} ] && [ ${dow} -le ${b} ]; } || \
+		   { [ ${a} -gt ${b} ] && { [ ${dow} -ge ${a} ] || [ ${dow} -le ${b} ]; }; }; then
+		    dayok=0
+		fi
+	    done
+	fi
+	if [ ${dayok} -ne 0 ]; then continue; fi
+	if { [ ${s} -lt ${e} ] && [ ${hm} -ge ${s} ] && [ ${hm} -lt ${e} ]; } || \
+	   { [ ${s} -gt ${e} ] && { [ ${hm} -ge ${s} ] || [ ${hm} -lt ${e} ]; }; } || \
+	   [ ${s} -eq ${e} ]; then
+	    rv=0
+	fi
+    done
+    return ${rv}
+}
+
+function drsm_push_hours_spec()
+{
+    # Push hours for tier $1 (DEV, QA): $2 when set (a site file's
+    # PUSH_<TIER>_HOURS), else PUSH_<TIER>_HOURS in alert.push.conf
+    local tier="${1^^}" spec="${2}"
+    tier="${tier//[^A-Z0-9_]/_}"
+    if [ "${spec}" == "" ]; then
+	if [ "${ALERTdir}" == "" ]; then ALERTdir="${DRSMHOME}/etc"; fi
+	local -A __phconf=()
+	drsm_read_conf "${PUSH_CONF:-${ALERTdir}/alert.push.conf}" __phconf 2> /dev/null
+	spec="${__phconf[PUSH_${tier}_HOURS]}"
+    fi
+    echo "${spec}"
+}
+
+function drsm_push_tier_alert()
+{
+    # Push alert $1 (subject) with body $2 for errors on tier $3 (DEV,
+    # QA) hosts: only inside push hours $4, and at most once every $6
+    # hours (default 4) with time file $5. It has its own throttle so
+    # an error that starts before the hours pushes when they start,
+    # even though its email went out less than 4 hours ago.
+    local subject="${1}" body="${2}" tier="${3}" spec="${4}" tf="${5}" span="${6:-4}" now last
+    now=$(date +%s)
+    drsm_push_in_hours "${spec}" "${now}" 2>&1
+    case $? in
+	1) echo "Outside ${tier} push hours (${spec}), no push alert"; return 0 ;;
+	2) return 1 ;;
+    esac
+    last=0
+    if [ -f "${tf}" ]; then last=$(cat "${tf}"); fi
+    if ! [[ "${last}" =~ ^[0-9]+$ ]]; then last=0; fi
+    if [ $((now - last)) -lt $((span * 3600)) ]; then
+	echo "INFO - ${tier} push alert sent $(( (now - last) / 60 )) minutes ago, we only push every ${span} hours"
+	return 0
+    fi
+    echo "${now}" > "${tf}"
+    chmod 664 "${tf}" 2> /dev/null
+    echo "Inside ${tier} push hours (${spec}), sending push alert"
+    drsm_push_alert "${subject}" "${body}"
 }
 # ----------------------------------------------------------- 
 # ******************************* 

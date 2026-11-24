@@ -339,7 +339,10 @@ tier from cron:
 55 09-16 * * mon-fri ~/drsm/bin/drsm_run.sh -g qa &> /dev/null
 ```
 
-DEV and QA alerts never send texts. A site file can send each tier's
+DEV and QA alerts send texts and push alerts only inside their push
+hours, `PUSH_DEV_HOURS` and `PUSH_QA_HOURS` in `alert.push.conf` or the
+site file (for example `"Mon-Fri 08:00-17:00"`); with none set they
+send email only. A site file can send each tier's
 alerts to its own addresses with `ALERT_EMAIL_DEV`, `ALERT_EMAIL_QA`
 and `ALERT_EMAIL_OPS`; a tier without one uses `ALERT_EMAIL`, then
 `alert.email.list`. Other group names still work and show as their own

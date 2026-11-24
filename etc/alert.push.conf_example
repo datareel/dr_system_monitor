@@ -10,6 +10,8 @@
 #
 # Push alerts go out for errors on production hosts, the alerts that
 # used to send texts, with the same 4 hour throttle as the email.
+# Errors on DEV and QA hosts push only inside PUSH_DEV_HOURS and
+# PUSH_QA_HOURS below.
 # This file is read as KEY=value lines, never run as a script.
 
 # Providers to send to, comma delimited:
@@ -22,6 +24,18 @@ PUSH_PROVIDERS="pushover"
 
 # Longest alert text sent (Pushover allows 1024)
 #PUSH_MAXCHARS=900
+
+# DEV and QA hosts (drsm_run.sh -g dev, -g qa): their errors push only
+# inside these hours, at most once every 4 hours, with a throttle of
+# their own so an error found before the hours pushes when they start.
+# Unset or "never": DEV and QA errors send email only. "always": any
+# time. Else "[DAYS] HH:MM-HH:MM" windows separated by ";", DAYS such
+# as Mon-Fri or Sat,Sun (no DAYS: every day). The end time is not
+# included, 08:00-17:00 is 8 AM up to 5 PM. The times are in the site's
+# TZ (site file), else the monitor's. PUSH_DEV_HOURS in a site file
+# replaces this one for that site.
+#PUSH_DEV_HOURS="Mon-Fri 08:00-17:00"
+#PUSH_QA_HOURS="Mon-Fri 08:00-17:00"
 
 # Pushover, https://pushover.net
 # Create an application at https://pushover.net/apps/build for its API

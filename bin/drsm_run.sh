@@ -6,7 +6,7 @@
 # Shell: BASH shell
 # Original Author(s): DataReel Software Development
 # File Creation Date: 10/23/2026
-# Date Last Modified: 10/23/2026
+# Date Last Modified: 11/24/2026
 #
 # Version control: 1.00
 #
@@ -76,6 +76,8 @@ source "${DRSMHOME}/lib/drsm_history.sh"
 source "${DRSMHOME}/lib/drsm_sites.sh"
 # shellcheck source=lib/drsm_ansible.sh
 source "${DRSMHOME}/lib/drsm_ansible.sh"
+# shellcheck source=lib/drsm_notify.sh
+source "${DRSMHOME}/lib/drsm_notify.sh"
 
 if [ "${HOSTSdir}" == "" ]; then HOSTSdir="${DRSMHOME}/etc/hosts"; fi
 if [ "${PLUGINSdir}" == "" ]; then PLUGINSdir="${DRSMHOME}/plugins"; fi
@@ -793,7 +795,17 @@ function send_alert()
     TIMESPAN="4"
     SENDEMAIL="TRUE"
     SENDTEXT="${3}"
-    if [ "${group}" != "production" ]; then SENDTEXT="FALSE"; fi
+    local pushtier="" pushhours=""
+    if [ "${group}" != "production" ]; then
+	# DEV and QA errors send no texts with the email, they push on
+	# their own inside PUSH_<TIER>_HOURS (site file, else alert.push.conf)
+	if [ "${SENDTEXT}" == "TRUE" ]; then
+	    pushtier=$(drsm_group_tier "${group}")
+	    pushtier="${pushtier//[^A-Z0-9_]/_}"
+	    pushhours=$(drsm_push_hours_spec "${pushtier}" "${SCONF[PUSH_${pushtier}_HOURS]}")
+	fi
+	SENDTEXT="FALSE"
+    fi
     if [ "${sfx}" != "" ]; then
 	TIMEFILE="${VARdir}/email_alert${sfx}.timefile"
 	INITFILE="${VARdir}/email_alert${sfx}.initfile"
@@ -804,6 +816,10 @@ function send_alert()
     # A site's ALERT_EMAIL_<TIER>, else its ALERT_EMAIL, replaces the
     # addresses in alert.email.list, texts still go to its TEXTlist
     email_alert "${SUBJECT}" "${BODY}" "$(drsm_site_alert_email SCONF "${group}")"
+    if [ "${pushhours}" != "" ]; then
+	drsm_push_tier_alert "${SUBJECT}" "${BODY}" "${pushtier}" "${pushhours}" \
+	    "${VARdir}/push_alert${sfx}.timefile" "${TIMESPAN}" | while IFS= read -r line; do log "${line}"; done
+    fi
 }
 
 what="Health Checks"

@@ -94,6 +94,15 @@ out=$(DRSM_CONFIG="${T}/missing.sh" bash "${P}" 2>&1)
 rc=$?
 if [ "${rc}" == "1" ]; then pass "missing config fails"; else fail "missing config exit ${rc}"; fi
 
+# Push hours are checked, the keys are not printed
+cp "${TOPdir}/lib/drsm_conf.sh" "${TOPdir}/lib/drsm_notify.sh" "${T}/drsm/lib/"
+printf 'PUSH_PROVIDERS="pushover"\nPUSHOVER_TOKEN="pftokensecret"\nPUSH_DEV_HOURS="Mon-Fri 08:00-17:00" # office\nPUSH_QA_HOURS=Mon-Fri 8-5\n' > "${T}/drsm/etc/alert.push.conf"
+chmod 600 "${T}/drsm/etc/alert.push.conf"
+out=$(DRSM_CONFIG="${T}/drsm.sh" bash "${P}" 2>&1)
+if echo "${out}" | grep -q 'PUSH_DEV_HOURS: Mon-Fri 08:00-17:00$'; then pass "good push hours"; else fail "good push hours: ${out}"; fi
+if echo "${out}" | grep -q 'PUSH_QA_HOURS="Mon-Fri 8-5" is not valid'; then pass "bad push hours warn"; else fail "bad push hours: ${out}"; fi
+if ! echo "${out}" | grep -q 'pftokensecret'; then pass "push token not printed"; else fail "push token printed"; fi
+
 if [ "${failures}" -gt 0 ]; then echo "${failures} test(s) failed"; exit 1; fi
 echo "All pre-flight tests passed"
 exit 0

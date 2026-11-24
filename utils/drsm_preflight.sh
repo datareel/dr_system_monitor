@@ -240,6 +240,23 @@ if [ -f "${pconf}" ]; then
     if [ "${pprov}" != "" ] && [ "${pprov}" != "smsgateway" ] && ! command -v curl > /dev/null 2>&1; then
 	warn "push alerts need curl, curl not found"
     fi
+    # DEV and QA push hours (not secret, so they are printed)
+    if [ -f "${DRSMHOME}/lib/drsm_notify.sh" ]; then
+	# shellcheck source=lib/drsm_notify.sh
+	source "${DRSMHOME}/lib/drsm_notify.sh" > /dev/null 2>&1
+    fi
+    while IFS= read -r pline
+    do
+	pkey="${pline%%=*}"
+	pval=$(echo "${pline#*=}" | sed -E 's/^[[:space:]]*["'"'"']?//; s/["'"'"']?[[:space:]]*(#.*)?$//')
+	if ! declare -F drsm_push_in_hours > /dev/null; then
+	    info "${pkey}=\"${pval}\" needs DRSM 1.36 or later"
+	else
+	    drsm_push_in_hours "${pval}" > /dev/null 2>&1
+	    if [ $? -eq 2 ]; then warn "${pkey}=\"${pval}\" is not valid, use for example \"Mon-Fri 08:00-17:00\""
+	    else ok "${pkey}: ${pval}"; fi
+	fi
+    done < <(grep -E '^[[:space:]]*(export[[:space:]]+)?PUSH_[A-Z0-9_]+_HOURS=' "${pconf}" | sed -E 's/^[[:space:]]*(export[[:space:]]+)?//')
 else
     info "no ${pconf}: no push alerts (see etc/alert.push.conf_example)"
 fi

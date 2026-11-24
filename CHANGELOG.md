@@ -42,6 +42,12 @@ DEVIATIONS.md D1, D3, D4, D6, D10, D14):
 - Tokens and webhook URLs go to curl in a private config file, never
   on the command line, and are never printed.
 - With no `PUSH_PROVIDERS`, a `TEXTlist` is still mailed as before.
+- DEV and QA push hours: `PUSH_DEV_HOURS` and `PUSH_QA_HOURS` in
+  `alert.push.conf` (or a site file), for example
+  `"Mon-Fri 08:00-17:00"`, push DEV and QA host errors inside those
+  hours, in the site's time zone, with their own 4 hour throttle so an
+  error found before the hours pushes when they start. Unset, DEV and
+  QA errors send email only, as before.
 - `bin/test_alert.sh` takes `all` (the default), `email` or `push`.
 - `utils/drsm_preflight.sh` names the push providers (not the keys)
   and warns when `alert.push.conf` can be read by other users or curl

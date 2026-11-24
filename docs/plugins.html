@@ -119,7 +119,7 @@ etc/sites/acme/hq.site        <span class="c"># the hq site of acme</span></code
 <pre><code>15,45 * * * * ~/drsm/bin/drsm_run.sh &amp;&gt; /dev/null                <span class="c"># OPS</span>
 55 09-16 * * mon-fri ~/drsm/bin/drsm_run.sh -g dev &amp;&gt; /dev/null
 55 09-16 * * mon-fri ~/drsm/bin/drsm_run.sh -g qa &amp;&gt; /dev/null</code></pre>
-<p>DEV and QA alerts never send texts. A site file can send each tier's alerts to its own addresses with <code>ALERT_EMAIL_DEV</code>, <code>ALERT_EMAIL_QA</code> and <code>ALERT_EMAIL_OPS</code>. A tier without one uses <code>ALERT_EMAIL</code>, then <code>alert.email.list</code>. Other group names still work and show as their own tier, in upper case.</p>
+<p>DEV and QA alerts send push alerts only inside their <a href="alerts.html#pushhours">push hours</a>, <code>PUSH_DEV_HOURS</code> and <code>PUSH_QA_HOURS</code>; with none set they send email only. A site file can send each tier's alerts to its own addresses with <code>ALERT_EMAIL_DEV</code>, <code>ALERT_EMAIL_QA</code> and <code>ALERT_EMAIL_OPS</code>. A tier without one uses <code>ALERT_EMAIL</code>, then <code>alert.email.list</code>. Other group names still work and show as their own tier, in upper case.</p>
 
 <h2 id="links">Site links</h2>
 <p>Site and org files can list links for the dashboard's <a href="dashboard.html#links">Site links menu</a>, one <code>LINK</code> line each:</p>
