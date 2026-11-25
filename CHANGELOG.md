@@ -48,6 +48,13 @@ DEVIATIONS.md D1, D3, D4, D6, D10, D14):
   hours, in the site's time zone, with their own 4 hour throttle so an
   error found before the hours pushes when they start. Unset, DEV and
   QA errors send email only, as before.
+- Email hours: `EMAIL_DEV_HOURS` and `EMAIL_QA_HOURS` (and
+  `EMAIL_PROD_HOURS`) in `alert.push.conf` or a site file, such as
+  `"8x5"`, hold that tier's alert emails to those hours, with the push
+  hours syntax and time zone. A held alert is logged and leaves the 4
+  hour email throttle alone, so the first run inside the hours emails.
+  Production errors still push at any time. Unset, email goes out at
+  any time as before. `drsm_preflight.sh` checks them.
 - `bin/test_alert.sh` takes `all` (the default), `email` or `push`.
 - `utils/drsm_preflight.sh` names the push providers (not the keys)
   and warns when `alert.push.conf` can be read by other users or curl

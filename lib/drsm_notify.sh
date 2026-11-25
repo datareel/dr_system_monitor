@@ -49,6 +49,13 @@
 #   PUSH_QA_HOURS="Mon-Fri 08:00-17:00"
 #                                    when DEV and QA errors push, in the
 #                                    site's time zone; unset: never
+#   EMAIL_DEV_HOURS="8x5"            when DEV, QA and production (OPS or
+#   EMAIL_QA_HOURS="8x5"             PROD) alerts email, same syntax and
+#                                    time zone; unset: any time (24x7).
+#                                    Outside them the alert is held and
+#                                    the 4 hour email throttle is left
+#                                    alone, so the first run inside the
+#                                    hours emails (drsm_email_hours_spec)
 #
 #   PUSHOVER_TOKEN, PUSHOVER_USER    application token, user or group key
 #                                    (several user keys, comma delimited)
@@ -353,19 +360,39 @@ function drsm_push_in_hours()
     return ${rv}
 }
 
-function drsm_push_hours_spec()
+function drsm_alert_hours_spec()
 {
-    # Push hours for tier $1 (DEV, QA): $2 when set (a site file's
-    # PUSH_<TIER>_HOURS), else PUSH_<TIER>_HOURS in alert.push.conf
-    local tier="${1^^}" spec="${2}"
+    # Hours setting $1_<TIER>_HOURS for tier $2 ($1 PUSH or EMAIL):
+    # $3 when set (a site file's value), else the one in alert.push.conf.
+    # For tier OPS (production) EMAIL_PROD_HOURS is read when
+    # EMAIL_OPS_HOURS is not set.
+    local kind="${1^^}" tier="${2^^}" spec="${3}"
     tier="${tier//[^A-Z0-9_]/_}"
     if [ "${spec}" == "" ]; then
 	if [ "${ALERTdir}" == "" ]; then ALERTdir="${DRSMHOME}/etc"; fi
 	local -A __phconf=()
 	drsm_read_conf "${PUSH_CONF:-${ALERTdir}/alert.push.conf}" __phconf 2> /dev/null
-	spec="${__phconf[PUSH_${tier}_HOURS]}"
+	spec="${__phconf[${kind}_${tier}_HOURS]}"
+	if [ "${spec}" == "" ] && [ "${kind}" == "EMAIL" ] && [ "${tier}" == "OPS" ]; then
+	    spec="${__phconf[EMAIL_PROD_HOURS]}"
+	fi
     fi
     echo "${spec}"
+}
+
+function drsm_push_hours_spec()
+{
+    # Push hours for tier $1 (DEV, QA): $2 when set (a site file's
+    # PUSH_<TIER>_HOURS), else PUSH_<TIER>_HOURS in alert.push.conf
+    drsm_alert_hours_spec PUSH "${1}" "${2}"
+}
+
+function drsm_email_hours_spec()
+{
+    # Email hours for tier $1 (DEV, QA, OPS): $2 when set (a site file's
+    # EMAIL_<TIER>_HOURS), else EMAIL_<TIER>_HOURS in alert.push.conf.
+    # Empty means any time.
+    drsm_alert_hours_spec EMAIL "${1}" "${2}"
 }
 
 function drsm_push_tier_alert()
@@ -376,7 +403,8 @@ function drsm_push_tier_alert()
     # an error that starts before the hours pushes when they start,
     # even though its email went out less than 4 hours ago.
     local subject="${1}" body="${2}" tier="${3}" spec="${4}" tf="${5}" span="${6:-4}" now last
-    now=$(date +%s)
+    # DRSM_NOW (epoch seconds) is for the tests only
+    now="${DRSM_NOW:-$(date +%s)}"
     drsm_push_in_hours "${spec}" "${now}" 2>&1
     case $? in
 	1) echo "Outside ${tier} push hours (${spec}), no push alert"; return 0 ;;

@@ -152,6 +152,45 @@ if [ "$(grep -c . "${T}/fake/curl.log")" -eq 1 ]; then pass "one push in two run
 rm -rf "${T}/fake" "${T}/alert.push.conf" "${T}/alert.email.list" "${T}"/tmp/var/email_alert* "${T}"/tmp/var/push_alert*
 printf 'HOST=box2\nCOLLECTOR=local\nGROUP=dev\n' > "${T}/hosts/box2.conf"
 
+echo "== email hours"
+# box2 (dev) and box1 (production) error, alerts on, fake mail and curl.
+# 2026-11-24 is a Tuesday, DRSM_NOW sets the time the hours are checked at.
+printf 'HOST=box2\nCOLLECTOR=local\nGROUP=dev\nPLUGINS="core/load"\ncore_load_CRIT=-1\n' > "${T}/hosts/box2.conf"
+mkdir -p "${T}/fake"
+printf '#!/bin/bash\ncat > /dev/null\necho "$@" >> %s/fake/mail.log\n' "${T}" > "${T}/fake/mail"
+printf '#!/bin/bash\necho "$@" >> %s/fake/curl.log\necho -n 200\n' "${T}" > "${T}/fake/curl"
+chmod 755 "${T}/fake/mail" "${T}/fake/curl"
+printf 'export EMAILlist="dev@example.com"\n' > "${T}/alert.email.list"
+tue2007=$(TZ=America/New_York date -d "2026-11-24 20:07" +%s)
+tue1000=$(TZ=America/New_York date -d "2026-11-24 10:00" +%s)
+wed0300=$(TZ=America/New_York date -d "2026-11-25 03:00" +%s)
+function erun() { TZ=America/New_York DRSM_NOW="${1}" HOME="${T}/home" MAILcmd="${T}/fake/mail" DRSM_CURL="${T}/fake/curl" bash "${TOPdir}/bin/drsm_run.sh" "${@:2}" > "${T}/run.log" 2>&1; }
+function mails() { if [ -f "${T}/fake/mail.log" ]; then grep -c . "${T}/fake/mail.log"; else echo 0; fi; }
+# Unset: no change, dev errors email at 20:07
+erun "${tue2007}" -g dev
+if [ "$(mails)" -eq 1 ]; then pass "no email hours: dev error at Tue 20:07 emails"; else fail "no email hours: $(mails) emails"; fi
+rm -rf "${T}/fake/mail.log" "${T}"/tmp/var/email_alert*
+printf 'PUSH_PROVIDERS=pushover\nPUSHOVER_TOKEN=t\nPUSHOVER_USER=u\nEMAIL_DEV_HOURS="8x5"\nEMAIL_QA_HOURS="8x5"\n' > "${T}/alert.push.conf"
+chmod 600 "${T}/alert.push.conf"
+erun "${tue2007}" -g dev
+expect "dev error at Tue 20:07 held" "${T}/run.log" "INFO - dev alert held outside email hours (8x5)"
+expect "held alert logged in the site log" "${T}/tmp/logs/drsm_run_dev_all.log" "alert held outside email hours"
+if [ "$(mails)" -eq 0 ]; then pass "dev error at Tue 20:07 sends no email"; else fail "dev email sent outside the hours"; fi
+if ! ls "${T}"/tmp/var/email_alert*_dev.timefile > /dev/null 2>&1; then pass "held alert leaves the email throttle alone"; else fail "email timefile written outside the hours"; fi
+expect "reports still written outside the hours" "${R}/system_health_report_dev_errors.txt" "15 minute load average"
+erun "${tue1000}" -g dev
+if [ "$(mails)" -eq 1 ]; then pass "dev error at Tue 10:00 emails"; else fail "dev at Tue 10:00: $(mails) emails"; fi
+erun "${wed0300}"
+expect "production error at 03:00 still emails" "${T}/run.log" "Emailing message to: dev@example.com"
+expect "production error at 03:00 still pushes" "${T}/run.log" "Push alert sent with pushover (HTTP 200)"
+printf 'EMAIL_PROD_HOURS="8x5"\n' >> "${T}/alert.push.conf"
+rm -rf "${T}/fake/curl.log" "${T}/fake/mail.log" "${T}"/tmp/var/email_alert.*
+erun "${wed0300}"
+expect "EMAIL_PROD_HOURS holds the production email" "${T}/run.log" "INFO - production email held outside email hours (8x5), push alert only"
+if [ "$(mails)" -eq 0 ] && [ -f "${T}/fake/curl.log" ]; then pass "production push still sent outside its email hours"; else fail "production: $(mails) emails, push $(test -f "${T}/fake/curl.log" && echo sent || echo missing)"; fi
+rm -rf "${T}/fake" "${T}/alert.push.conf" "${T}/alert.email.list" "${T}"/tmp/var/email_alert* "${T}"/tmp/var/push_alert*
+printf 'HOST=box2\nCOLLECTOR=local\nGROUP=dev\n' > "${T}/hosts/box2.conf"
+
 echo "== probes"
 cat > "${T}/hosts/box1.conf" <<'HOSTS'
 HOST=box1

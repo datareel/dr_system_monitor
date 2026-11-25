@@ -806,6 +806,36 @@ function send_alert()
 	fi
 	SENDTEXT="FALSE"
     fi
+    # Email hours, EMAIL_<TIER>_HOURS (site file, else alert.push.conf),
+    # unset is any time. Outside them the email is held without touching
+    # the 4 hour email throttle, so the first run inside the hours emails.
+    # Production errors still push (the push shares the email throttle).
+    local etier emailhours rv
+    etier=$(drsm_group_tier "${group}")
+    etier="${etier//[^A-Z0-9_]/_}"
+    emailhours="${SCONF[EMAIL_${etier}_HOURS]}"
+    if [ "${emailhours}" == "" ] && [ "${etier}" == "OPS" ]; then emailhours="${SCONF[EMAIL_PROD_HOURS]}"; fi
+    emailhours=$(drsm_email_hours_spec "${etier}" "${emailhours}")
+    if [ "${emailhours}" != "" ]; then
+	# DRSM_NOW (epoch seconds) is for the tests only
+	drsm_push_in_hours "${emailhours}" "${DRSM_NOW}" 2> /dev/null
+	rv=$?
+	if [ ${rv} -eq 2 ]; then
+	    log "WARNING - EMAIL_${etier}_HOURS=\"${emailhours}\" not valid, emailing any time"
+	elif [ ${rv} -eq 1 ]; then
+	    if [ "${SENDTEXT}" == "TRUE" ]; then
+		log "INFO - ${group} email held outside email hours (${emailhours}), push alert only"
+		SENDEMAIL="FALSE"
+	    else
+		log "INFO - ${group} alert held outside email hours (${emailhours})"
+		if [ "${pushhours}" != "" ]; then
+		    drsm_push_tier_alert "${SUBJECT}" "${BODY}" "${pushtier}" "${pushhours}" \
+			"${VARdir}/push_alert${sfx}.timefile" "${TIMESPAN}" | while IFS= read -r line; do log "${line}"; done
+		fi
+		return 0
+	    fi
+	fi
+    fi
     if [ "${sfx}" != "" ]; then
 	TIMEFILE="${VARdir}/email_alert${sfx}.timefile"
 	INITFILE="${VARdir}/email_alert${sfx}.initfile"

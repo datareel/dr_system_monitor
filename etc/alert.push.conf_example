@@ -37,6 +37,17 @@ PUSH_PROVIDERS="pushover"
 #PUSH_DEV_HOURS="8x5"
 #PUSH_QA_HOURS="8x5"
 
+# Email hours: when alert emails go out, per tier, with the same values
+# and time zone as the push hours. Unset: any time (24x7), as before.
+# Outside them the alert is held (logged, the dashboard and reports are
+# not changed) and the 4 hour email throttle is left alone, so the first
+# run inside the hours emails. EMAIL_PROD_HOURS (or EMAIL_OPS_HOURS) holds
+# production email too; production errors still push at any time.
+# EMAIL_DEV_HOURS in a site file replaces this one for that site.
+#EMAIL_DEV_HOURS="8x5"
+#EMAIL_QA_HOURS="8x5"
+#EMAIL_PROD_HOURS="24x7"
+
 # Pushover, https://pushover.net
 # Create an application at https://pushover.net/apps/build for its API
 # token. The user key is on your Pushover dashboard; a group key or

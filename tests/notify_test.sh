@@ -213,6 +213,15 @@ check "tier push outside the hours sends nothing" 'echo "${out}" | grep -q "Outs
 out=$(drsm_push_tier_alert "S" "${body}" DEV "weekdays" "${tf}" 4); rv=$?
 check "tier push with bad hours warns" '[ ${rv} -eq 1 ] && echo "${out}" | grep -q "WARNING - Push hours" && [ ! -f "${FAKELOG}/args.1" ]'
 rm -f "${tf}"
+
+# --- Email hours ------------------------------------------------------
+printf 'EMAIL_DEV_HOURS="8x5"\nEMAIL_PROD_HOURS="24x7"\n' >> "${T}/etc/alert.push.conf"
+check "email hours read from alert.push.conf" '[ "$(drsm_email_hours_spec dev)" == "8x5" ] && [ "$(drsm_email_hours_spec QA)" == "" ]'
+check "EMAIL_PROD_HOURS is the production (OPS) setting" '[ "$(drsm_email_hours_spec OPS)" == "24x7" ]'
+check "site email hours replace alert.push.conf" '[ "$(drsm_email_hours_spec DEV "always")" == "always" ]'
+check "email and push hours are separate settings" '[ "$(drsm_push_hours_spec DEV)" == "Mon-Fri 08:00-17:00" ]'
+tue2007=$(date -d "2026-11-24 20:07" +%s); tue1000=$(date -d "2026-11-24 10:00" +%s)
+check "email hours 8x5: Tue 20:07 outside, Tue 10:00 inside" '! drsm_push_in_hours 8x5 ${tue2007} && drsm_push_in_hours 8x5 ${tue1000}'
 unset TZ
 
 echo ""

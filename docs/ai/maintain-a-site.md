@@ -87,6 +87,13 @@ manage them (file `$CONFIGdir/messages.conf`).
   `etc/alert.push.conf_example`). It holds API tokens: the person fills
   it in and sets mode 600; the agent never reads or prints it. Test
   with `bin/test_alert.sh push`.
+- Alert hours (in `alert.push.conf` or a site file, not secret):
+  `PUSH_DEV_HOURS` / `PUSH_QA_HOURS` (when DEV and QA errors push,
+  unset: never) and `EMAIL_DEV_HOURS` / `EMAIL_QA_HOURS` /
+  `EMAIL_PROD_HOURS` (when alerts email, unset: any time), such as
+  `"8x5"`, `"24x7"` or `"Mon-Fri 08:00-17:00"`, in the site's `TZ`.
+  A held email is logged as `alert held outside email hours` and the
+  first run inside the hours emails. `utils/drsm_preflight.sh` checks them.
 - `drsm_run.sh` alerts on ERROR; `-n` turns alerts off for a run (use
   it in cron for groups that should only show on the dashboard).
 
